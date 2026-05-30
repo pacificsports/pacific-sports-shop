@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Log in / Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  header{border-bottom:1px solid var(--line);background:var(--bg)}
+  .header-in{max-width:1240px;margin:0 auto;padding:22px 30px;display:flex;align-items:center;justify-content:space-between}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo i{font-style:italic;color:var(--accent)}
+  .back{font-size:14px;color:var(--soft-ink)}.back:hover{color:var(--ink)}
+
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:50px 30px 80px;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start}
+
+  /* left intro */
+  .intro{padding-top:14px}
+  .intro .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:18px}
+  .intro h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,5.5vw,62px);line-height:1.02;margin-bottom:20px}
+  .intro p{font-size:16px;color:var(--soft-ink);font-weight:350;margin-bottom:30px;max-width:42ch}
+  .intro .feats{list-style:none;display:flex;flex-direction:column;gap:14px}
+  .intro .feats li{display:flex;gap:12px;font-size:15px;color:var(--ink)}
+  .intro .feats .ic{width:26px;height:26px;border-radius:7px;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;font-weight:700}
+
+  /* right card */
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:34px;box-shadow:0 40px 80px -50px rgba(28,28,26,.4)}
+  .tabs{display:flex;background:var(--bg);border-radius:12px;padding:5px;margin-bottom:28px}
+  .tabs button{flex:1;border:none;background:none;font-family:var(--body);font-size:15px;font-weight:500;color:var(--soft-ink);padding:11px;border-radius:9px;cursor:pointer;transition:.2s}
+  .tabs button.active{background:var(--paper);color:var(--ink);box-shadow:0 2px 8px rgba(28,28,26,.08)}
+
+  .pane{display:none}.pane.active{display:block}
+  .pane h2{font-family:var(--display);font-weight:400;font-size:27px;margin-bottom:6px}
+  .pane .psub{font-size:14px;color:var(--faint);margin-bottom:24px}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--soft-ink);margin-bottom:6px}
+  .field input,.field select{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);color:var(--ink);transition:border .2s}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .field .hint{font-size:12px;color:var(--faint);margin-top:5px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+  .forgot{text-align:right;margin:-6px 0 18px;font-size:13px;color:var(--accent)}
+  .forgot a:hover{text-decoration:underline}
+  .btn{width:100%;background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:16px;border:none;border-radius:12px;cursor:pointer;padding:15px;transition:transform .2s,background .25s}
+  .btn:hover{transform:translateY(-2px);background:var(--accent)}
+  .swap{text-align:center;margin-top:18px;font-size:14px;color:var(--soft-ink)}
+  .swap a{color:var(--accent);font-weight:500;cursor:pointer}.swap a:hover{text-decoration:underline}
+
+  .wholesale-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:11px;padding:13px 16px;font-size:13px;color:var(--accent);margin-bottom:22px;line-height:1.5}
+  .ok-msg{display:none;background:var(--accent-soft);border:1px solid #cdddc9;border-radius:12px;padding:20px;text-align:center;margin-top:8px}
+  .ok-msg.show{display:block;animation:rise .5s both}
+  .ok-msg .big{font-family:var(--display);font-size:24px;margin-bottom:6px;color:var(--accent)}
+  .ok-msg p{font-size:14px;color:var(--soft-ink)}
+
+  footer{border-top:1px solid var(--line);padding:30px;text-align:center;font-size:12px;color:var(--faint)}
+
+  @media(max-width:860px){
+    .wrap{grid-template-columns:1fr;gap:40px;padding-top:36px}
+    .intro{display:none}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">— 디자인 시안 (DEMO) · 로그인 / 거래처 가입 —</div>
+
+<header>
+  <div class="header-in">
+    <a href="index.html" class="logo">Pacific<i>Sports</i></a>
+    <a href="index.html" class="back">← Back to demo</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- LEFT -->
+  <div class="intro rise">
+    <div class="eyebrow">Wholesale only</div>
+    <h1>Built for wholesale, not retail.</h1>
+    <p>Pacific Sports sells exclusively to verified wholesale accounts. Log in to see your wholesale pricing and place orders across our SC and CA warehouses.</p>
+    <ul class="feats">
+      <li><span class="ic">✓</span><span>Your account pricing on every blank</span></li>
+      <li><span class="ic">✓</span><span>No minimum — order by the piece or the case</span></li>
+      <li><span class="ic">✓</span><span>Ship from Sumter (SC) or Eastvale (CA)</span></li>
+      <li><span class="ic">✓</span><span>Reorder past orders in one click</span></li>
+    </ul>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="card rise">
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="showPane('login')">Log in</button>
+      <button id="tabReg" onclick="showPane('reg')">Sign up</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="pane active" id="paneLogin">
+      <h2>Welcome back</h2>
+      <div class="psub">Log in to your wholesale account.</div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" placeholder="you@company.com" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <div class="forgot"><a href="#">Forgot password?</a></div>
+      <button class="btn" onclick="fakeLogin()">Log in →</button>
+      <div class="swap">New to Pacific Sports? <a onclick="showPane('reg')">Apply for an account</a></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="pane" id="paneReg">
+      <h2>Open a wholesale account</h2>
+      <div class="psub">Tell us about your business. We'll set up your account.</div>
+      <div class="wholesale-note">🔒 Wholesale accounts are for verified businesses only. We'll review your details and activate your account.</div>
+      <div id="regForm">
+        <div class="field">
+          <label>Business name</label>
+          <input type="text" placeholder="Your company / brand">
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label>Contact name</label>
+            <input type="text" placeholder="First & last">
+          </div>
+          <div class="field">
+            <label>Phone</label>
+            <input type="tel" placeholder="(000) 000-0000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" placeholder="you@company.com">
+        </div>
+        <div class="field">
+          <label>Resale certificate / Tax ID</label>
+          <input type="text" placeholder="Seller's permit or resale ID">
+          <div class="hint">Required to buy at wholesale. We verify this before activating your account.</div>
+        </div>
+        <div class="field">
+          <label>Primary warehouse</label>
+          <select>
+            <option>SC — Sumter (East Coast)</option>
+            <option>CA — Eastvale (West Coast)</option>
+            <option>Both</option>
+          </select>
+        </div>
+        <button class="btn" onclick="fakeRegister()">Submit application →</button>
+        <div class="swap">Already have an account? <a onclick="showPane('login')">Log in</a></div>
+      </div>
+      <div class="ok-msg" id="okMsg">
+        <div class="big">✓ Application received</div>
+        <p>Thanks! We'll review your business details and email you once your account is active.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
+
+<script>
+  function showPane(which){
+    document.getElementById('paneLogin').classList.toggle('active',which==='login');
+    document.getElementById('paneReg').classList.toggle('active',which==='reg');
+    document.getElementById('tabLogin').classList.toggle('active',which==='login');
+    document.getElementById('tabReg').classList.toggle('active',which==='reg');
+  }
+  function fakeLogin(){
+    // 데모: 실제로는 서버 인증 후 가격 보이는 상태로 이동
+    alert('데모 화면이에요. 실제 사이트에서는 여기서 로그인 후 도매가가 보이는 상태로 들어가요.');
+  }
+  function fakeRegister(){
+    document.getElementById('regForm').style.display='none';
+    document.getElementById('okMsg').classList.add('show');
+  }
+</script>
+</body>
+</html>

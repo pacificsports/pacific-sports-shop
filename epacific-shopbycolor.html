@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Shop by Color</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .nav-item>a.on{color:var(--ink);background:var(--accent-soft)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;transition:.2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+
+  .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
+
+  .page{max-width:1240px;margin:0 auto;padding:18px 30px 90px}
+  .page h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,5.5vw,64px);line-height:1;margin-bottom:8px}
+  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-bottom:30px;max-width:54ch}
+
+  /* family filter chips */
+  .families{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px}
+  .fam{display:flex;align-items:center;gap:9px;background:var(--paper);border:1.5px solid var(--line-2);border-radius:999px;padding:8px 16px 8px 9px;cursor:pointer;font-size:14px;font-weight:500;transition:.2s}
+  .fam:hover{border-color:var(--accent)}
+  .fam.active{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+  .fam .sw{display:flex}
+  .fam .sw i{width:16px;height:16px;border-radius:50%;margin-left:-6px;box-shadow:0 0 0 2px var(--paper)}
+  .fam.active .sw i{box-shadow:0 0 0 2px var(--ink)}
+  .fam:first-child .sw{display:none}
+
+  /* color grid */
+  .colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;margin-bottom:50px}
+  .swatch{cursor:pointer;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--paper);transition:transform .2s,box-shadow .2s}
+  .swatch:hover{transform:translateY(-4px);box-shadow:0 18px 36px -22px rgba(28,28,26,.4)}
+  .swatch .chip{height:96px}
+  .swatch .lbl{padding:11px 13px}
+  .swatch .lbl .nm{font-size:14px;font-weight:500}
+  .swatch .lbl .av{font-size:12px;color:var(--faint);margin-top:2px}
+
+  /* selected color → styles */
+  .picked{display:none;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:30px;margin-bottom:30px}
+  .picked.show{display:block;animation:rise .4s both}
+  .picked .ph{display:flex;align-items:center;gap:16px;margin-bottom:22px}
+  .picked .ph .big-chip{width:60px;height:60px;border-radius:14px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .picked .ph h2{font-family:var(--display);font-weight:400;font-size:28px;line-height:1}
+  .picked .ph .sub2{font-size:13px;color:var(--faint)}
+  .picked .ph .close{margin-left:auto;background:none;border:1.5px solid var(--line-2);border-radius:9px;padding:8px 14px;font-family:var(--body);font-size:13px;cursor:pointer;color:var(--soft-ink)}
+  .picked .ph .close:hover{border-color:var(--accent);color:var(--accent)}
+  .styles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+  .st-card{display:flex;gap:14px;align-items:center;border:1px solid var(--line-2);border-radius:13px;padding:14px;cursor:pointer;transition:.2s}
+  .st-card:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .st-card .tee{width:52px;height:52px;border-radius:9px;background:#eceae6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .st-card .si .no{font-size:12px;color:var(--accent);font-weight:600}
+  .st-card .si .nm{font-size:14px;font-weight:500;line-height:1.25}
+  .st-card .si .meta{font-size:12px;color:var(--faint)}
+
+  footer{border-top:1px solid var(--line);padding:30px;text-align:center;font-size:12px;color:var(--faint);margin-top:40px}
+
+  @media(max-width:780px){ nav.main{display:none} }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">— 디자인 시안 (DEMO) · Shop by Color —</div>
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">My Account</a><a href="#">Order History</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="index.html" class="logo">Pacific<i>Sports</i></a>
+    <nav class="main">
+      <div class="nav-item"><a>Men's</a></div>
+      <div class="nav-item"><a>Youth & Kids</a></div>
+      <div class="nav-item"><a>Collections</a></div>
+      <div class="nav-item"><a class="on">Shop by Color</a></div>
+      <div class="nav-item"><a>Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button>Search</button>
+      <button class="primary">Cart</button>
+    </div>
+  </div>
+</header>
+
+<div class="crumb"><a href="#">Home</a><span>/</span>Shop by Color</div>
+
+<div class="page">
+  <h1 class="rise">Shop by Color</h1>
+  <div class="sub rise">Find the shade you need, then see every style that comes in it. Pick a family or browse all.</div>
+
+  <div class="families rise" id="families"></div>
+
+  <!-- 선택된 색 → 스타일 -->
+  <div class="picked" id="picked"></div>
+
+  <div class="colors rise" id="colors"></div>
+</div>
+
+<footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
+
+<script>
+  function teeSVG(hex,s){s=s||40;return `<svg viewBox="0 0 100 100" width="${s}" height="${s}"><path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="${hex}" stroke="rgba(0,0,0,.1)" stroke-width="1"/><path d="M30 18 C34 24 42 26 50 26 C58 26 66 24 70 18 C66 21 58 22 50 22 C42 22 34 21 30 18 Z" fill="rgba(0,0,0,.08)"/></svg>`;}
+
+  // 색상 (계열 포함)
+  const COLORS=[
+    ['Natural','#ede6d6','neutral'],['White','#f7f7f4','neutral'],['Sand','#d8c4a0','neutral'],['Tan','#c9a87c','neutral'],['Wheat','#e0cd9a','neutral'],
+    ['Black','#232323','black'],['Charcoal Htr','#595959','black'],['Smoke','#8a9aa0','black'],['Shadow Grey','#6e6e6e','black'],['Pewter','#8c8c86','black'],
+    ['Navy','#27314f','blue'],['Monaco Blue','#2f5b8f','blue'],['Sapphire','#2f4f8f','blue'],['Baby Blue','#a9c9e0','blue'],['Frost Blue','#bcd6dc','blue'],['Royal Htr','#3a4a8c','blue'],
+    ['Clover','#3f7d4f','green'],['Olive','#6b6a3f','green'],['Artichoke','#7d8064','green'],['River Green','#4f8a7a','green'],['Pistachio','#bcd09a','green'],['Bermuda','#5bbcb6','green'],
+    ['Cardinal','#8e2535','red'],['Wine','#5a2733','red'],['Tabasco','#9c2f2f','red'],['Rust','#a85636','red'],['Cinnamon','#b05c33','red'],
+    ['Canary','#f5d935','warm'],['Papaya','#f0905a','warm'],['Cantaloupe','#f0a875','warm'],['Honeycomb','#e8b84a','warm'],['Butter','#f3e3a0','warm'],
+    ['Purple','#5a3f7a','purple'],['Future Dusk','#6a6480','purple'],['Pink Ice','#edc6cf','purple'],['Peach Rose','#e8a99c','purple']
+  ];
+  const FAMILIES=[
+    ['all','All colors',[]],
+    ['neutral','Neutrals','#d8c4a0'],['black','Black & Grey','#595959'],['blue','Blues','#2f5b8f'],
+    ['green','Greens','#3f7d4f'],['red','Reds','#8e2535'],['warm','Yellows & Orange','#f0a875'],['purple','Purple & Pink','#5a3f7a']
+  ];
+  // 이 색을 제공하는 스타일 (데모: 대부분 공통)
+  const STYLES=[
+    ['1368','60:40 Short Sleeve Crew','4.3 oz · XS–3XL'],
+    ['1315','100% Cotton Crew','5.0 oz · XS–3XL'],
+    ['1410','40/1 Crew','4.0 oz · S–2XL'],
+    ['1311','30/1 V-neck','4.3 oz · S–XL'],
+    ['1314','30/1 Tank Top','4.3 oz · S–2XL'],
+    ['1322','30/1 Long Sleeve','4.5 oz · S–2XL']
+  ];
+
+  let activeFam='all';
+  const famEl=document.getElementById('families');
+  const colorsEl=document.getElementById('colors');
+  const pickedEl=document.getElementById('picked');
+
+  function renderFamilies(){
+    famEl.innerHTML=FAMILIES.map(f=>{
+      const sw = f[0]==='all' ? '' : `<span class="sw"><i style="background:${f[2]}"></i></span>`;
+      return `<div class="fam ${f[0]===activeFam?'active':''}" onclick="setFam('${f[0]}')">${sw}${f[1]}</div>`;
+    }).join('');
+  }
+  function setFam(f){ activeFam=f; renderFamilies(); renderColors(); pickedEl.classList.remove('show'); }
+
+  function renderColors(){
+    const list = activeFam==='all' ? COLORS : COLORS.filter(c=>c[2]===activeFam);
+    colorsEl.innerHTML=list.map(c=>{
+      // 데모: 색상별 대략 제공 스타일 수
+      const n = 4 + (c[0].length % 3);
+      return `<div class="swatch" onclick="pickColor('${c[0]}','${c[1]}')">
+        <div class="chip" style="background:${c[1]}"></div>
+        <div class="lbl"><div class="nm">${c[0]}</div><div class="av">${n} styles</div></div>
+      </div>`;
+    }).join('');
+  }
+
+  function pickColor(name,hex){
+    pickedEl.innerHTML=`
+      <div class="ph">
+        <div class="big-chip" style="background:${hex}"></div>
+        <div>
+          <h2>${name}</h2>
+          <div class="sub2">Styles available in ${name}</div>
+        </div>
+        <button class="close" onclick="document.getElementById('picked').classList.remove('show')">✕ Close</button>
+      </div>
+      <div class="styles">
+        ${STYLES.map(s=>`
+          <div class="st-card" onclick="alert('데모: 실제로는 #${s[0]} 제품 페이지(${name} 선택됨)로 이동')">
+            <div class="tee">${teeSVG(hex,40)}</div>
+            <div class="si"><div class="no">#${s[0]}</div><div class="nm">${s[1]}</div><div class="meta">${s[2]}</div></div>
+          </div>`).join('')}
+      </div>`;
+    pickedEl.classList.add('show');
+    pickedEl.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  renderFamilies();
+  renderColors();
+</script>
+</body>
+</html>

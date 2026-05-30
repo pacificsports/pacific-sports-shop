@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Order Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:.2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+  .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+
+  .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
+
+  .page{max-width:1240px;margin:0 auto;padding:18px 30px 90px}
+  .page h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5vw,60px);line-height:1;margin-bottom:8px}
+  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-bottom:34px}
+
+  .layout{display:grid;grid-template-columns:1fr 360px;gap:34px;align-items:start}
+
+  /* order item card */
+  .item{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-bottom:20px}
+  .item-head{display:flex;align-items:center;gap:16px;padding:20px 24px;border-bottom:1px solid var(--line)}
+  .item-thumb{width:64px;height:64px;border-radius:12px;background:#eceae6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .item-thumb svg{display:block}
+  .item-info{flex:1}
+  .item-info .cat{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .item-info h3{font-family:var(--display);font-weight:400;font-size:23px;line-height:1.1;margin:2px 0}
+  .item-info .sn{font-size:13px;color:var(--faint)}
+  .item-head .rm{background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;padding:6px;border-radius:6px;transition:.2s}
+  .item-head .rm:hover{color:#b04a3b;background:#faf0ee}
+
+  .lines{padding:8px 24px 18px}
+  .line{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .line:last-child{border-bottom:none}
+  .line .dot{width:22px;height:22px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .line .lc{font-weight:500;font-size:14px;min-width:90px}
+  .line .wh{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .wh-SC{background:#e7eef3;color:#2f5b7a}
+  .wh-CA{background:#f1ece0;color:#8a6a3a}
+  .line .sizes{flex:1;font-size:13px;color:var(--soft-ink);display:flex;flex-wrap:wrap;gap:4px 12px}
+  .line .sizes b{color:var(--ink);font-weight:600}
+  .line .lqty{font-family:var(--display);font-size:20px;min-width:54px;text-align:right}
+  .line .lamt{font-size:15px;font-weight:600;color:var(--ink);min-width:90px;text-align:right}
+
+  /* summary sidebar */
+  .summary-box{position:sticky;top:104px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 30px 60px -40px rgba(28,28,26,.3)}
+  .summary-box h2{font-family:var(--display);font-weight:400;font-size:24px;margin-bottom:20px}
+  .srow{display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;font-size:14px;border-bottom:1px solid var(--line)}
+  .srow .lbl{color:var(--soft-ink)}
+  .srow .val{font-weight:600;font-family:var(--display);font-size:18px}
+  .srow.wh .val{font-size:15px}
+  .srow.cases{flex-direction:column;align-items:stretch;gap:6px}
+  .srow.cases .lbl{margin-bottom:2px}
+  .casebreak{font-size:13px;color:var(--accent);display:flex;justify-content:space-between}
+  .srow.grand{border-bottom:none;padding-top:18px;margin-top:4px;border-top:2px solid var(--ink)}
+  .srow.grand .lbl{font-size:15px;color:var(--ink);font-weight:600}
+  .srow.grand .val{font-size:30px}
+  .submit{width:100%;background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:16px;border:none;border-radius:12px;cursor:pointer;padding:17px;transition:transform .2s,background .25s;margin-top:6px}
+  .submit:hover{transform:translateY(-2px);background:var(--accent)}
+  .cont{display:block;text-align:center;margin-top:14px;font-size:14px;color:var(--soft-ink);border-bottom:1px solid var(--line-2);padding-bottom:2px;width:fit-content;margin-left:auto;margin-right:auto}
+  .cont:hover{color:var(--accent);border-color:var(--accent)}
+
+  .note{font-size:12px;color:var(--faint);text-align:center;margin-top:16px;line-height:1.6}
+
+  footer{background:var(--ink);color:#9c9c92;padding:60px 30px 30px;margin-top:30px}
+  .f-in{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:44px}
+  footer h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg);margin-bottom:18px;font-weight:600}
+  footer a{display:block;padding:6px 0;font-size:14px;color:#9c9c92;font-weight:350;transition:color .2s}
+  footer a:hover{color:var(--bg)}
+  .fb .logo{color:var(--bg);margin-bottom:18px}.fb .logo i{color:var(--warm)}
+  .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
+  .f-bot{max-width:1240px;margin:48px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+
+  @media(max-width:980px){
+    .layout{grid-template-columns:1fr}
+    .summary-box{position:static}
+    nav.main{display:none}
+    .f-in{grid-template-columns:1fr 1fr}
+    .line{flex-wrap:wrap}
+    .line .sizes{order:5;width:100%;padding-left:36px}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">— 디자인 시안 (DEMO) · 장바구니 / 주문 확인 —</div>
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">(CA) 803-447-0012</a><a href="#">(SC) 803-840-2405</a><a href="#">My Account</a><a href="#">Logout</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="index.html" class="logo">Pacific<i>Sports</i></a>
+    <nav class="main">
+      <div class="nav-item"><a>Men's</a></div>
+      <div class="nav-item"><a>Youth & Kids</a></div>
+      <div class="nav-item"><a>Collections</a></div>
+      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a href="#">Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button>Search</button>
+      <button class="primary">Cart <span class="cart-c" id="cartCount">3</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="crumb"><a href="#">Home</a><span>/</span>Cart</div>
+
+<div class="page">
+  <h1 class="rise">Order Review</h1>
+  <div class="sub rise">Review your order and submit.</div>
+
+  <div class="layout">
+    <!-- ITEMS -->
+    <div id="items"></div>
+
+    <!-- SUMMARY -->
+    <div class="summary-box rise">
+      <h2>Order Summary</h2>
+      <div class="srow"><span class="lbl">Total pieces</span><span class="val" id="sumPieces">0</span></div>
+      <div class="srow wh"><span class="lbl">From SC — Sumter</span><span class="val" id="sumSC">0</span></div>
+      <div class="srow wh"><span class="lbl">From CA — Eastvale</span><span class="val" id="sumCA">0</span></div>
+      <div class="srow cases">
+        <span class="lbl">Case breakdown</span>
+        <div class="casebreak"><span>XS–2XL (72/case)</span><span id="caseStd">—</span></div>
+        <div class="casebreak"><span>3XL (48/case)</span><span id="caseBig">—</span></div>
+      </div>
+      <div class="srow grand"><span class="lbl">Subtotal</span><span class="val" id="sumPrice">— login</span></div>
+
+
+      <button class="submit" id="submitBtn">Submit Order →</button>
+      <a href="#" class="cont">← Continue shopping</a>
+      <div class="note">SC &amp; CA ship separately when your order spans both warehouses.</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-in">
+    <div class="fb">
+      <div class="logo">Pacific<i>Sports</i></div>
+      <p>Headquartered in Sumter, South Carolina. Founded 1992. Proprietary dyeing and finishing technology, delivering premium cotton blanks nationwide.</p>
+    </div>
+    <div><h4>Shop</h4><a href="#">Men's</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
+    <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
+    <div><h4>Account</h4><a href="#">My Account</a><a href="#">Order History</a><a href="#">How to Order</a><a href="#">Shipping</a></div>
+  </div>
+  <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
+</footer>
+
+<script>
+  // 티셔츠 SVG (제품 페이지와 동일)
+  function teeSVG(hex,size){
+    const s=size||44;
+    return `<svg viewBox="0 0 100 100" width="${s}" height="${s}" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="${hex}" stroke="rgba(0,0,0,.1)" stroke-width="1"/>
+      <path d="M30 18 C34 24 42 26 50 26 C58 26 66 24 70 18 C66 21 58 22 50 22 C42 22 34 21 30 18 Z" fill="rgba(0,0,0,.08)"/>
+    </svg>`;
+  }
+
+  // 사이즈별 케이스 기준
+  const CASE={XS:72,S:72,M:72,L:72,XL:72,'2XL':72,'3XL':48};
+  const PRICE={XS:3.75,S:3.75,M:3.75,L:3.75,XL:3.75,'2XL':4.35,'3XL':4.95};
+  const sizeOrder=['XS','S','M','L','XL','2XL','3XL'];
+  const money=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function lineAmount(sizes){ let t=0; for(const s in sizes) t+=sizes[s]*PRICE[s]; return t; }
+
+  // ── 예시 장바구니 데이터 (제품 페이지에서 담은 것을 흉내) ──
+  // 실제로는 제품 페이지/IMS에서 넘어온 주문이 들어올 자리
+  const cart=[
+    {style:'1368',name:'30/1 60:40 Short Sleeve Crew',cat:"Men's · CVC",hex:'#27314f',
+     lines:[
+       {color:'Navy',hex:'#27314f',wh:'SC',sizes:{S:24,M:48,L:48,XL:24}},
+       {color:'Navy',hex:'#27314f',wh:'CA',sizes:{M:24,L:36}},
+       {color:'Sand',hex:'#d8c4a0',wh:'SC',sizes:{M:36,L:36,XL:12,'3XL':24}}
+     ]},
+    {style:'1315',name:'30/1 100% Cotton Crew',cat:"Men's · 100% Cotton",hex:'#6b7b5e',
+     lines:[
+       {color:'Olive',hex:'#6b6a3f',wh:'CA',sizes:{S:12,M:24,L:24}}
+     ]}
+  ];
+
+  const itemsEl=document.getElementById('items');
+
+  function sizesStr(sizes){
+    return sizeOrder.filter(s=>sizes[s]).map(s=>`${s} <b>${sizes[s]}</b>`).join('  ');
+  }
+  function lineQty(sizes){ return Object.values(sizes).reduce((a,b)=>a+b,0); }
+  function lineCaseNote(sizes){
+    let std=0,big=0;
+    for(const s in sizes){ if(CASE[s]===48) big+=sizes[s]; else std+=sizes[s]; }
+    let parts=[];
+    if(std>0){ const c=Math.floor(std/72),r=std%72; parts.push(c>0?`${c}cs${r?'+'+r:''}`:`${r}pc`); }
+    if(big>0){ const c=Math.floor(big/48),r=big%48; parts.push('3XL '+(c>0?`${c}cs${r?'+'+r:''}`:`${r}pc`)); }
+    return parts.join(' · ');
+  }
+
+  function render(){
+    itemsEl.innerHTML='';
+    cart.forEach((item,ii)=>{
+      const card=document.createElement('div');
+      card.className='item rise';
+      const linesHtml=item.lines.map((ln,li)=>`
+        <div class="line">
+          <span class="dot" style="background:${ln.hex}"></span>
+          <span class="lc">${ln.color}</span>
+          <span class="wh wh-${ln.wh}">${ln.wh}</span>
+          <span class="sizes">${sizesStr(ln.sizes)}</span>
+          <span class="lqty">${lineQty(ln.sizes)}</span>
+          <span class="lamt">${money(lineAmount(ln.sizes))}</span>
+        </div>`).join('');
+      card.innerHTML=`
+        <div class="item-head">
+          <div class="item-thumb">${teeSVG(item.hex,46)}</div>
+          <div class="item-info">
+            <div class="cat">${item.cat}</div>
+            <h3>${item.name}</h3>
+            <div class="sn">Style #${item.style}</div>
+          </div>
+          <button class="rm" data-i="${ii}">Remove</button>
+        </div>
+        <div class="lines">${linesHtml}</div>`;
+      itemsEl.appendChild(card);
+    });
+    itemsEl.querySelectorAll('.rm').forEach(b=>b.addEventListener('click',()=>{
+      cart.splice(+b.dataset.i,1); render(); recalc();
+    }));
+    recalc();
+  }
+
+  function recalc(){
+    let total=0,sc=0,ca=0,std=0,big=0;
+    cart.forEach(item=>item.lines.forEach(ln=>{
+      for(const s in ln.sizes){
+        const q=ln.sizes[s];
+        total+=q;
+        if(ln.wh==='SC') sc+=q; else ca+=q;
+        if(CASE[s]===48) big+=q; else std+=q;
+      }
+    }));
+    document.getElementById('sumPieces').textContent=total;
+    document.getElementById('sumSC').textContent=sc;
+    document.getElementById('sumCA').textContent=ca;
+    const fmt=(p,per)=>{ if(p===0)return '—'; const c=Math.floor(p/per),r=p%per; if(r===0)return c+' case'+(c>1?'s':''); if(c===0)return r+' pcs'; return c+' case'+(c>1?'s':'')+' + '+r; };
+    document.getElementById('caseStd').textContent=fmt(std,72);
+    document.getElementById('caseBig').textContent=fmt(big,48);
+    document.getElementById('cartCount').textContent=cart.length;
+    let subtotal=0;
+    cart.forEach(item=>item.lines.forEach(ln=>{ subtotal+=lineAmount(ln.sizes); }));
+    document.getElementById('sumPrice').textContent=total>0?money(subtotal):'$0.00';
+  }
+
+  document.getElementById('submitBtn').addEventListener('click',()=>{
+    if(cart.length===0){ alert('Your cart is empty.'); return; }
+    document.getElementById('submitBtn').textContent='✓ Order placed — thank you';
+    document.getElementById('submitBtn').style.background='var(--accent)';
+  });
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — My Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;transition:.2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+
+  .crumb{max-width:1180px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
+
+  .page{max-width:1180px;margin:0 auto;padding:18px 30px 90px}
+  .page h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5vw,58px);line-height:1;margin-bottom:6px}
+  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-bottom:34px}
+
+  .layout{max-width:760px}
+  .side{position:sticky;top:104px;display:flex;flex-direction:column;gap:4px}
+  .side a{padding:11px 16px;border-radius:10px;font-size:15px;color:var(--soft-ink);cursor:pointer;transition:.2s}
+  .side a:hover{background:var(--accent-soft);color:var(--ink)}
+  .side a.active{background:var(--ink);color:var(--bg);font-weight:500}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:30px;margin-bottom:22px}
+  .card h2{font-family:var(--display);font-weight:400;font-size:25px;margin-bottom:14px}
+  .sec-divider{height:1px;background:var(--line);margin:30px 0 26px}
+  .card .cdesc{font-size:14px;color:var(--faint);margin-bottom:24px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .field{margin-bottom:18px}
+  .field.full{grid-column:1 / -1}
+  .field label{display:block;font-size:13px;font-weight:500;color:var(--soft-ink);margin-bottom:6px}
+  .field input,.field select{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);color:var(--ink);transition:border .2s}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
+  .field input:disabled{background:var(--bg);color:var(--faint)}
+  .field .lock{font-size:12px;color:var(--faint);margin-top:5px}
+  .save-row{display:flex;justify-content:flex-end;gap:12px;margin-top:8px}
+  .btn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:11px;cursor:pointer;padding:13px 26px;transition:transform .2s,background .25s}
+  .btn:hover{transform:translateY(-2px);background:var(--accent)}
+  .btn-ghost{background:none;border:1.5px solid var(--line-2);color:var(--ink);font-family:var(--body);font-weight:500;font-size:15px;border-radius:11px;cursor:pointer;padding:13px 24px;transition:.2s}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+
+  .verified{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);border:1px solid #cdddc9;border-radius:999px;padding:6px 14px;margin-bottom:20px}
+
+  .addr-card{border:1px solid var(--line-2);border-radius:13px;padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
+  .addr-card .a-body{font-size:14px;line-height:1.6}
+  .addr-card .a-tag{font-size:11px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:6px;margin-bottom:8px;display:inline-block}
+  .tag-SC{background:#e7eef3;color:#2f5b7a}.tag-CA{background:#f1ece0;color:#8a6a3a}
+  .addr-card .a-edit{font-size:13px;color:var(--accent);cursor:pointer;white-space:nowrap}
+  .addr-card .a-edit:hover{text-decoration:underline}
+
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:15px 26px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:.4s;z-index:200;box-shadow:0 20px 50px -15px rgba(0,0,0,.5)}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  footer{border-top:1px solid var(--line);padding:30px;text-align:center;font-size:12px;color:var(--faint);margin-top:40px}
+
+  @media(max-width:880px){
+    nav.main{display:none}
+    .layout{grid-template-columns:1fr}
+    .side{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:10px}
+    .grid2{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">— 디자인 시안 (DEMO) · 내 계정 —</div>
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">Order History</a><a href="#">Logout</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="index.html" class="logo">Pacific<i>Sports</i></a>
+    <nav class="main">
+      <div class="nav-item"><a>Men's</a></div>
+      <div class="nav-item"><a>Youth & Kids</a></div>
+      <div class="nav-item"><a>Collections</a></div>
+      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a href="#">Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button>Search</button>
+      <button class="primary">Cart</button>
+    </div>
+  </div>
+</header>
+
+<div class="crumb"><a href="#">Home</a><span>/</span>My Account</div>
+
+<div class="page">
+  <h1 class="rise">My Account</h1>
+  <div class="sub rise">Manage your business details, addresses, and login.</div>
+
+  <div class="layout">
+    <div class="card rise">
+      <span class="verified">✓ Verified wholesale account</span>
+
+      <!-- BUSINESS -->
+      <h2>Business information</h2>
+      <div class="grid2">
+        <div class="field"><label>Business name</label><input type="text" value="Westside Print Co."></div>
+        <div class="field"><label>Account #</label><input type="text" value="WS-2041" disabled><div class="lock">Assigned by Pacific Sports</div></div>
+        <div class="field"><label>Contact name</label><input type="text" value="Jordan Lee"></div>
+        <div class="field"><label>Phone</label><input type="tel" value="(213) 555-0147"></div>
+        <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" value="CA-RESALE-99381" disabled><div class="lock">Contact us to update your resale certificate</div></div>
+      </div>
+
+      <!-- ADDRESSES -->
+      <div class="sec-divider"></div>
+      <h2>Addresses</h2>
+      <div class="cdesc">Where your orders ship. Orders default to your nearest warehouse.</div>
+      <div class="addr-card">
+        <div class="a-body">
+          <span class="a-tag tag-CA">DEFAULT · WEST</span><br>
+          <b>Westside Print Co.</b><br>
+          1420 Mission St, Unit 5<br>
+          Los Angeles, CA 90021<br>
+          (213) 555-0147
+        </div>
+        <span class="a-edit" onclick="save()">Edit</span>
+      </div>
+      <div class="addr-card">
+        <div class="a-body">
+          <span class="a-tag tag-SC">EAST</span><br>
+          <b>Westside Print Co. — East</b><br>
+          88 Industrial Blvd<br>
+          Charlotte, NC 28206<br>
+          (704) 555-0192
+        </div>
+        <span class="a-edit" onclick="save()">Edit</span>
+      </div>
+      <div style="margin-top:6px"><button class="btn-ghost" onclick="save()">+ Add address</button></div>
+
+      <!-- LOGIN -->
+      <div class="sec-divider"></div>
+      <h2>Login &amp; password</h2>
+      <div class="grid2">
+        <div class="field full"><label>Email</label><input type="email" value="jordan@westsideprint.com"></div>
+        <div class="field"><label>New password</label><input type="password" placeholder="••••••••"></div>
+        <div class="field"><label>Confirm new password</label><input type="password" placeholder="••••••••"></div>
+      </div>
+
+      <!-- ONE SAVE BAR -->
+      <div class="sec-divider"></div>
+      <div class="save-row"><button class="btn-ghost">Cancel</button><button class="btn" onclick="save()">Save all changes</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Saved</div>
+
+<footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
+
+<script>
+  let tT;
+  function save(){
+    const t=document.getElementById('toast');
+    t.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2000);
+  }
+</script>
+</body>
+</html>

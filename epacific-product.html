@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Style #1368</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}img{display:block;max-width:100%}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:.2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+  .h-icons .primary:hover{background:var(--accent);color:#fff}
+  .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+
+  .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
+
+  .product{max-width:1240px;margin:0 auto;padding:24px 30px 70px;display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:start}
+
+  /* gallery — Abercrombie-style clean studio look */
+  .gallery{position:sticky;top:104px}
+  .main-img{aspect-ratio:1/1.12;border-radius:16px;overflow:hidden;background:#eceae6;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;box-shadow:0 1px 2px rgba(28,28,26,.04)}
+  .main-img #mainImg{display:flex;align-items:center;justify-content:center}
+  .main-img #mainImg svg{filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
+  .main-img .tag{position:absolute;top:18px;left:18px;background:rgba(255,255,255,.9);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
+  .thumbs{display:flex;gap:10px}
+  .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#eceae6;border:1.5px solid transparent;cursor:pointer;transition:border .2s,transform .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative;padding-top:6px}
+  .thumbs .t .tlabel{font-size:10px;font-weight:500;color:var(--soft-ink);margin-top:2px}
+  .thumbs .t:hover{transform:translateY(-2px)}
+  .thumbs .t.active{border-color:var(--ink)}
+
+  /* info */
+  .ct{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:11px}
+  .info h1{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.02;margin-bottom:8px}
+  .style-no{font-size:14px;color:var(--faint);margin-bottom:22px}
+  .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+  .chip{background:var(--paper);border:1px solid var(--line-2);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--soft-ink)}
+  .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
+
+  .login-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:12px;padding:14px 18px;font-size:14px;color:var(--accent);margin-bottom:28px;display:flex;align-items:center;gap:10px}
+  .login-note b{font-weight:600}
+  /* size guide */
+  .sizeguide{margin-bottom:22px;border:1px solid var(--line-2);border-radius:12px;overflow:hidden}
+  .sg-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;background:var(--paper);border:none;cursor:pointer;font-family:var(--body);font-size:14px;font-weight:500;color:var(--ink);padding:14px 18px;transition:background .2s}
+  .sg-toggle:hover{background:var(--accent-soft)}
+  .sg-arrow{transition:transform .25s;color:var(--faint)}
+  .sg-toggle.open .sg-arrow{transform:rotate(180deg)}
+  .sg-panel{display:none;padding:0 18px 16px}
+  .sg-panel.open{display:block}
+  .sg-note{font-size:12px;color:var(--faint);margin:6px 0 12px}
+  .sg-table{width:100%;border-collapse:collapse;font-size:14px}
+  .sg-table th{text-align:left;font-weight:600;color:var(--faint);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line)}
+  .sg-table td{padding:9px 10px;border-bottom:1px solid var(--line);color:var(--ink)}
+  .sg-table tbody tr:last-child td{border-bottom:none}
+  .sg-table td:first-child{font-weight:600}
+
+  .flabel{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:14px;display:flex;align-items:center;gap:9px}
+  .flabel .n{background:var(--accent);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+  .flabel .hint{margin-left:auto;font-weight:400;letter-spacing:0;text-transform:none;color:var(--faint);font-size:12px}
+
+  .sw{display:flex;gap:11px;flex-wrap:wrap;margin-bottom:30px}
+  .swatch{width:40px;height:40px;border-radius:50%;cursor:pointer;border:2px solid transparent;position:relative;transition:transform .18s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.09)}
+  .swatch:hover{transform:scale(1.12)}
+  .swatch.sel{border-color:var(--ink)}
+  .swatch .nm{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:10px;white-space:nowrap;color:var(--faint);opacity:0;transition:opacity .15s}
+  .swatch:hover .nm{opacity:1}
+
+  /* multi-color order rows */
+  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px}
+  /* color search */
+  .color-search{position:relative;margin-bottom:12px}
+  .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
+  .color-search input:focus{outline:none;border-color:var(--accent);background:#fff}
+  .search-sug{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 20px 40px -20px rgba(28,28,26,.3);max-height:260px;overflow-y:auto;z-index:20;display:none}
+  .search-sug.show{display:block}
+  .search-sug .sg{display:flex;align-items:center;gap:11px;padding:10px 14px;cursor:pointer;font-size:14px;transition:background .12s}
+  .search-sug .sg:hover,.search-sug .sg.hl{background:var(--accent-soft)}
+  .search-sug .sg .sgimg{width:26px;height:26px;border-radius:6px;background:#eceae6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .search-sug .sg .sgimg svg{display:block}
+  .search-sug .none{padding:12px 14px;color:var(--faint);font-size:14px}
+  /* jump highlight */
+  tr.jump-hl td{background:var(--accent-soft)!important;transition:background .3s}
+  /* WH 두 줄 방식 */
+  .otable th.whcol{width:42px}
+  .otable th.szh{padding:13px 6px}
+  .whcell{text-align:center}
+  .whbadge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 8px;border-radius:6px}
+  .whbadge.wh-SC{background:#e7eef3;color:#2f5b7a}
+  .whbadge.wh-CA{background:#f1ece0;color:#8a6a3a}
+  /* 색상의 첫 줄(SC) 위에 구분선 */
+  tr.color-start td{border-top:2px solid var(--line-2)}
+  tr.color-start:first-child td{border-top:none}
+  .otable .colcell-td{vertical-align:middle;background:var(--paper)}
+  .cellwrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .stock{font-size:10px;color:var(--faint);line-height:1.1;white-space:nowrap}
+  .stock.low{color:#c0853b}
+  .stock.out{color:#b06a3b;font-weight:600;font-size:9px;line-height:1.15;white-space:normal;text-align:center}
+  td.is-out input{background:#f4f3f0;border-color:var(--line);color:#bbb}
+  .otable-scroll{max-height:560px;overflow-y:auto}
+  .otable{width:100%;border-collapse:collapse}
+  .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
+  .otable thead th.colcol{text-align:left;padding-left:18px;min-width:130px}
+  .otable tbody td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  .otable tbody tr:last-child td{border-bottom:none}
+  .otable tbody tr{transition:background .15s}
+  .otable tbody tr.active-row{background:var(--accent-soft)}
+  .colcell{display:flex;align-items:center;gap:11px;padding-left:12px;text-align:left}
+  .colcell .cimg{width:42px;height:42px;border-radius:8px;background:#eceae6;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .colcell .cimg svg{display:block}
+  .colcell .cn{font-size:14px;font-weight:500;white-space:nowrap}
+  /* 숫자 스피너 화살표 숨김 (공간 확보) */
+  .otable input::-webkit-outer-spin-button,.otable input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .otable input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  .otable input{width:68px;text-align:center;font-size:15px;font-weight:500;font-family:var(--body);padding:8px 6px;border:1.5px solid var(--line-2);border-radius:9px;background:var(--paper);transition:border .15s,background .15s}
+  .otable input:disabled{cursor:not-allowed}
+  .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
+  .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
+  .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
+
+  .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
+  .case-note::before{content:"📦"}
+  .summary{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:24px 0 4px;border-top:1.5px solid var(--ink);margin-top:18px;flex-wrap:wrap}
+  .summary .blk small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  .summary .blk b{font-family:var(--display);font-weight:400;font-size:34px}
+  .summary .blk #caseConv{color:var(--accent);font-family:var(--body);font-size:14px;font-weight:600;line-height:1.45;display:block}
+  .summary .blk #caseConv .cl{display:inline-block;min-width:54px;color:var(--faint);font-weight:500;font-size:12px}
+  .addbtn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:999px;cursor:pointer;padding:18px 36px;transition:transform .2s,background .25s}
+  .addbtn:hover{transform:translateY(-2px);background:var(--accent)}
+  .addbtn:disabled{opacity:.3;cursor:not-allowed;transform:none;background:var(--ink)}
+
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:16px 28px;border-radius:999px;font-weight:500;font-size:14px;z-index:300;transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 48px -20px rgba(28,28,26,.5)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  footer{background:var(--ink);color:#9c9c92;padding:70px 30px 32px}
+  .f-in{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:44px}
+  footer h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg);margin-bottom:18px;font-weight:600}
+  footer a{display:block;padding:6px 0;font-size:14px;color:#9c9c92;font-weight:350;transition:color .2s}
+  footer a:hover{color:var(--bg)}
+  .fb .logo{color:var(--bg);margin-bottom:18px}.fb .logo i{color:var(--warm)}
+  .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
+  .f-bot{max-width:1240px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+
+  @media(max-width:1000px){
+    .product{grid-template-columns:1fr;gap:30px}
+    .gallery{position:static}
+    nav.main{display:none}
+    .f-in{grid-template-columns:1fr 1fr}
+    .otable input{width:58px;font-size:14px}
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-banner">— 디자인 시안 (DEMO) · 제품 상세 + 멀티컬러 주문 그리드 —</div>
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">(CA) 803-447-0012</a><a href="#">(SC) 803-840-2405</a><a href="#">Register</a><a href="#">Login</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="index.html" class="logo">Pacific<i>Sports</i></a>
+    <nav class="main">
+      <div class="nav-item"><a>Men's</a></div>
+      <div class="nav-item"><a>Youth & Kids</a></div>
+      <div class="nav-item"><a>Collections</a></div>
+      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a href="#">Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button>Search</button>
+      <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span>Style #1368</div>
+
+<div class="product">
+  <!-- GALLERY -->
+  <div class="gallery rise">
+    <div class="main-img">
+      <div class="tag">BCI Certified</div>
+      <div id="mainImg"></div>
+    </div>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <!-- INFO -->
+  <div class="info rise">
+    <div class="ct">Men's · 60/40 Combed Ring Spun</div>
+    <h1>1368 Short Sleeve Crew</h1>
+    <div class="style-no">Style #1368</div>
+    <div class="specs">
+      <span class="chip">4.3 oz / 145 gram</span>
+      <span class="chip">60:40 Cotton / Poly</span>
+      <span class="chip">Tear-away label</span>
+      <span class="chip">BCI Certified</span>
+      <span class="chip">52 colors</span>
+      <span class="chip">XS–3XL</span>
+    </div>
+    <p class="desc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
+
+    <div class="sizeguide">
+      <button class="sg-toggle" id="sgToggle"><span>📏 Size Guide</span><span class="sg-arrow">▾</span></button>
+      <div class="sg-panel" id="sgPanel">
+        <div class="sg-note">Standard fit · measurements in inches</div>
+        <table class="sg-table">
+          <thead><tr><th>Size</th><th>Chest (½, laid flat)</th><th>Body Length</th></tr></thead>
+          <tbody>
+            <tr><td>XS</td><td>17"</td><td>27"</td></tr>
+            <tr><td>S</td><td>18"</td><td>28"</td></tr>
+            <tr><td>M</td><td>20"</td><td>29"</td></tr>
+            <tr><td>L</td><td>22"</td><td>30.25"</td></tr>
+            <tr><td>XL</td><td>24"</td><td>31.5"</td></tr>
+            <tr><td>2XL</td><td>26"</td><td>32.5"</td></tr>
+            <tr><td>3XL</td><td>28"</td><td>33.5"</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="login-note">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
+
+    <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력 -->
+    <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
+    <div class="color-search">
+      <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
+      <div class="search-sug" id="searchSug"></div>
+    </div>
+    <div class="order-block">
+      <div class="otable-scroll">
+        <table class="otable">
+          <thead>
+            <tr>
+              <th class="colcol">Color</th>
+              <th class="whcol">WH</th>
+              <th class="szh">XS</th>
+              <th class="szh">S</th>
+              <th class="szh">M</th>
+              <th class="szh">L</th>
+              <th class="szh">XL</th>
+              <th class="szh">2XL</th>
+              <th class="szh">3XL</th>
+              <th>Pieces</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
+
+    <div class="summary">
+      <div class="blk"><small>Total Pieces</small><b id="totalUnits">0</b></div>
+      <div class="blk"><small>Case Breakdown</small><div id="caseConv">0</div></div>
+      <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
+      <button class="addbtn" id="addBtn" disabled>Add to Order</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-in">
+    <div class="fb">
+      <div class="logo">Pacific<i>Sports</i></div>
+      <p>Headquartered in Sumter, South Carolina. Founded 1992. Proprietary dyeing and finishing technology, delivering premium cotton blanks nationwide.</p>
+    </div>
+    <div><h4>Shop</h4><a href="#">Men's</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
+    <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
+    <div><h4>Account</h4><a href="#">Register (Reseller)</a><a href="#">Login</a><a href="#">How to Order</a><a href="#">Shipping</a></div>
+  </div>
+  <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
+</footer>
+
+<div class="toast" id="toast">✓ Added to order</div>
+
+<script src="pacific-data.js"></script>
+<script>
+  // 카탈로그·재고는 pacific-data.js 에서 불러옵니다 (init()에서 채움)
+  let sizes=[], colors=[], sizePrice={}, stockMap={};
+
+  // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
+  function teeSVG(hex,big){
+    const dark=['#232323','#33353a','#2c3e4f','#27314f','#27314a','#5a2733','#4a2f26','#5a3f7a','#3a4a8c','#2f4f8f','#2f5b8f','#8e2535','#9c2f2f','#3a4a52','#27314a'].includes(hex);
+    const shade='rgba(0,0,0,.10)';
+    const w=big?260:48,h=big?260:48;
+    return `<svg viewBox="0 0 100 100" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+      <path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z"
+        fill="${hex}" stroke="${shade}" stroke-width="1"/>
+      <path d="M30 18 C34 24 42 26 50 26 C58 26 66 24 70 18 C66 21 58 22 50 22 C42 22 34 21 30 18 Z" fill="rgba(0,0,0,.08)"/>
+    </svg>`;
+  }
+
+
+
+  const rowsBody=document.getElementById('rows');
+  const totalUnitsEl=document.getElementById('totalUnits');
+  const caseConvEl=document.getElementById('caseConv');
+  const addBtn=document.getElementById('addBtn');
+
+
+  function fmtStock(n){
+    if(n>=1000) return {t:(n/1000).toFixed(n%1000?1:0).replace('.0','')+'k',cls:''};
+    if(n<=72) return {t:String(n),cls:'low'};
+    return {t:String(n),cls:''};
+  }
+
+  // 한 창고(SC 또는 CA)의 한 줄을 만든다
+  function buildWHRow(c,wh,isFirst){
+    const tr=document.createElement('tr');
+    tr.dataset.color=c.name; tr.dataset.wh=wh;
+    tr.className='wh-row wh-'+wh+(isFirst?' color-start':'');
+    if(isFirst) tr.id='color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
+    const st=stockMap[c.name][wh];
+    // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
+    const colorCell = isFirst
+      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${teeSVG(c.hex,false)}</span><span class="cn">${c.name}</span></div></td>`
+      : '';
+    const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
+    const cells=sizes.map((s,i)=>{
+      const avail=st[i];
+      const out=avail===0;
+      const stockHtml = out
+        ? `<span class="stock out">Out of<br>stock</span>`
+        : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
+      return `<td data-si="${i}" class="${out?'is-out':''}"><div class="cellwrap">`+
+        `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
+        stockHtml+`</div></td>`;
+    }).join('');
+    tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
+    rowsBody.appendChild(tr);
+    tr.querySelectorAll('input').forEach((inp,idx)=>inp.addEventListener('input',()=>{
+      const avail=st[idx];
+      let q=parseInt(inp.value)||0;
+      if(q>avail){ q=avail; inp.value=avail||''; }
+      inp.classList.toggle('has',q>0);
+      tr.classList.toggle('active-row',[...tr.querySelectorAll('input')].some(i=>(parseInt(i.value)||0)>0));
+      recalc();
+    }));
+  }
+
+  // 색상마다 SC줄 + CA줄 두 줄 생성
+  function buildAllRows(){
+    colors.forEach(c=>{
+      buildWHRow(c,'SC',true);
+      buildWHRow(c,'CA',false);
+    });
+  }
+
+  function fmtCase(pcs,per){
+    const cases=Math.floor(pcs/per);
+    const rem=pcs%per;
+    if(pcs===0)return '0';
+    if(rem===0)return cases+' case'+(cases>1?'s':'');
+    if(cases===0)return rem+' pcs';
+    return cases+' case'+(cases>1?'s':'')+' + '+rem;
+  }
+
+  function recalc(){
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
+    rowsBody.querySelectorAll('tr').forEach(tr=>{
+      let rt=0;
+      tr.querySelectorAll('input').forEach((inp,idx)=>{
+        const q=parseInt(inp.value)||0;
+        rt+=q;
+        if(sizes[idx].per===48) bigPcs+=q; else stdPcs+=q;
+      });
+      tr.querySelector('.rowtotal').textContent=rt;
+      tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
+      if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
+      total+=rt;
+    });
+    totalUnitsEl.textContent=total;
+    if(total===0){
+      caseConvEl.innerHTML='0';
+    }else{
+      let parts=[];
+      if(stdPcs>0) parts.push(`<span class="cl">XS–2XL</span> ${fmtCase(stdPcs,72)}`);
+      if(bigPcs>0) parts.push(`<span class="cl">3XL</span> ${fmtCase(bigPcs,48)}`);
+      // 창고별 합계도 한 줄
+      let whline=[];
+      if(scPcs>0) whline.push('SC '+scPcs);
+      if(caPcs>0) whline.push('CA '+caPcs);
+      if(whline.length) parts.push(`<span class="cl">By WH</span> ${whline.join(' · ')}`);
+      caseConvEl.innerHTML=parts.join('<br>');
+    }
+    addBtn.disabled=total===0;
+  }
+
+  // ── 사이즈 가이드 토글 ──
+  const sgToggle=document.getElementById('sgToggle');
+  const sgPanel=document.getElementById('sgPanel');
+  sgToggle.addEventListener('click',()=>{
+    sgToggle.classList.toggle('open');
+    sgPanel.classList.toggle('open');
+  });
+
+  // ── 색상 검색 → 해당 색상 줄로 점프 ──
+  const searchInput=document.getElementById('colorSearch');
+  const sugBox=document.getElementById('searchSug');
+  let hlIndex=-1, matches=[];
+
+  function colorId(name){ return 'color-'+name.replace(/[^a-zA-Z0-9]/g,''); }
+
+  function jumpTo(name){
+    const row=document.getElementById(colorId(name));
+    if(!row)return;
+    const scroller=document.querySelector('.otable-scroll');
+    const thead=scroller.querySelector('thead');
+    const headH=thead?thead.offsetHeight:44;
+    // 스크롤 컨테이너 안에서 해당 행이 sticky 헤더 바로 아래 오도록
+    const top=row.offsetTop - headH - 6;
+    scroller.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+    // 두 줄(SC+CA) 다 잠깐 강조
+    const rows=[row, row.nextElementSibling].filter(Boolean);
+    rows.forEach(r=>r.classList.add('jump-hl'));
+    setTimeout(()=>rows.forEach(r=>r.classList.remove('jump-hl')),1400);
+    // 첫 입력칸에 포커스
+    const firstInput=row.querySelector('input:not([disabled])');
+    if(firstInput) setTimeout(()=>firstInput.focus(),350);
+    sugBox.classList.remove('show');
+    searchInput.value=name;
+  }
+
+  function renderSug(q){
+    q=q.trim().toLowerCase();
+    if(!q){ sugBox.classList.remove('show'); matches=[]; return; }
+    matches=colors.filter(c=>c.name.toLowerCase().includes(q));
+    hlIndex=-1;
+    if(matches.length===0){
+      sugBox.innerHTML='<div class="none">No color found</div>';
+      sugBox.classList.add('show'); return;
+    }
+    sugBox.innerHTML=matches.slice(0,8).map((c,i)=>
+      `<div class="sg" data-name="${c.name}">${`<span class="sgimg">${teeSVG(c.hex,false)}</span>`}<span>${c.name}</span></div>`
+    ).join('');
+    sugBox.classList.add('show');
+    sugBox.querySelectorAll('.sg').forEach(el=>el.addEventListener('click',()=>jumpTo(el.dataset.name)));
+  }
+
+  searchInput.addEventListener('input',()=>renderSug(searchInput.value));
+  searchInput.addEventListener('keydown',e=>{
+    const items=sugBox.querySelectorAll('.sg');
+    if(e.key==='ArrowDown'){ e.preventDefault(); hlIndex=Math.min(hlIndex+1,items.length-1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); hlIndex=Math.max(hlIndex-1,0); }
+    else if(e.key==='Enter'){ e.preventDefault();
+      if(hlIndex>=0 && items[hlIndex]) jumpTo(items[hlIndex].dataset.name);
+      else if(matches.length>0) jumpTo(matches[0].name);
+      return;
+    }else return;
+    items.forEach((el,i)=>el.classList.toggle('hl',i===hlIndex));
+  });
+  // 바깥 클릭 시 닫기
+  document.addEventListener('click',e=>{
+    if(!e.target.closest('.color-search')) sugBox.classList.remove('show');
+  });
+
+  function setupGallery(){
+  // 갤러리: 대표 색상 4개를 큰 SVG 썸네일로, 클릭 시 메인 전환
+  const mainImg=document.getElementById('mainImg');
+  const thumbsEl=document.getElementById('thumbs');
+  const featured=['Natural','Black','Navy','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean);
+  function setMain(c){ mainImg.innerHTML=teeSVG(c.hex,true); }
+  setMain(featured[0]);
+  featured.forEach((c,i)=>{
+    const t=document.createElement('div');
+    t.className='t'+(i===0?' active':'');
+    t.innerHTML=`${teeSVG(c.hex,false)}<span class="tlabel">${c.name}</span>`;
+    t.addEventListener('click',()=>{
+      thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      setMain(c);
+    });
+    thumbsEl.appendChild(t);
+  });
+  }
+
+  let cart=0;
+  const cc=document.getElementById('cartCount'),toast=document.getElementById('toast');
+  addBtn.addEventListener('click',()=>{
+    let total=0,scPcs=0,caPcs=0; const colorSet=new Set();
+    rowsBody.querySelectorAll('tr').forEach(tr=>{
+      let rt=0;tr.querySelectorAll('input').forEach(i=>rt+=parseInt(i.value)||0);
+      if(rt>0){ colorSet.add(tr.dataset.color); if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt; }
+      total+=rt;
+    });
+    if(total===0)return;
+    cart+=total;cc.textContent=cart;
+    const colorCount=colorSet.size;
+    let whTxt=[]; if(scPcs>0) whTxt.push('SC '+scPcs); if(caPcs>0) whTxt.push('CA '+caPcs);
+    toast.textContent=`✓ ${total} pcs · ${colorCount} color${colorCount>1?'s':''} · ${whTxt.join(' + ')}`;
+    toast.classList.add('show');
+    setTimeout(()=>toast.classList.remove('show'),2800);
+    rowsBody.querySelectorAll('input').forEach(i=>{i.value='';i.classList.remove('has')});
+    rowsBody.querySelectorAll('tr').forEach(tr=>tr.classList.remove('active-row'));
+    recalc();
+  });
+
+  // ── 데이터 로드 후 화면 구성 ──────────────────────────────
+  async function init(){
+    try{
+      if(typeof PacificData==='undefined'){
+        throw new Error('pacific-data.js 를 찾을 수 없어요. 이 HTML 파일과 같은 폴더에 pacific-data.js 가 함께 있어야 합니다.');
+      }
+      const cfg = PacificData.config;
+      const product = await PacificData.getProduct('1368');
+      sizes     = cfg.sizes;
+      colors    = product.colors;
+      sizePrice = product.sizePrice;
+      stockMap  = await PacificData.getInventory('1368');
+      buildAllRows();
+      setupGallery();
+      recalc();
+    }catch(e){
+      console.error('데이터 로드 실패:', e);
+      const rb=document.getElementById('rows');
+      if(rb) rb.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#b04;">재고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</td></tr>';
+    }
+  }
+  init();
+</script>
+</body>
+</html>

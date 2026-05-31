@@ -132,17 +132,17 @@
       <div class="nav-item">
         <a class="active">Men's</a>
         <div class="mega">
-          <div><h4>Categories</h4><a href="#">Short Sleeve</a><a href="#">Long Sleeve</a><a href="#">Tank Tops</a><a href="#">Performance</a><a href="#">View All</a></div>
+          <div><h4>Categories</h4><a href="epacific-category.html?cat=Adult%20S%2FS">Short Sleeve</a><a href="epacific-category.html?cat=Adult%20L%2FS">Long Sleeve</a><a href="epacific-category.html?cat=Adult%20Tank%20Top">Tank Tops</a><a href="epacific-category.html?cat=Adult%20Performance">Performance</a><a href="epacific-category.html">View All</a></div>
           <div><h4>Featured</h4><a href="#">New Arrivals</a><a href="#">Best Sellers</a><a href="#">BCI Certified</a></div>
         </div>
       </div>
       <div class="nav-item"><a>Youth & Kids</a>
-        <div class="mega"><div><h4>Categories</h4><a href="#">Youth</a><a href="#">Junior</a><a href="#">Juvy</a><a href="#">Toddler</a></div><div><h4>Featured</h4><a href="#">New Arrivals</a><a href="#">Best Sellers</a></div></div>
+        <div class="mega"><div><h4>Categories</h4><a href="epacific-category.html?cat=Youth%20S%2FS">Youth</a><a href="epacific-category.html?cat=Juvy%20S%2FS">Juvy</a><a href="epacific-category.html?cat=Kids%20S%2FS">Kids</a><a href="epacific-category.html?cat=Toddler%20S%2FS">Toddler</a></div><div><h4>Featured</h4><a href="#">New Arrivals</a><a href="#">Best Sellers</a></div></div>
       </div>
       <div class="nav-item"><a>Collections</a>
         <div class="mega"><div><h4>Fabric</h4><a href="#">100% Cotton</a><a href="#">60/40 CVC Blend</a><a href="#">Tri-Blend</a><a href="#">Heather</a><a href="#">PFD &amp; Pigment Dye</a><a href="#">Performance Poly</a></div><div><h4>Featured</h4><a href="#">New Colors</a><a href="#">Best Sellers</a><a href="#">BCI Certified</a></div></div>
       </div>
-      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a href="epacific-shopbycolor.html">Shop by Color</a></div>
       <div class="nav-item"><a href="#">Information</a></div>
     </nav>
     <div class="h-icons">
@@ -163,12 +163,7 @@
   <aside class="filters">
     <div class="fgroup">
       <h4>Category</h4>
-      <label class="fopt"><input type="checkbox"> Men's <span class="count">34</span></label>
-      <label class="fopt"><input type="checkbox"> Youth <span class="count">17</span></label>
-      <label class="fopt"><input type="checkbox"> Juvy <span class="count">8</span></label>
-      <label class="fopt"><input type="checkbox"> Toddler <span class="count">5</span></label>
-      <label class="fopt"><input type="checkbox"> Junior <span class="count">3</span></label>
-      <label class="fopt"><input type="checkbox"> Performance <span class="count">10</span></label>
+      <div id="catFilter"></div>
     </div>
     <div class="fgroup">
       <h4>Fabric</h4>
@@ -220,7 +215,7 @@
   <!-- PRODUCTS -->
   <div>
     <div class="toolbar">
-      <div class="ct">Showing <b>12</b> of <b>86</b> styles</div>
+      <div class="ct">Showing <b id="resultCount">…</b></div>
       <select class="sortsel">
         <option>Sort: Featured</option>
         <option>Newest</option>
@@ -246,46 +241,66 @@
   <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
 </footer>
 
+<script src="pacific-data.js"></script>
 <script>
   const colors=['#f1ece0','#2c2c2c','#6b7b5e','#8a9aa8','#b0383a','#33414f','#6e6e6e','#c9a87c','#9c5a3c'];
-  const products=[
-    {no:'1368',name:'30/1 60:40 Combed Ring Spun',meta:'4.3 oz · 60:40 CVC · BCI · S/S',badge:'Best Seller',c:7},
-    {no:'1315',name:'30/1 100% Cotton Crew',meta:'4.7 oz · 100% Cotton · S/S',badge:'',c:9},
-    {no:'1210',name:'22/1 100% Cotton Crew',meta:'5.2 oz · Soft Spun · S/S',badge:'',c:8},
-    {no:'1260',name:'22/1 Color Heather Crew',meta:'4.8 oz · 60:40 Heather · S/S',badge:'',c:6},
-    {no:'1350',name:'30/1 Snow Heather Crew',meta:'4.7 oz · Snow Heather · S/S',badge:'New',c:5},
-    {no:'1510',name:'Tri-Blend Crew',meta:'4.2 oz · 50/25/25 Tri-Blend · S/S',badge:'New',c:6},
-    {no:'1314',name:'30/1 Tank Top',meta:'4.7 oz · 100% Cotton · Tank',badge:'',c:8},
-    {no:'1362',name:'30/1 60:40 Long Sleeve',meta:'4.3 oz · 60:40 CVC · BCI · L/S',badge:'',c:7},
-    {no:'1348',name:'30/1 60:40 Hooded Long Sleeve',meta:'4.3 oz · 60:40 CVC · BCI · Hooded',badge:'Best Seller',c:5},
-    {no:'1311',name:'30/1 V-Neck',meta:'4.7 oz · 100% Cotton · V-Neck',badge:'',c:6},
-    {no:'1390S',name:'30/1 PFD (Prepared for Dye)',meta:'4.7 oz · 100% Cotton · PFD',badge:'',c:3},
-    {no:'8150',name:'Cationic Polyester Crew',meta:'Performance · 100% Poly · S/S',badge:'New',c:7}
-  ];
   const grid=document.getElementById('grid');
-  products.forEach((p,idx)=>{
-    const dots=colors.slice(0,Math.min(p.c,5)).map(c=>`<span class="sm" style="background:${c}"></span>`).join('');
-    const badge=p.badge?`<div class="badge ${p.badge==='New'?'new':''}">${p.badge}</div>`:'';
-    const card=document.createElement('div');
-    card.className='card';
-    card.style.animationDelay=(idx*0.05)+'s';
-    card.innerHTML=`
-      <div class="thumb">
-        ${badge}
-        <div class="ph">${p.no}</div>
-        <div class="quick">View &amp; order →</div>
-      </div>
-      <div class="style-no">Style #${p.no}</div>
-      <div class="pname">${p.name}</div>
-      <div class="pmeta">${p.meta}</div>
-      <div class="swatches-mini">${dots}</div>
-      <div class="pcolors">${p.c} colors available</div>
-    `;
-    grid.appendChild(card);
-  });
-  document.querySelectorAll('.cdot').forEach(d=>d.addEventListener('click',()=>{
-    document.querySelectorAll('.cdot').forEach(x=>x.classList.remove('active'));d.classList.add('active');
-  }));
+  let allStyles=[], activeCat='All';
+
+  function renderGrid(){
+    const list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat);
+    grid.innerHTML='';
+    if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:var(--faint)">No styles in this category.</div>'; return; }
+    list.forEach((p,idx)=>{
+      const dots=colors.slice(0,5).map(c=>`<span class="sm" style="background:${c}"></span>`).join('');
+      const card=document.createElement('div');
+      card.className='card';
+      card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
+      card.innerHTML=`
+        <div class="thumb">
+          <div class="ph">${p.no}</div>
+          <div class="quick">View &amp; order →</div>
+        </div>
+        <div class="style-no">Style #${p.no}</div>
+        <div class="pname">${p.desc}</div>
+        <div class="pmeta">${p.cat} · ${p.sr}</div>
+        <div class="swatches-mini">${dots}</div>
+        <div class="pcolors">View colors &amp; stock</div>
+      `;
+      // 클릭하면 그 스타일의 주문 그리드로 이동
+      card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      grid.appendChild(card);
+    });
+    const cnt=document.getElementById('resultCount');
+    if(cnt) cnt.textContent=list.length+' styles';
+  }
+
+  // 사이드 카테고리 필터를 IMS 카테고리로 동적 생성
+  function buildCategoryFilter(){
+    const cats=['All',...[...new Set(allStyles.map(s=>s.cat))]];
+    const box=document.getElementById('catFilter');
+    if(!box) return;
+    box.innerHTML=cats.map(c=>
+      `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${c}</label>`
+    ).join('');
+    box.querySelectorAll('input[name=cat]').forEach(r=>r.addEventListener('change',()=>{
+      activeCat=r.value; renderGrid();
+    }));
+  }
+
+  (async function initCategory(){
+    try{
+      allStyles = await PacificData.getStyles();
+      // URL ?cat= 로 들어오면 그 카테고리로 시작 (메뉴 링크용)
+      const q=new URLSearchParams(location.search).get('cat');
+      if(q) activeCat=q;
+      buildCategoryFilter();
+      renderGrid();
+    }catch(e){
+      console.error(e);
+      grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:#b04">스타일 목록을 불러오지 못했어요.</div>';
+    }
+  })();
 </script>
 </body>
 </html>

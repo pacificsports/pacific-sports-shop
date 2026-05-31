@@ -205,7 +205,7 @@
   </div>
 </header>
 
-<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span>Style #1368</div>
+<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb">Style #1368</span></div>
 
 <div class="product">
   <!-- GALLERY -->
@@ -220,8 +220,8 @@
   <!-- INFO -->
   <div class="info rise">
     <div class="ct">Men's · 60/40 Combed Ring Spun</div>
-    <h1>1368 Short Sleeve Crew</h1>
-    <div class="style-no">Style #1368</div>
+    <h1 id="pTitle">1368 Short Sleeve Crew</h1>
+    <div class="style-no" id="pStyleNo">Style #1368</div>
     <div class="specs">
       <span class="chip">4.3 oz / 145 gram</span>
       <span class="chip">60:40 Cotton / Poly</span>
@@ -508,7 +508,7 @@
   // 갤러리: 대표 색상 4개를 큰 SVG 썸네일로, 클릭 시 메인 전환
   const mainImg=document.getElementById('mainImg');
   const thumbsEl=document.getElementById('thumbs');
-  const featured=['Natural','Black','Navy','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean);
+  let featured=['Natural','Black','Navy','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean); if(featured.length<4) featured=colors.slice(0,4);
   function setMain(c){ mainImg.innerHTML=teeSVG(c.hex,true); }
   setMain(featured[0]);
   featured.forEach((c,i)=>{
@@ -552,11 +552,19 @@
         throw new Error('pacific-data.js 를 찾을 수 없어요. 이 HTML 파일과 같은 폴더에 pacific-data.js 가 함께 있어야 합니다.');
       }
       const cfg = PacificData.config;
-      product   = await PacificData.getProduct('1368');
+      const STYLE = new URLSearchParams(location.search).get('style') || '1368';
+      product   = await PacificData.getProduct(STYLE);
+      if(!product){ throw new Error('스타일 '+STYLE+' 을(를) 찾을 수 없어요.'); }
       sizes     = product.sizes;
       colors    = product.colors;
       casePer   = product.casePer || cfg.casePer;
-      stockMap  = await PacificData.getInventory('1368', product);
+      stockMap  = await PacificData.getInventory(STYLE, product);
+      // 제목·브레드크럼·H1 을 이 스타일로 채움
+      const niceName = product.name || STYLE;
+      document.title = 'Pacific Sports — Style #'+STYLE;
+      const h1=document.getElementById('pTitle'); if(h1) h1.textContent=niceName;
+      const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='Style #'+STYLE;
+      const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
       renderSizeHeaders();
       buildAllRows();
       setupGallery();

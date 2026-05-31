@@ -99,7 +99,8 @@
 
   // ── REST 헬퍼 ──
   async function rest(path, opts={}){
-    const r = await fetch(URL+'/rest/v1/'+path, {headers:{...H,...(opts.headers||{})}, ...opts});
+    const {headers:extra, ...rest} = opts;
+    const r = await fetch(URL+'/rest/v1/'+path, {...rest, headers:{...H, ...(extra||{})}});
     if(!r.ok) throw new Error('DB '+r.status+': '+(await r.text()).slice(0,160));
     const t = await r.text();
     return t ? JSON.parse(t) : null;

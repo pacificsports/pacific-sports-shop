@@ -84,11 +84,14 @@
 </div>
 
 <script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
 <script>
   const CFG = window.PACIFIC_CONFIG || {};
   const URL = CFG.SUPABASE_URL, KEY = CFG.SUPABASE_ANON_KEY, BUCKET = CFG.IMAGE_BUCKET || 'product-images';
-  const H = { apikey:KEY, Authorization:'Bearer '+KEY };
+  let SESSION = null;
+  // 로그인 토큰 기반 인증 헤더 (로그인 전엔 anon)
+  function H(){ return SESSION ? { apikey:KEY, Authorization:'Bearer '+SESSION.token } : { apikey:KEY, Authorization:'Bearer '+KEY }; }
   const $ = id => document.getElementById(id);
   let styles=[], current=null;
 
@@ -100,7 +103,7 @@
   // ── REST 헬퍼 ──
   async function rest(path, opts={}){
     const {headers:extra, ...rest} = opts;
-    const r = await fetch(URL+'/rest/v1/'+path, {...rest, headers:{...H, ...(extra||{})}});
+    const r = await fetch(URL+'/rest/v1/'+path, {...rest, headers:{...H(), ...(extra||{})}});
     if(!r.ok) throw new Error('DB '+r.status+': '+(await r.text()).slice(0,160));
     const t = await r.text();
     return t ? JSON.parse(t) : null;
@@ -108,12 +111,16 @@
 
   function imgUrl(path){ return URL+'/storage/v1/object/public/'+BUCKET+'/'+path; }
 
-  // ── 초기화: 연결 확인 + 스타일 목록 ──
+  // ── 초기화: 로그인 확인 → 연결 확인 + 스타일 목록 ──
   (async function init(){
     if(!URL || !KEY){ $('connWho').textContent='⚠ 설정 없음'; setStatus('pacific-config.js 에 URL/키가 없어요.','err'); return; }
+    // 관리자 로그인 가드 — 아니면 로그인 페이지로 보냄
+    SESSION = await PacificAuth.requireAdmin('admin-login.html');
+    if(!SESSION) return;  // 리다이렉트 중
     try{
       styles = await PacificData.getStyles();
-      $('connWho').textContent='IMS 연결됨 · 스타일 '+styles.length+'개';
+      $('connWho').innerHTML = `${SESSION.email} (${SESSION.role}) · 스타일 ${styles.length}개 &nbsp; <a href="#" id="logout" style="color:var(--accent)">로그아웃</a>`;
+      const lo=$('logout'); if(lo) lo.addEventListener('click',e=>{e.preventDefault();PacificAuth.logout();location.href='admin-login.html';});
       fillStyleSelect(styles);
     }catch(e){
       $('connWho').textContent='⚠ 연결 실패';
@@ -202,7 +209,7 @@
     try{
       // 1) Storage 업로드 (덮어쓰기 허용: upsert)
       const up=await fetch(URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path)+'?upsert=true',{
-        method:'POST', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file
+        method:'POST', headers:{...H(),'Content-Type':file.type,'x-upsert':'true'}, body:file
       });
       if(!up.ok) throw new Error('업로드 '+up.status+': '+(await up.text()).slice(0,140));
 

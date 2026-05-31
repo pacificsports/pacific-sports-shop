@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — 관리자 로그인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  .box{width:100%;max-width:400px;padding:30px}
+  .logo-img{height:42px;margin:0 auto 26px;display:block}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:34px 30px;box-shadow:0 30px 60px -40px rgba(28,28,26,.3)}
+  h1{font-family:var(--display);font-weight:400;font-size:27px;text-align:center;margin-bottom:6px}
+  .sub{text-align:center;font-size:13.5px;color:var(--faint);margin-bottom:26px}
+  label{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:7px}
+  input{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg);margin-bottom:18px}
+  input:focus{outline:none;border-color:var(--accent);background:var(--paper)}
+  button{width:100%;font-family:var(--body);font-size:15px;font-weight:500;padding:13px;border:none;border-radius:10px;background:var(--ink);color:var(--bg);cursor:pointer;transition:.2s}
+  button:hover{background:var(--accent)}
+  button:disabled{opacity:.6;cursor:default}
+  .err{background:#f8ecea;color:var(--err);border:1px solid #ecd6d3;border-radius:10px;padding:11px 14px;font-size:13.5px;margin-bottom:18px;display:none}
+  .err.show{display:block}
+  .foot{text-align:center;font-size:12.5px;color:var(--faint);margin-top:18px;line-height:1.6}
+  .foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="box">
+  <img src="logo-pacific.png" alt="Pacific Sports" class="logo-img">
+  <div class="card">
+    <h1>관리자 로그인</h1>
+    <div class="sub">재고관리(IMS)와 같은 이메일·비밀번호로 로그인하세요.</div>
+    <div class="err" id="err"></div>
+    <form id="form">
+      <label>이메일</label>
+      <input type="email" id="email" autocomplete="username" placeholder="you@peacepacificsports.com" required>
+      <label>비밀번호</label>
+      <input type="password" id="password" autocomplete="current-password" required>
+      <button type="submit" id="btn">로그인</button>
+    </form>
+    <div class="foot">관리자 권한이 있는 직원만 들어올 수 있어요.<br><a href="epacific-timeless.html">← 쇼핑몰로 돌아가기</a></div>
+  </div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script>
+  const $ = id=>document.getElementById(id);
+  // 이미 로그인돼 있으면 바로 통과
+  (async()=>{ const u=await PacificAuth.currentUser(); if(u) go(); })();
+
+  function go(){
+    const next = new URLSearchParams(location.search).get('next') || 'admin-photos.html';
+    location.href = next;
+  }
+  function showErr(m){ const e=$('err'); e.textContent=m; e.className='err show'; }
+
+  $('form').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const btn=$('btn'); btn.disabled=true; btn.textContent='로그인 중…';
+    $('err').className='err';
+    try{
+      await PacificAuth.login($('email').value.trim(), $('password').value);
+      go();
+    }catch(err){
+      showErr(err.message);
+      btn.disabled=false; btn.textContent='로그인';
+    }
+  });
+</script>
+</body>
+</html>

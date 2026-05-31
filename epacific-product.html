@@ -320,12 +320,19 @@
 
 <div class="toast" id="toast">✓ Added to order</div>
 
+<script src="pacific-config.js"></script>
 <script src="pacific-data.js"></script>
 <script>
   // 카탈로그·재고는 pacific-data.js 에서 불러옵니다 (init()에서 채움)
   let sizes=[], colors=[], casePer={}, stockMap={}, product=null;
 
   // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
+
+  // 색상 썸네일: 사진 있으면 사진, 없으면 티셔츠 SVG
+  function colorThumb(c,big){
+    if(c.img){ return `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit">`; }
+    return teeSVG(c.hex,big);
+  }
   function teeSVG(hex,big){
     const dark=['#232323','#33353a','#2c3e4f','#27314f','#27314a','#5a2733','#4a2f26','#5a3f7a','#3a4a8c','#2f4f8f','#2f5b8f','#8e2535','#9c2f2f','#3a4a52','#27314a'].includes(hex);
     const shade='rgba(0,0,0,.10)';
@@ -360,7 +367,7 @@
     const st=stockMap[c.name][wh];
     // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
     const colorCell = isFirst
-      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${teeSVG(c.hex,false)}</span><span class="cn">${c.name}</span></div></td>`
+      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false)}</span><span class="cn">${c.name}</span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
     const cells=sizes.map((s,i)=>{
@@ -501,7 +508,7 @@
       sugBox.classList.add('show'); return;
     }
     sugBox.innerHTML=matches.slice(0,8).map((c,i)=>
-      `<div class="sg" data-name="${c.name}">${`<span class="sgimg">${teeSVG(c.hex,false)}</span>`}<span>${c.name}</span></div>`
+      `<div class="sg" data-name="${c.name}"><span class="sgimg">${colorThumb(c,false)}</span><span>${c.name}</span></div>`
     ).join('');
     sugBox.classList.add('show');
     sugBox.querySelectorAll('.sg').forEach(el=>el.addEventListener('click',()=>jumpTo(el.dataset.name)));
@@ -529,12 +536,12 @@
   const mainImg=document.getElementById('mainImg');
   const thumbsEl=document.getElementById('thumbs');
   let featured=['Natural','Black','Navy','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean); if(featured.length<4) featured=colors.slice(0,4);
-  function setMain(c){ mainImg.innerHTML=teeSVG(c.hex,true); }
+  function setMain(c){ mainImg.innerHTML=colorThumb(c,true); }
   setMain(featured[0]);
   featured.forEach((c,i)=>{
     const t=document.createElement('div');
     t.className='t'+(i===0?' active':'');
-    t.innerHTML=`${teeSVG(c.hex,false)}<span class="tlabel">${c.name}</span>`;
+    t.innerHTML=`${colorThumb(c,false)}<span class="tlabel">${c.name}</span>`;
     t.addEventListener('click',()=>{
       thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active'));
       t.classList.add('active');

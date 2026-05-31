@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — 사진 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+    --ok:#3d5a40;--err:#a8463f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit}
+  header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 30px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:50}
+  header .logo-img{height:34px}
+  header .title{font-family:var(--display);font-size:24px}
+  header .who{margin-left:auto;font-size:13px;color:var(--faint)}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px}
+  .bar{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  select,input[type=search]{font-family:var(--body);font-size:15px;padding:11px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);color:var(--ink);min-width:280px}
+  select:focus,input:focus{outline:none;border-color:var(--accent)}
+  .hint{font-size:13px;color:var(--soft-ink);margin:6px 0 22px;line-height:1.6}
+  .status{padding:11px 16px;border-radius:10px;font-size:14px;margin-bottom:20px;display:none}
+  .status.show{display:block}
+  .status.ok{background:var(--accent-soft);color:var(--accent);border:1px solid #dce4da}
+  .status.err{background:#f8ecea;color:var(--err);border:1px solid #ecd6d3}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+  .drop{aspect-ratio:1;background:var(--accent-soft);position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;border-bottom:1px solid var(--line);overflow:hidden}
+  .drop img{width:100%;height:100%;object-fit:cover;display:block}
+  .drop .ph{text-align:center;color:var(--faint);padding:14px}
+  .drop .ph svg{width:30px;height:30px;opacity:.5;margin-bottom:6px}
+  .drop .ph .t{font-size:12.5px;line-height:1.4}
+  .drop.dragover{outline:2px dashed var(--accent);outline-offset:-6px;background:#e4ebe2}
+  .drop .uploading{position:absolute;inset:0;background:rgba(255,255,255,.82);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent);font-weight:600}
+  .cardbody{padding:11px 13px 13px;display:flex;flex-direction:column;gap:3px}
+  .cardbody .swatch{width:16px;height:16px;border-radius:5px;border:1px solid rgba(0,0,0,.12);display:inline-block;vertical-align:-3px;margin-right:7px}
+  .cardbody .cname{font-size:14px;font-weight:500}
+  .cardbody .act{margin-top:8px;display:flex;gap:8px}
+  .cardbody .act button{font-family:var(--body);font-size:12px;border:1px solid var(--line-2);background:var(--paper);color:var(--soft-ink);padding:5px 10px;border-radius:7px;cursor:pointer;transition:.15s}
+  .cardbody .act button:hover{border-color:var(--accent);color:var(--accent)}
+  .cardbody .act button.del:hover{border-color:var(--err);color:var(--err)}
+  .empty{grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--faint)}
+  .count{font-size:13px;color:var(--faint);margin-bottom:14px}
+  .loading{padding:50px;text-align:center;color:var(--faint)}
+</style>
+</head>
+<body>
+<header>
+  <img src="logo-pacific.png" alt="Pacific Sports" class="logo-img">
+  <div class="title">사진 관리</div>
+  <div class="who" id="connWho">연결 확인 중…</div>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="field">
+      <label>스타일 선택</label>
+      <select id="styleSel"><option>불러오는 중…</option></select>
+    </div>
+    <div class="field">
+      <label>스타일 검색</label>
+      <input type="search" id="styleSearch" placeholder="번호나 이름으로 찾기 (예: 1368, hoodie)">
+    </div>
+  </div>
+  <div class="hint">
+    스타일을 고르면 그 스타일의 <b>색상별 칸</b>이 나와요. 각 칸에 사진을 <b>끌어다 놓거나 클릭해서</b> 올리면 자동 저장돼요.
+    저장된 사진은 쇼핑몰 제품 화면에 바로 보여요. (사진은 정사각형 권장 · JPG/PNG/WebP)
+  </div>
+
+  <div class="status" id="status"></div>
+  <div class="count" id="count"></div>
+  <div class="grid" id="grid">
+    <div class="empty">위에서 스타일을 먼저 선택하세요.</div>
+  </div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-data.js"></script>
+<script>
+  const CFG = window.PACIFIC_CONFIG || {};
+  const URL = CFG.SUPABASE_URL, KEY = CFG.SUPABASE_ANON_KEY, BUCKET = CFG.IMAGE_BUCKET || 'product-images';
+  const H = { apikey:KEY, Authorization:'Bearer '+KEY };
+  const $ = id => document.getElementById(id);
+  let styles=[], current=null;
+
+  function setStatus(msg, kind){
+    const s=$('status'); s.textContent=msg; s.className='status show '+(kind||'ok');
+    if(kind==='ok') setTimeout(()=>{ s.className='status'; }, 3500);
+  }
+
+  // ── REST 헬퍼 ──
+  async function rest(path, opts={}){
+    const r = await fetch(URL+'/rest/v1/'+path, {headers:{...H,...(opts.headers||{})}, ...opts});
+    if(!r.ok) throw new Error('DB '+r.status+': '+(await r.text()).slice(0,160));
+    const t = await r.text();
+    return t ? JSON.parse(t) : null;
+  }
+
+  function imgUrl(path){ return URL+'/storage/v1/object/public/'+BUCKET+'/'+path; }
+
+  // ── 초기화: 연결 확인 + 스타일 목록 ──
+  (async function init(){
+    if(!URL || !KEY){ $('connWho').textContent='⚠ 설정 없음'; setStatus('pacific-config.js 에 URL/키가 없어요.','err'); return; }
+    try{
+      styles = await PacificData.getStyles();
+      $('connWho').textContent='IMS 연결됨 · 스타일 '+styles.length+'개';
+      fillStyleSelect(styles);
+    }catch(e){
+      $('connWho').textContent='⚠ 연결 실패';
+      setStatus('IMS 연결 실패: '+e.message,'err');
+    }
+  })();
+
+  function fillStyleSelect(list){
+    const sel=$('styleSel');
+    sel.innerHTML='<option value="">— 스타일 선택 —</option>'+
+      list.map(s=>`<option value="${s.no}">${s.no} · ${s.desc}</option>`).join('');
+  }
+
+  $('styleSearch').addEventListener('input', e=>{
+    const q=e.target.value.toLowerCase().trim();
+    fillStyleSelect(!q?styles:styles.filter(s=>(s.no+' '+s.desc).toLowerCase().includes(q)));
+  });
+
+  $('styleSel').addEventListener('change', e=>{ if(e.target.value) loadStyle(e.target.value); });
+
+  // ── 선택한 스타일의 색상 칸 그리기 ──
+  async function loadStyle(styleNo){
+    current=styleNo;
+    $('grid').innerHTML='<div class="loading">색상·사진 불러오는 중…</div>';
+    try{
+      const product = await PacificData.getProduct(styleNo);
+      const imgs = await PacificData.getImages(styleNo);   // {색상:URL}
+      const colors = product.colors;
+      $('count').textContent = `Style #${styleNo} · 색상 ${colors.length}개`;
+      const g=$('grid'); g.innerHTML='';
+      colors.forEach(c=>{
+        const url = imgs[c.name] || '';
+        const card=document.createElement('div'); card.className='card';
+        card.innerHTML=`
+          <div class="drop" data-color="${c.name.replace(/"/g,'&quot;')}">
+            ${url
+              ? `<img src="${url}" alt="${c.name}">`
+              : `<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="t">사진 끌어다 놓기<br>또는 클릭</div></div>`}
+          </div>
+          <div class="cardbody">
+            <div><span class="swatch" style="background:${c.hex}"></span><span class="cname">${c.name}</span></div>
+            <div class="act">
+              <button class="rep">바꾸기</button>
+              ${url?'<button class="del">삭제</button>':''}
+            </div>
+          </div>`;
+        const drop=card.querySelector('.drop');
+        wireDrop(drop, styleNo, c.name);
+        card.querySelector('.rep').addEventListener('click',()=>pickFile(drop, styleNo, c.name));
+        const del=card.querySelector('.del');
+        if(del) del.addEventListener('click',()=>removeImage(styleNo, c.name, drop));
+        g.appendChild(card);
+      });
+    }catch(e){
+      $('grid').innerHTML='<div class="empty">불러오기 실패: '+e.message+'</div>';
+    }
+  }
+
+  // ── 드래그&드롭 + 클릭 업로드 ──
+  function wireDrop(drop, styleNo, color){
+    drop.addEventListener('click',()=>pickFile(drop, styleNo, color));
+    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('dragover');});
+    drop.addEventListener('dragleave',()=>drop.classList.remove('dragover'));
+    drop.addEventListener('drop',e=>{
+      e.preventDefault();drop.classList.remove('dragover');
+      const f=e.dataTransfer.files[0]; if(f) uploadImage(f, styleNo, color, drop);
+    });
+  }
+  function pickFile(drop, styleNo, color){
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+    inp.onchange=()=>{ if(inp.files[0]) uploadImage(inp.files[0], styleNo, color, drop); };
+    inp.click();
+  }
+
+  // 파일명: 스타일/색상 기준으로 안전하게
+  function safeName(styleNo, color, file){
+    const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+    const c=color.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    return `${styleNo}/${c}.${ext}`;   // 예: 1368/navy.jpg
+  }
+
+  async function uploadImage(file, styleNo, color, drop){
+    if(!file.type.startsWith('image/')){ setStatus('이미지 파일만 올릴 수 있어요.','err'); return; }
+    const path=safeName(styleNo, color, file);
+    drop.insertAdjacentHTML('beforeend','<div class="uploading">올리는 중…</div>');
+    try{
+      // 1) Storage 업로드 (덮어쓰기 허용: upsert)
+      const up=await fetch(URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path)+'?upsert=true',{
+        method:'POST', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file
+      });
+      if(!up.ok) throw new Error('업로드 '+up.status+': '+(await up.text()).slice(0,140));
+
+      // 2) product_images 기록 (있으면 갱신, 없으면 추가) — style+color 유니크
+      await rest('product_images?on_conflict=style_number,color', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+        body:JSON.stringify({style_number:styleNo, color:color, image_path:path})
+      });
+
+      // 3) 화면 갱신 (캐시 우회용 타임스탬프)
+      drop.innerHTML=`<img src="${imgUrl(path)}?t=${Date.now()}" alt="${color}">`;
+      // 삭제 버튼 없으면 추가
+      const body=drop.parentElement.querySelector('.act');
+      if(body && !body.querySelector('.del')){
+        const b=document.createElement('button'); b.className='del'; b.textContent='삭제';
+        b.addEventListener('click',()=>removeImage(styleNo,color,drop)); body.appendChild(b);
+      }
+      setStatus(`✓ ${styleNo} · ${color} 사진 저장됨`,'ok');
+    }catch(e){
+      const u=drop.querySelector('.uploading'); if(u) u.remove();
+      setStatus('실패: '+e.message,'err');
+    }
+  }
+
+  async function removeImage(styleNo, color, drop){
+    if(!confirm(`${styleNo} · ${color} 사진을 삭제할까요?`)) return;
+    try{
+      await rest('product_images?style_number=eq.'+encodeURIComponent(styleNo)+'&color=eq.'+encodeURIComponent(color),
+                 {method:'DELETE', headers:{'Prefer':'return=minimal'}});
+      drop.innerHTML=`<div class="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg><div class="t">사진 끌어다 놓기<br>또는 클릭</div></div>`;
+      const del=drop.parentElement.querySelector('.del'); if(del) del.remove();
+      setStatus(`${styleNo} · ${color} 사진 삭제됨`,'ok');
+    }catch(e){ setStatus('삭제 실패: '+e.message,'err'); }
+  }
+</script>
+</body>
+</html>

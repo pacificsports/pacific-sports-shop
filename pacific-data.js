@@ -13,14 +13,15 @@
 
 window.PacificData = (function () {
 
-  /* ===== ① 데이터 소스 스위치 ===========================================
-     'mock'     = 예시 데이터로 동작 (Supabase 불필요). 지금 단계.
-     'supabase' = 실제 IMS 재고/카탈로그를 읽어옴.
+  /* ===== ① 데이터 소스 ================================================
+     pacific-config.js 가 있고 URL/키가 채워져 있으면 자동으로 'supabase',
+     없으면 'mock'. (config 파일만 빼면 즉시 예시 모드로 안전하게 동작)
   ====================================================================== */
-  const SOURCE = 'mock';
-
-  const SUPABASE_URL      = '';   // 예: 'https://abcd1234.supabase.co'
-  const SUPABASE_ANON_KEY = '';   // anon public key (service_role 키는 절대 넣지 말 것)
+  const CFG = (window.PACIFIC_CONFIG || {});
+  const SUPABASE_URL      = CFG.SUPABASE_URL || '';
+  const SUPABASE_ANON_KEY = CFG.SUPABASE_ANON_KEY || '';
+  const IMAGE_BUCKET      = CFG.IMAGE_BUCKET || 'product-images';
+  const SOURCE = (SUPABASE_URL && SUPABASE_ANON_KEY) ? 'supabase' : 'mock';
 
 
   /* ===== ② 케이스 규칙 + 사이즈 표시 순서 ===============================
@@ -212,6 +213,25 @@ window.PacificData = (function () {
 
   function _sizeSort(a,b){ return SIZE_ORDER.indexOf(a) - SIZE_ORDER.indexOf(b); }
 
+  // Storage 공개 URL 만들기 (image_path → 실제 보이는 주소)
+  function _imageUrl(path) {
+    if (!path) return '';
+    if (/^https?:\/\//.test(path)) return path;  // 이미 전체 URL이면 그대로
+    return SUPABASE_URL + '/storage/v1/object/public/' + IMAGE_BUCKET + '/' + path;
+  }
+
+  // product_images 에서 한 스타일의 색상별 사진 읽기 → { 색상(예쁜표기): URL }
+  async function _supabaseImages(styleNo) {
+    const rows = await _sb('product_images?style_number=eq.'+encodeURIComponent(styleNo)
+                          +'&select=color,image_path,sort_order&order=sort_order');
+    const out = {};
+    rows.forEach(r => {
+      const key = r.color ? prettyColor(r.color) : '_default';
+      if (!out[key]) out[key] = _imageUrl(r.image_path);   // 색상별 첫 사진
+    });
+    return out;
+  }
+
   async function _supabaseProduct(styleNo) {
     // skus 에서 이 스타일의 색상·사이즈 (활성만)
     const rows = await _sb('skus?style_number=eq.'+encodeURIComponent(styleNo)
@@ -231,10 +251,19 @@ window.PacificData = (function () {
     });
 
     const sizes = [...sizeSet].sort(_sizeSort);
-    const colors = Object.keys(colorMap).sort().map(raw=>({
-      name: prettyColor(raw), raw, hex: colorHex(raw), img:'',
-      sizes: [...colorMap[raw]].sort(_sizeSort)
-    }));
+
+    // 사진 붙이기 (있으면 색상별 img 채움)
+    let imgMap = {};
+    try { imgMap = await _supabaseImages(styleNo); } catch(e){}
+
+    const colors = Object.keys(colorMap).sort().map(raw=>{
+      const pretty = prettyColor(raw);
+      return {
+        name: pretty, raw, hex: colorHex(raw),
+        img: imgMap[pretty] || imgMap['_default'] || '',
+        sizes: [...colorMap[raw]].sort(_sizeSort)
+      };
+    });
 
     return {
       styleNo,
@@ -302,6 +331,24 @@ window.PacificData = (function () {
       }
       return _mockInventory(styleNo, product);
     },
+
+    // 한 스타일의 색상별 사진 (관리 화면/상세에서 사용)
+    getImages: async function (styleNo) {
+      return SOURCE === 'supabase' ? _supabaseImages(styleNo) : {};
+    },
+
+    // 모든 스타일의 "대표 사진 1장" (제품 목록 카드용) → { style_number: URL }
+    getStyleThumbs: async function () {
+      if (SOURCE !== 'supabase') return {};
+      try {
+        const rows = await _sb('product_images?select=style_number,image_path,sort_order&order=sort_order');
+        const out = {};
+        rows.forEach(r => { if (!out[r.style_number]) out[r.style_number] = _imageUrl(r.image_path); });
+        return out;
+      } catch (e) { return {}; }
+    },
+
+    imageUrl: function (path) { return _imageUrl(path); },
 
     prettyColor, colorHex
   };

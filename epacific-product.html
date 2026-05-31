@@ -30,8 +30,15 @@
   .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
   .logo i{font-style:italic;color:var(--accent)}
   nav.main{display:flex;gap:2px;flex:1}
+  .nav-item{position:relative}
   .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
   .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .mega{position:absolute;top:100%;left:0;margin-top:8px;background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 60px -30px rgba(28,28,26,.25);padding:28px 32px;display:none;grid-template-columns:repeat(2,minmax(150px,1fr));gap:32px;min-width:410px;z-index:200}
+  .mega::before{content:"";position:absolute;top:-12px;left:0;right:0;height:12px}
+  .nav-item:hover .mega{display:grid}
+  .mega h4{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:15px}
+  .mega a{display:block;padding:8px 10px;margin:0 -10px;font-size:15px;font-weight:450;color:var(--soft-ink);border-radius:9px;transition:background .15s,color .15s}
+  .mega a:hover{background:var(--accent-soft);color:var(--ink)}
   .h-icons{display:flex;align-items:center;gap:10px}
   .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:.2s}
   .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
@@ -192,10 +199,19 @@
   <div class="header-in">
     <a href="index.html" class="logo">Pacific<i>Sports</i></a>
     <nav class="main">
-      <div class="nav-item"><a>Men's</a></div>
-      <div class="nav-item"><a>Youth & Kids</a></div>
-      <div class="nav-item"><a>Collections</a></div>
-      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a>Men's</a>
+        <div class="mega">
+          <div><h4>Categories</h4><a href="epacific-category.html?cat=Adult%20S%2FS">Short Sleeve</a><a href="epacific-category.html?cat=Adult%20L%2FS">Long Sleeve</a><a href="epacific-category.html?cat=Adult%20Tank%20Top">Tank Tops</a><a href="epacific-category.html?cat=Adult%20Performance">Performance</a><a href="epacific-category.html">View All</a></div>
+          <div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a><a href="epacific-category.html">Best Sellers</a></div>
+        </div>
+      </div>
+      <div class="nav-item"><a>Youth &amp; Kids</a>
+        <div class="mega"><div><h4>Categories</h4><a href="epacific-category.html?cat=Youth%20S%2FS">Youth</a><a href="epacific-category.html?cat=Juvy%20S%2FS">Juvy</a><a href="epacific-category.html?cat=Kids%20S%2FS">Kids</a><a href="epacific-category.html?cat=Toddler%20S%2FS">Toddler</a></div><div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a></div></div>
+      </div>
+      <div class="nav-item"><a>Collections</a>
+        <div class="mega"><div><h4>Browse</h4><a href="epacific-category.html">All Styles</a><a href="epacific-shopbycolor.html">Shop by Color</a></div></div>
+      </div>
+      <div class="nav-item"><a href="epacific-shopbycolor.html">Shop by Color</a></div>
       <div class="nav-item"><a href="#">Information</a></div>
     </nav>
     <div class="h-icons">

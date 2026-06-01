@@ -376,7 +376,8 @@
       : teeSVG(c.hex,big);
     // 색상 행 썸네일(작은 것)에만 수정 오버레이 (수정모드+로그인 시 .editmode로 표시)
     if(!big){
-      return inner + `<div class="editov" data-editcolor="${String(c.name).replace(/"/g,'&quot;')}">${c.img?'사진<br>바꾸기':'사진<br>올리기'}</div>`;
+      const rawc = c.raw || c.name;
+      return inner + `<div class="editov" data-editcolor="${String(rawc).replace(/"/g,'&quot;')}" data-prettyname="${String(c.name).replace(/"/g,'&quot;')}">${c.img?'사진<br>바꾸기':'사진<br>올리기'}</div>`;
     }
     return inner;
   }

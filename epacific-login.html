@@ -115,16 +115,17 @@
     <div class="pane active" id="paneLogin">
       <h2>Welcome back</h2>
       <div class="psub">Log in to your wholesale account.</div>
+      <div class="msg" id="loginMsg" style="display:none;border-radius:10px;padding:11px 14px;font-size:13.5px;margin-bottom:14px;line-height:1.5"></div>
       <div class="field">
         <label>Email</label>
-        <input type="email" placeholder="you@company.com" autocomplete="username">
+        <input type="email" id="loginEmail" placeholder="you@company.com" autocomplete="username">
       </div>
       <div class="field">
         <label>Password</label>
-        <input type="password" placeholder="••••••••" autocomplete="current-password">
+        <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <div class="forgot"><a href="#">Forgot password?</a></div>
-      <button class="btn" onclick="fakeLogin()">Log in →</button>
+      <div class="forgot"><a href="#" id="forgotLink">Forgot password?</a></div>
+      <button class="btn" id="loginBtn">Log in →</button>
       <div class="swap">New to Pacific Sports? <a onclick="showPane('reg')">Apply for an account</a></div>
     </div>
 
@@ -178,21 +179,72 @@
 
 <footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
 
+<script src="pacific-config.js"></script>
 <script>
+  const _CFG=window.PACIFIC_CONFIG||{}, _URL=_CFG.SUPABASE_URL, _KEY=_CFG.SUPABASE_ANON_KEY;
   function showPane(which){
     document.getElementById('paneLogin').classList.toggle('active',which==='login');
     document.getElementById('paneReg').classList.toggle('active',which==='reg');
     document.getElementById('tabLogin').classList.toggle('active',which==='login');
     document.getElementById('tabReg').classList.toggle('active',which==='reg');
   }
-  function fakeLogin(){
-    // 데모: 실제로는 서버 인증 후 가격 보이는 상태로 이동
-    alert('데모 화면이에요. 실제 사이트에서는 여기서 로그인 후 도매가가 보이는 상태로 들어가요.');
+  function lmsg(t,kind){
+    const m=document.getElementById('loginMsg');
+    m.textContent=t;
+    m.style.display='block';
+    m.style.background = kind==='ok' ? '#eef1ec' : '#f8ecea';
+    m.style.color = kind==='ok' ? '#3d5a40' : '#a8463f';
+    m.style.border = '1px solid ' + (kind==='ok' ? '#dce4da' : '#ecd6d3');
   }
+
+  // 실제 로그인 (Supabase Auth)
+  async function doLogin(){
+    const email=document.getElementById('loginEmail').value.trim();
+    const pw=document.getElementById('loginPw').value;
+    if(!email||!pw){ lmsg('이메일과 비밀번호를 입력해주세요.','err'); return; }
+    const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='로그인 중…';
+    try{
+      const r=await fetch(_URL+'/auth/v1/token?grant_type=password',{
+        method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({email,password:pw})
+      });
+      const data=await r.json();
+      if(!r.ok) throw new Error(data.error_description||data.msg||'로그인 실패');
+      // 로그인 성공 — 세션 저장 (직원/거래처 공통). 이후 화면에서 권한 확인.
+      try{ sessionStorage.setItem('pacific_user', JSON.stringify({
+        token:data.access_token, userId:data.user&&data.user.id, email:data.user&&data.user.email
+      })); }catch(e){}
+      lmsg('✓ 로그인됐어요. 이동 중…','ok');
+      setTimeout(()=>{ location.href='epacific-timeless.html'; }, 1000);
+    }catch(e){
+      lmsg('로그인 실패: '+e.message,'err');
+      btn.disabled=false; btn.textContent='Log in →';
+    }
+  }
+
+  // 비밀번호 재설정 요청 — redirect_to 를 reset-password.html 로 정확히 지정
+  async function doForgot(){
+    const email=(document.getElementById('loginEmail').value||'').trim();
+    if(!email){ lmsg('재설정 메일을 받을 이메일을 위 칸에 먼저 입력해주세요.','err'); return; }
+    try{
+      const redirect = location.origin + '/reset-password.html';
+      const r=await fetch(_URL+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
+        method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({email})
+      });
+      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.msg||('오류 '+r.status)); }
+      lmsg('✓ 재설정 메일을 보냈어요. 메일함에서 링크를 눌러 새 비밀번호를 정하세요.','ok');
+    }catch(e){ lmsg('메일 발송 실패: '+e.message,'err'); }
+  }
+
   function fakeRegister(){
     document.getElementById('regForm').style.display='none';
     document.getElementById('okMsg').classList.add('show');
   }
+
+  document.getElementById('loginBtn').addEventListener('click',doLogin);
+  document.getElementById('forgotLink').addEventListener('click',e=>{e.preventDefault();doForgot();});
+  document.getElementById('loginPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 </script>
 </body>
 </html>

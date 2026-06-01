@@ -716,8 +716,12 @@
   }
   async function uploadPhoto(file, color, ov){
     if(!file.type.startsWith('image/')){ alert('이미지 파일만 올릴 수 있어요.'); return; }
+    // 로그인한 직원의 토큰으로 업로드 (DB가 직원만 허용하도록 잠겨있음)
+    let token=null;
+    try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
+    if(!token){ alert('로그인이 풀렸어요. 다시 로그인해주세요.'); return; }
     const path=safeName(color,file); const prev=ov.textContent; ov.textContent='올리는 중…';
-    const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+    const H={apikey:SB_KEY,Authorization:'Bearer '+token};
     try{
       // 1) 파일을 Storage에 업로드 (이미 있으면 덮어쓰기)
       const up=await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path)+'?upsert=true',

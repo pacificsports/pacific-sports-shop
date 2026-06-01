@@ -56,13 +56,15 @@
 
   /* gallery — Abercrombie-style clean studio look */
   .gallery{position:sticky;top:104px}
-  .main-img{aspect-ratio:1/1.12;border-radius:16px;overflow:hidden;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;box-shadow:0 1px 2px rgba(28,28,26,.04);border:1px solid var(--line)}
-  .main-img #mainImg{display:flex;align-items:center;justify-content:center}
+  .main-img{aspect-ratio:1/1.05;border-radius:16px;overflow:hidden;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;box-shadow:0 1px 2px rgba(28,28,26,.04);border:1px solid var(--line)}
+  .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:8px}
   .main-img #mainImg svg{filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
-  .main-img .tag{position:absolute;top:18px;left:18px;background:rgba(255,255,255,.9);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
+  .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
   .thumbs{display:flex;gap:10px}
-  .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative;padding-top:6px}
-  .thumbs .t .tlabel{font-size:10px;font-weight:500;color:var(--soft-ink);margin-top:2px}
+  .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  .thumbs .t img{width:100%;height:100%;object-fit:contain;padding:5px}
+  .thumbs .t .tlabel{display:none}
   .thumbs .t:hover{transform:translateY(-2px)}
   .thumbs .t.active{border-color:var(--ink)}
 
@@ -595,7 +597,7 @@
   // 큰 사진: 사진 있으면 사진(꽉 차게 contain), 없으면 SVG. 수정 오버레이는 큰 사진엔 없음.
   function setMain(c){
     mainImg.innerHTML = c.img
-      ? `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`
+      ? `<img src="${c.img}" alt="${c.name}">`
       : teeSVG(c.hex,true);
   }
   setMain(featured[0]);
@@ -606,7 +608,7 @@
     t.className='t'+(i===0?' active':'');
     // 썸네일: 사진 있으면 사진, 없으면 SVG (수정 오버레이 없이 깔끔하게)
     const thumbInner = c.img
-      ? `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:contain;display:block">`
+      ? `<img src="${c.img}" alt="${c.name}">`
       : teeSVG(c.hex,false);
     t.innerHTML=`${thumbInner}<span class="tlabel">${c.name}</span>`;
     const activate=()=>{ thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active')); t.classList.add('active'); setMain(c); };

@@ -81,7 +81,7 @@
 </head>
 <body>
 
-<div class="demo-banner">— 디자인 시안 (DEMO) · 로그인 / 거래처 가입 —</div>
+
 
 <header>
   <div class="header-in">
@@ -201,24 +201,24 @@
   async function doLogin(){
     const email=document.getElementById('loginEmail').value.trim();
     const pw=document.getElementById('loginPw').value;
-    if(!email||!pw){ lmsg('이메일과 비밀번호를 입력해주세요.','err'); return; }
-    const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='로그인 중…';
+    if(!email||!pw){ lmsg('Please enter your email and password.','err'); return; }
+    const btn=document.getElementById('loginBtn'); btn.disabled=true; btn.textContent='Logging in…';
     try{
       const r=await fetch(_URL+'/auth/v1/token?grant_type=password',{
         method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({email,password:pw})
       });
       const data=await r.json();
-      if(!r.ok) throw new Error(data.error_description||data.msg||'로그인 실패');
+      if(!r.ok) throw new Error(data.error_description||data.msg||'Login failed');
       // 로그인 성공 — 세션 저장 (직원/거래처 공통). 이후 화면에서 권한 확인.
       try{ sessionStorage.setItem('pacific_user', JSON.stringify({
         token:data.access_token, userId:data.user&&data.user.id, email:data.user&&data.user.email
       })); }catch(e){}
-      lmsg('✓ 로그인됐어요. 이동 중…','ok');
+      lmsg('✓ Logged in. Redirecting…','ok');
       const next = new URLSearchParams(location.search).get('next');
       setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, 1000);
     }catch(e){
-      lmsg('로그인 실패: '+e.message,'err');
+      lmsg('Login failed: '+e.message,'err');
       btn.disabled=false; btn.textContent='Log in →';
     }
   }
@@ -226,16 +226,16 @@
   // 비밀번호 재설정 요청 — redirect_to 를 reset-password.html 로 정확히 지정
   async function doForgot(){
     const email=(document.getElementById('loginEmail').value||'').trim();
-    if(!email){ lmsg('재설정 메일을 받을 이메일을 위 칸에 먼저 입력해주세요.','err'); return; }
+    if(!email){ lmsg('Enter your email above first to receive a reset link.','err'); return; }
     try{
       const redirect = location.origin + '/reset-password.html';
       const r=await fetch(_URL+'/auth/v1/recover?redirect_to='+encodeURIComponent(redirect),{
         method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({email})
       });
-      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.msg||('오류 '+r.status)); }
-      lmsg('✓ 재설정 메일을 보냈어요. 메일함에서 링크를 눌러 새 비밀번호를 정하세요.','ok');
-    }catch(e){ lmsg('메일 발송 실패: '+e.message,'err'); }
+      if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.msg||('Error '+r.status)); }
+      lmsg('✓ Reset email sent. Check your inbox and click the link to set a new password.','ok');
+    }catch(e){ lmsg('Could not send email: '+e.message,'err'); }
   }
 
   function fakeRegister(){

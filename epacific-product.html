@@ -52,7 +52,7 @@
   .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
-  .product{max-width:1500px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.6fr 1fr;gap:50px;align-items:start}
+  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.75fr 1fr;gap:48px;align-items:start}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   .gallery{position:sticky;top:90px;width:100%;min-width:0;align-self:start;max-height:calc(100vh - 110px);overflow-y:auto;overflow-x:hidden;padding-right:2px}
@@ -149,7 +149,8 @@
   .otable tbody tr:last-child td{border-bottom:none}
   .otable tbody tr{transition:background .15s}
   .otable tbody tr.active-row{background:var(--accent-soft)}
-  .colcell{display:flex;align-items:center;gap:11px;padding-left:12px;text-align:left}
+  .colcell{display:flex;align-items:center;gap:11px;padding-left:12px;text-align:left;cursor:pointer;border-radius:8px;transition:background .12s}
+  .colcell:hover{background:var(--accent-soft)}
   .colcell .cimg{width:42px;height:42px;border-radius:8px;background:#ffffff;border:1px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .colcell .cimg svg{display:block}
   .colcell .cn{font-size:14px;font-weight:500;white-space:nowrap}
@@ -197,7 +198,7 @@
 </head>
 <body>
 
-<div class="demo-banner">— 디자인 시안 (DEMO) · 제품 상세 + 멀티컬러 주문 그리드 —</div>
+
 
 <div class="utility">
   <div class="utility-in">
@@ -228,18 +229,18 @@
     <div class="h-icons">
       <button>Search</button>
       <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
-      <button id="staffBtn" style="background:transparent;border:1px solid var(--line-2);color:var(--soft-ink);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer">직원 로그인</button>
+      <button id="staffBtn" style="background:transparent;border:1px solid var(--line-2);color:var(--soft-ink);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer">Staff Login</button>
     </div>
   </div>
 </header>
 
 <!-- 직원 수정 바 (로그인 시 표시) -->
 <div class="staff-bar" id="staffBar">
-  <b id="staffName">직원</b>
-  <span>· 사진 수정 모드를 켜면 색상 사진 위에 올리기 버튼이 나타나요</span>
+  <b id="staffName">Staff</b>
+  <span>· Turn on photo edit mode to upload images on each color</span>
   <span class="sp">
-    <button class="toggle" id="editToggle">사진 수정 켜기</button>
-    <button id="staffLogout">로그아웃</button>
+    <button class="toggle" id="editToggle">Edit Photos</button>
+    <button id="staffLogout">Log out</button>
   </span>
 </div>
 
@@ -385,7 +386,7 @@
     // 색상 행 썸네일(작은 것)에만 수정 오버레이 (수정모드+로그인 시 .editmode로 표시)
     if(!big){
       const rawc = c.raw || c.name;
-      return inner + `<div class="editov" data-editcolor="${String(rawc).replace(/"/g,'&quot;')}" data-prettyname="${String(c.name).replace(/"/g,'&quot;')}">${c.img?'사진<br>바꾸기':'사진<br>올리기'}</div>`;
+      return inner + `<div class="editov" data-editcolor="${String(rawc).replace(/"/g,'&quot;')}" data-prettyname="${String(c.name).replace(/"/g,'&quot;')}">${c.img?'Replace<br>photo':'Add<br>photo'}</div>`;
     }
     return inner;
   }
@@ -594,24 +595,41 @@
   const swEl=document.getElementById('thumbs');
   const swLabel=document.getElementById('swLabel');
 
-  function setMain(c){
+  let lockedColor=null;  // 클릭으로 고정된 색
+  function render(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
-    if(swLabel) swLabel.innerHTML = '색상: <b>'+c.name+'</b>';
+    if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
-  const firstWithImg = colors.find(c=>c.img) || colors[0];
-  setMain(firstWithImg);
-  _setMainFn = setMain;
+  // 고정 (클릭): 스크롤해도 안 바뀜
+  function lockMain(c){ lockedColor=c; render(c); }
+  // 미리보기 (hover): 떼면 고정된 색으로 복귀
+  function previewMain(c){ render(c); }
+  function restore(){ if(lockedColor) render(lockedColor); }
 
-  // 색상 동그라미 칩 격자 (색으로 꽉 채움). 마우스 올리면 위 큰 사진 바뀜
+  const firstWithImg = colors.find(c=>c.img) || colors[0];
+  lockMain(firstWithImg);
+  _setMainFn = lockMain;   // 주문 그리드 클릭 → 고정
+
+  // 색상 칩: hover=미리보기, click=고정
   colors.forEach(c=>{
     const sw=document.createElement('button');
     sw.className='sw'; sw.dataset.name=c.name; sw.title=c.name;
     sw.style.background=c.hex;
-    const activate=()=>setMain(c);
-    sw.addEventListener('mouseenter',activate);
-    sw.addEventListener('click',activate);
+    sw.addEventListener('mouseenter',()=>previewMain(c));
+    sw.addEventListener('click',()=>lockMain(c));
     swEl.appendChild(sw);
+  });
+  // 칩 영역에서 마우스가 벗어나면 고정된 색으로 복귀
+  swEl.addEventListener('mouseleave',restore);
+
+  // 주문 그리드의 색상 사진/이름 클릭 → 왼쪽 큰 사진 고정
+  const rb=document.getElementById('rowsBody');
+  if(rb) rb.addEventListener('click',e=>{
+    const cell=e.target.closest('.colcell'); if(!cell) return;
+    const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
+    const c=colors.find(x=>x.name===name);
+    if(c) lockMain(c);
   });
   }
 
@@ -640,13 +658,13 @@
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
-        throw new Error('pacific-data.js 를 찾을 수 없어요. 이 HTML 파일과 같은 폴더에 pacific-data.js 가 함께 있어야 합니다.');
+        throw new Error('pacific-data.js not found. It must be in the same folder as this HTML file.');
       }
       const cfg = PacificData.config;
       currentStyle = new URLSearchParams(location.search).get('style') || '1368';
       const STYLE = currentStyle;
       product   = await PacificData.getProduct(STYLE);
-      if(!product){ throw new Error('스타일 '+STYLE+' 을(를) 찾을 수 없어요.'); }
+      if(!product){ throw new Error('Style '+STYLE+' not found.'); }
       sizes     = product.sizes;
       colors    = product.colors;
       casePer   = product.casePer || cfg.casePer;
@@ -662,9 +680,9 @@
       setupGallery();
       recalc();
     }catch(e){
-      console.error('데이터 로드 실패:', e);
+      console.error('Data load failed:', e);
       const rb=document.getElementById('rows');
-      if(rb) rb.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#b04;">재고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.</td></tr>';
+      if(rb) rb.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#b04;">Could not load inventory. Please try again shortly.</td></tr>';
     }
   }
   init();
@@ -701,7 +719,7 @@
     editOn=!editOn;
     document.body.classList.toggle('editmode',editOn);
     el('editToggle').classList.toggle('on',editOn);
-    el('editToggle').textContent=editOn?'사진 수정 끄기':'사진 수정 켜기';
+    el('editToggle').textContent=editOn?'Done editing':'Edit Photos';
   });
   // 로그아웃
   if(el('staffLogout')) el('staffLogout').addEventListener('click',()=>{ PacificAuth.logout(); refreshStaff(); });
@@ -730,12 +748,12 @@
     return currentStyle+'/'+c+'.'+ext;
   }
   async function uploadPhoto(file, color, ov){
-    if(!file.type.startsWith('image/')){ alert('이미지 파일만 올릴 수 있어요.'); return; }
+    if(!file.type.startsWith('image/')){ alert('Only image files are allowed.'); return; }
     // 로그인한 직원의 토큰으로 업로드 (DB가 직원만 허용하도록 잠겨있음)
     let token=null;
     try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
-    if(!token){ alert('로그인이 풀렸어요. 다시 로그인해주세요.'); return; }
-    const path=safeName(color,file); const prev=ov.textContent; ov.textContent='올리는 중…';
+    if(!token){ alert('Session expired. Please log in again.'); return; }
+    const path=safeName(color,file); const prev=ov.textContent; ov.textContent='Uploading…';
     const H={apikey:SB_KEY,Authorization:'Bearer '+token};
     try{
       // 1) 파일을 Storage에 업로드. 이미 있으면 덮어쓰기(PUT), 처음이면 만들기(POST)
@@ -745,14 +763,14 @@
         // 아직 없는 파일이면 PUT이 막힐 수 있어 POST로 새로 생성
         up=await fetch(objUrl, {method:'POST', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file});
       }
-      if(!up.ok) throw new Error('업로드 '+up.status+': '+(await up.text()).slice(0,120));
+      if(!up.ok) throw new Error('Upload '+up.status+': '+(await up.text()).slice(0,120));
 
       // 2) 이 스타일+색의 기존 기록이 있는지 확인
       const colorFilter = (color===null||color===undefined||color==='')
         ? 'color=is.null' : 'color=eq.'+encodeURIComponent(color);
       const findUrl = SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(currentStyle)+'&'+colorFilter+'&select=id';
       const fr=await fetch(findUrl,{headers:H});
-      if(!fr.ok) throw new Error('조회 '+fr.status);
+      if(!fr.ok) throw new Error('Lookup '+fr.status);
       const existing=await fr.json();
 
       // 3) 있으면 수정(PATCH), 없으면 추가(POST)
@@ -766,15 +784,15 @@
           {method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},
            body:JSON.stringify({style_number:currentStyle,color:color,image_path:path})});
       }
-      if(!r.ok) throw new Error('저장 '+r.status+': '+(await r.text()).slice(0,120));
+      if(!r.ok) throw new Error('Save '+r.status+': '+(await r.text()).slice(0,120));
 
       // 4) 화면의 해당 색상 썸네일을 새 사진으로 교체
       const url=SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+path+'?t='+Date.now();
       const cell=ov.closest('.cimg');
       if(cell){ cell.querySelector('img')?.remove(); cell.querySelector('svg')?.remove();
         cell.insertAdjacentHTML('afterbegin',`<img src="${url}" alt="${color}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`); }
-      ov.innerHTML='사진<br>바꾸기';
-    }catch(e){ ov.textContent=prev; alert('실패: '+e.message); }
+      ov.innerHTML='Replace<br>photo';
+    }catch(e){ ov.textContent=prev; alert('Failed: '+e.message); }
   }
 </script>
 </body>

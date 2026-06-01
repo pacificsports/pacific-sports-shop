@@ -91,7 +91,6 @@
 </head>
 <body>
 
-<div class="demo-banner">— 디자인 시안 (DEMO) · Shop by Color —</div>
 
 <div class="utility">
   <div class="utility-in">
@@ -198,7 +197,7 @@
       </div>
       <div class="styles">
         ${STYLES.map(s=>`
-          <div class="st-card" onclick="alert('데모: 실제로는 #${s[0]} 제품 페이지(${name} 선택됨)로 이동')">
+          <div class="st-card" onclick="alert('Demo: would open the #${s[0]} product page (${name} selected)')">
             <div class="tee">${teeSVG(hex,40)}</div>
             <div class="si"><div class="no">#${s[0]}</div><div class="nm">${s[1]}</div><div class="meta">${s[2]}</div></div>
           </div>`).join('')}

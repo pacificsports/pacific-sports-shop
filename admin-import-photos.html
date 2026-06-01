@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pacific Sports — 사진 일괄 올리기</title>
+<title>Pacific Sports — Bulk Photo Upload</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{--bg:#fbfbf9;--paper:#fff;--ink:#1c1c1a;--soft:#56564f;--faint:#8e8e85;--line:#e8e7e1;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f;--ok:#3d5a40;--body:'Geist',sans-serif;--display:'Instrument Serif',serif}
@@ -32,19 +32,19 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>사진 일괄 올리기</h1>
-  <div class="sub">컴퓨터에 받아둔 색상별 제품 사진을 한 번에 올려요. 파일 이름을 보고 색상에 자동으로 연결돼요.</div>
-  <div class="who" id="who">확인 중…</div>
+  <h1>Bulk Photo Upload</h1>
+  <div class="sub">Upload your saved product photos all at once. They auto-link to colors by filename.</div>
+  <div class="who" id="who">Checking…</div>
 
   <div class="note">
-    파일 이름이 <b>스타일번호-색상.jpg</b> 형식이면 자동 연결돼요. (예: <b>1368-navy.jpg</b> → 1368 NAVY)<br>
-    여러 장을 한꺼번에 끌어다 놓거나 클릭해서 고르세요. 사진은 새 서버(Supabase)에 저장돼요.
+    Filenames like <b>style-color.jpg</b> auto-link. (e.g. <b>1368-navy.jpg</b> → 1368 NAVY)<br>
+    Drag many files at once or click to choose. Photos are stored on the new server.
   </div>
 
   <div class="card">
     <div class="drop" id="drop">
-      <div class="big">사진을 여기로 끌어다 놓기</div>
-      <div>또는 클릭해서 파일 고르기 (여러 장 선택 가능)</div>
+      <div class="big">Drag photos here</div>
+      <div>or click to choose files (multiple allowed)</div>
     </div>
     <div class="count" id="count"></div>
     <div class="bar" id="barWrap"><div id="bar"></div></div>
@@ -62,10 +62,10 @@
   const $=id=>document.getElementById(id);
 
   (async()=>{
-    if(!SB||!KEY){ $('who').textContent='설정 없음 (pacific-config.js 확인)'; return; }
+    if(!SB||!KEY){ $('who').textContent='No config (check pacific-config.js)'; return; }
     let staff=null; try{ staff=await PacificAuth.currentStaff(); }catch(e){}
     if(!staff){ location.href='epacific-login.html?next=admin-import-photos.html'; return; }
-    $('who').innerHTML=staff.name+' ('+staff.role+') · <a href="#" id="lo">로그아웃</a>';
+    $('who').innerHTML=staff.name+' ('+staff.role+') · <a href="#" id="lo">Log out</a>';
     $('lo').onclick=e=>{e.preventDefault();PacificAuth.logout();location.reload();};
   })();
 
@@ -100,7 +100,7 @@
   }
 
   async function handleFiles(files){
-    const tk=token(); if(!tk){ alert('로그인이 풀렸어요. 다시 로그인해주세요.'); return; }
+    const tk=token(); if(!tk){ alert('Session expired. Please log in again.'); return; }
     $('barWrap').style.display='block'; $('count').style.display='block'; $('log').style.display='block';
     let done=0, ok=0, fail=0, skip=0;
     for(const file of files){
@@ -108,7 +108,7 @@
       $('bar').style.width=Math.round(done/files.length*100)+'%';
       $('count').textContent=done+' / '+files.length;
       const parsed=parseName(file.name);
-      if(!parsed){ skip++; log('<span class="sk">— '+file.name+' : 이름에서 스타일/색상을 못 읽음 (건너뜀)</span>'); continue; }
+      if(!parsed){ skip++; log('<span class="sk">— '+file.name+' : could not read style/color from name (skipped)</span>'); continue; }
       const {style, colorText}=parsed;
       try{
         const byNorm=await imsColors(style);
@@ -134,8 +134,8 @@
         ok++; log('<span class="ok">✓ '+style+' · '+matched+'</span>');
       }catch(e){ fail++; log('<span class="er">✗ '+file.name+' — '+e.message+'</span>'); }
     }
-    log('<br><b>완료: 성공 '+ok+(skip?' · 건너뜀 '+skip:'')+(fail?' · 실패 '+fail:'')+'</b>');
-    log('<span class="sk">제품 화면에서 새로고침하면 사진이 보여요.</span>');
+    log('<br><b>Done: '+ok+' uploaded'+(skip?' · '+skip+' skipped':'')+(fail?' · '+fail+' failed':'')+'</b>');
+    log('<span class="sk">Refresh the product page to see the photos.</span>');
   }
 </script>
 </body>

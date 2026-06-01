@@ -235,24 +235,6 @@
   </span>
 </div>
 
-<!-- 직원 PIN 로그인 모달 -->
-<div class="modal-bg" id="loginModal">
-  <div class="modal">
-    <h3>직원 로그인</h3>
-    <div class="ms">IMS에서 쓰는 4자리 PIN</div>
-    <div class="dots" id="mDots"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-    <div class="merr" id="mErr"></div>
-    <div class="pad" id="mPad">
-      <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button>
-      <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button>
-      <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button>
-      <button class="fn" data-k="clear">지우기</button><button data-k="0">0</button><button class="fn" data-k="back">←</button>
-    </div>
-    <div class="cancel" id="mCancel">취소</div>
-  </div>
-</div>
-
-
 <div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb">Style #1368</span></div>
 
 <div class="product">
@@ -672,17 +654,18 @@
   init();
 
   /* ===== 직원 로그인 + 사진 수정 모드 ===== */
-  let editOn=false, mPin='';
+  let editOn=false;
   const CFG2=window.PACIFIC_CONFIG||{}, SB_URL=CFG2.SUPABASE_URL, SB_KEY=CFG2.SUPABASE_ANON_KEY, BUCKET=CFG2.IMAGE_BUCKET||'product-images';
   const el=id=>document.getElementById(id);
 
-  // 로그인 상태에 따라 헤더 버튼/바 갱신
+  // 로그인 상태에 따라 헤더 버튼/바 갱신 (이메일 로그인 + 직원 권한 확인)
   async function refreshStaff(){
-    const u = await PacificAuth.currentUser();
     const btn=el('staffBtn'), bar=el('staffBar');
-    if(u){
+    let staff=null;
+    try{ staff = await PacificAuth.currentStaff(); }catch(e){}
+    if(staff){
       if(btn) btn.style.display='none';
-      if(bar){ bar.classList.add('show'); el('staffName').textContent=u.name+' ('+u.role+')'; }
+      if(bar){ bar.classList.add('show'); el('staffName').textContent=staff.name+' ('+staff.role+')'; }
     }else{
       if(btn) btn.style.display='';
       if(bar) bar.classList.remove('show');
@@ -691,21 +674,10 @@
   }
   refreshStaff();
 
-  // 헤더 "직원 로그인" → 모달 열기
-  if(el('staffBtn')) el('staffBtn').addEventListener('click',()=>{ mPin=''; renderMDots(); el('mErr').textContent=''; el('loginModal').classList.add('show'); });
-  if(el('mCancel')) el('mCancel').addEventListener('click',()=>el('loginModal').classList.remove('show'));
-
-  function renderMDots(){ [...el('mDots').children].forEach((d,i)=>d.className='dot'+(i<mPin.length?' filled':'')); }
-  async function mSubmit(){
-    try{ await PacificAuth.login(mPin); el('loginModal').classList.remove('show'); await refreshStaff(); }
-    catch(e){ el('mErr').textContent=e.message; mPin=''; renderMDots(); }
-  }
-  if(el('mPad')) el('mPad').addEventListener('click',e=>{
-    const b=e.target.closest('button'); if(!b) return; const k=b.dataset.k;
-    el('mErr').textContent='';
-    if(k==='clear') mPin=''; else if(k==='back') mPin=mPin.slice(0,-1);
-    else if(/\d/.test(k)&&mPin.length<4) mPin+=k;
-    renderMDots(); if(mPin.length===4) mSubmit();
+  // 헤더 "직원 로그인" → 로그인 화면으로 (로그인 후 이 제품 화면으로 복귀)
+  if(el('staffBtn')) el('staffBtn').addEventListener('click',()=>{
+    const back = 'epacific-product.html' + location.search;
+    location.href = 'epacific-login.html?next=' + encodeURIComponent(back);
   });
 
   // 수정 모드 토글

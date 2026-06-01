@@ -215,7 +215,8 @@
         token:data.access_token, userId:data.user&&data.user.id, email:data.user&&data.user.email
       })); }catch(e){}
       lmsg('✓ 로그인됐어요. 이동 중…','ok');
-      setTimeout(()=>{ location.href='epacific-timeless.html'; }, 1000);
+      const next = new URLSearchParams(location.search).get('next');
+      setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, 1000);
     }catch(e){
       lmsg('로그인 실패: '+e.message,'err');
       btn.disabled=false; btn.textContent='Log in →';

@@ -1,46 +1,50 @@
 /* =====================================================================
-   PACIFIC SPORTS — 관리자 인증 (pacific-admin-auth.js) · PIN 방식
+   PACIFIC SPORTS — 직원 권한 (pacific-admin-auth.js) · 이메일 로그인 기반
    ---------------------------------------------------------------------
-   IMS와 같은 4자리 PIN(employees.pin)으로 로그인.
-   PIN은 절대 클라이언트로 노출되지 않음 — Supabase 함수 verify_admin_pin()이
-   "맞는지만" 확인해서 이름/역할만 돌려줌. active한 admin/supervisor만 통과.
+   로그인은 epacific-login.html에서 이메일+비밀번호(Supabase Auth)로 함.
+   여기서는 "지금 로그인한 사람이 수정 권한 있는 직원인지"만 판단.
+   허용 role(user_roles): owner / accounting / sales.
+
+   세션은 sessionStorage 'pacific_user' 에 저장됨 (로그인 화면이 저장):
+     { token, userId, email }
+   여기에 role 을 확인해서 staff 여부를 알려줌.
    ===================================================================== */
 window.PacificAuth = (function () {
   const CFG = window.PACIFIC_CONFIG || {};
   const URL = CFG.SUPABASE_URL, KEY = CFG.SUPABASE_ANON_KEY;
-  const SS_KEY = 'pacific_admin_session';
+  const STAFF_ROLES = ['owner', 'accounting', 'sales'];
+  const SS_KEY = 'pacific_user';
 
-  function _save(s){ try{ sessionStorage.setItem(SS_KEY, JSON.stringify(s)); }catch(e){} }
-  function _get(){ try{ return JSON.parse(sessionStorage.getItem(SS_KEY)||'null'); }catch(e){ return null; } }
-  function _clear(){ try{ sessionStorage.removeItem(SS_KEY); }catch(e){} }
+  function _session(){ try{ return JSON.parse(sessionStorage.getItem(SS_KEY)||'null'); }catch(e){ return null; } }
+  function logout(){ try{ sessionStorage.removeItem(SS_KEY); }catch(e){} }
 
-  // PIN 로그인 — verify_admin_pin 함수 호출 (PIN은 서버에서만 비교)
-  async function login(pin){
-    pin = String(pin || '').trim();
-    if(!/^\d{4}$/.test(pin)) throw new Error('PIN은 4자리 숫자예요.');
-    const r = await fetch(URL + '/rest/v1/rpc/verify_admin_pin', {
-      method:'POST',
-      headers:{ apikey:KEY, Authorization:'Bearer '+KEY, 'Content-Type':'application/json' },
-      body: JSON.stringify({ input_pin: pin })
-    });
-    if(!r.ok) throw new Error('확인 실패: ' + r.status);
-    const rows = await r.json();
-    if(!rows || !rows.length) throw new Error('PIN이 맞지 않거나 권한이 없어요.');
-    const session = { name: rows[0].name, role: rows[0].role, ts: Date.now() };
-    _save(session);
-    return session;
+  // 로그인한 사용자의 role 조회 (본인 토큰으로 user_roles)
+  async function _fetchRole(s){
+    if(!s || !s.userId || !s.token) return null;
+    try{
+      const r = await fetch(URL + '/rest/v1/user_roles?user_id=eq.' + s.userId + '&select=role,full_name',
+        { headers:{ apikey:KEY, Authorization:'Bearer '+s.token } });
+      if(!r.ok) return null;
+      const rows = await r.json();
+      return rows[0] || null;
+    }catch(e){ return null; }
   }
 
-  async function currentUser(){ return _get(); }
-
-  async function requireAdmin(loginPage){
-    const s = _get();
-    if(!s){ location.href = (loginPage||'admin-login.html') + '?next=' + encodeURIComponent(location.pathname.split('/').pop()); return null; }
+  // 현재 로그인 사용자 (로그인 안 했으면 null)
+  async function currentUser(){
+    const s = _session();
+    if(!s) return null;
     return s;
   }
 
-  function logout(){ _clear(); }
-  function authHeaders(){ return { apikey:KEY, Authorization:'Bearer '+KEY }; }
+  // 수정 권한 있는 직원인지 확인 → {email, role, name} 또는 null
+  async function currentStaff(){
+    const s = _session();
+    if(!s) return null;
+    const roleRow = await _fetchRole(s);
+    if(!roleRow || !STAFF_ROLES.includes(roleRow.role)) return null;
+    return { email:s.email, role:roleRow.role, name:roleRow.full_name || s.email, token:s.token, userId:s.userId };
+  }
 
-  return { login, currentUser, requireAdmin, logout, authHeaders };
+  return { currentUser, currentStaff, logout, STAFF_ROLES };
 })();

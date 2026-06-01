@@ -595,41 +595,31 @@
   const swEl=document.getElementById('thumbs');
   const swLabel=document.getElementById('swLabel');
 
-  let lockedColor=null;  // 클릭으로 고정된 색
-  function render(c){
+  function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
-  // 고정 (클릭): 스크롤해도 안 바뀜
-  function lockMain(c){ lockedColor=c; render(c); }
-  // 미리보기 (hover): 떼면 고정된 색으로 복귀
-  function previewMain(c){ render(c); }
-  function restore(){ if(lockedColor) render(lockedColor); }
-
   const firstWithImg = colors.find(c=>c.img) || colors[0];
-  lockMain(firstWithImg);
-  _setMainFn = lockMain;   // 주문 그리드 클릭 → 고정
+  setMain(firstWithImg);
+  _setMainFn = setMain;
 
-  // 색상 칩: hover=미리보기, click=고정
+  // 색상 칩: 클릭으로만 바뀜 (hover 미리보기 없음 — 깜빡임 방지)
   colors.forEach(c=>{
     const sw=document.createElement('button');
     sw.className='sw'; sw.dataset.name=c.name; sw.title=c.name;
     sw.style.background=c.hex;
-    sw.addEventListener('mouseenter',()=>previewMain(c));
-    sw.addEventListener('click',()=>lockMain(c));
+    sw.addEventListener('click',()=>setMain(c));
     swEl.appendChild(sw);
   });
-  // 칩 영역에서 마우스가 벗어나면 고정된 색으로 복귀
-  swEl.addEventListener('mouseleave',restore);
 
-  // 주문 그리드의 색상 사진/이름 클릭 → 왼쪽 큰 사진 고정
-  const rb=document.getElementById('rowsBody');
+  // 주문 그리드의 색상 사진/이름 클릭 → 왼쪽 큰 사진 변경
+  const rb=document.getElementById('rows');
   if(rb) rb.addEventListener('click',e=>{
     const cell=e.target.closest('.colcell'); if(!cell) return;
     const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
     const c=colors.find(x=>x.name===name);
-    if(c) lockMain(c);
+    if(c) setMain(c);
   });
   }
 

@@ -52,22 +52,22 @@
   .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
-  .product{max-width:1280px;margin:0 auto;padding:24px 30px 70px;display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:start}
+  .product{max-width:1400px;margin:0 auto;padding:24px 30px 70px;display:grid;grid-template-columns:1.45fr 1fr;gap:54px;align-items:start}
 
-  /* gallery — 큰 메인 사진 + 아래 색상 칩 그리드 */
+  /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   .gallery{position:sticky;top:104px;width:100%;min-width:0}
-  .main-img{width:100%;aspect-ratio:1/1.08;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
+  .main-img{width:100%;aspect-ratio:1/1.1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:18px}
-  .main-img #mainImg svg{width:62%;height:62%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
+  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:10px}
+  .main-img #mainImg svg{width:70%;height:70%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
   .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
-  /* 색상 칩 그리드: 작은 칩 + 색 이름, 마우스 올리면 메인 사진 바뀜 */
-  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px 12px;max-height:340px;overflow-y:auto;padding-right:4px}
-  .sw{display:flex;align-items:center;gap:9px;padding:5px 7px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:.12s}
-  .sw:hover,.sw.active{background:var(--accent-soft);border-color:#dce4da}
-  .sw .swc{width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid var(--line);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
-  .sw .swc img{width:100%;height:100%;object-fit:contain}
-  .sw .swn{font-size:12.5px;font-weight:500;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
+  .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px}
+  .sw-label b{color:var(--ink);font-weight:600}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:8px}
+  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);overflow:hidden;background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
+  .sw img{width:100%;height:100%;object-fit:cover}
+  .sw:hover,.sw.active{transform:scale(1.12);border-color:var(--accent);box-shadow:0 2px 8px rgba(28,28,26,.18);z-index:1}
   .thumbs{display:flex;gap:10px}
   .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
   .thumbs .t img{width:100%;height:100%;object-fit:contain;padding:5px}
@@ -253,6 +253,7 @@
       <div class="tag">BCI Certified</div>
       <div id="mainImg"></div>
     </div>
+    <div class="sw-label" id="swLabel"></div>
     <div class="swatches" id="thumbs"></div>
   </div>
 
@@ -593,27 +594,25 @@
   if(!colors || !colors.length) return;
   const mainImg=document.getElementById('mainImg');
   const swEl=document.getElementById('thumbs');
+  const swLabel=document.getElementById('swLabel');
 
-  // 큰 메인 사진 (사진 있으면 사진, 없으면 SVG)
   function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
+    if(swLabel) swLabel.innerHTML = '색상: <b>'+c.name+'</b>';
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
-  // 첫 화면: 사진 있는 색 우선, 없으면 첫 색
   const firstWithImg = colors.find(c=>c.img) || colors[0];
   setMain(firstWithImg);
   _setMainFn = setMain;
 
-  // 아래: 전체 색상을 칩+이름으로
+  // 색상 동그라미 칩 격자 (사진 있으면 사진, 없으면 색). 마우스 올리면 메인 바뀜
   colors.forEach(c=>{
-    const sw=document.createElement('div');
-    sw.className='sw'; sw.dataset.name=c.name;
-    const chip = c.img
-      ? `<span class="swc"><img src="${c.img}" alt="${c.name}"></span>`
-      : `<span class="swc" style="background:${c.hex}"></span>`;
-    sw.innerHTML=`${chip}<span class="swn">${c.name}</span>`;
+    const sw=document.createElement('button');
+    sw.className='sw'; sw.dataset.name=c.name; sw.title=c.name;
+    sw.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : '';
+    if(!c.img) sw.style.background=c.hex;
     const activate=()=>setMain(c);
-    sw.addEventListener('mouseenter',activate);  // 마우스 올리면 메인 사진 바뀜
+    sw.addEventListener('mouseenter',activate);
     sw.addEventListener('click',activate);
     swEl.appendChild(sw);
   });

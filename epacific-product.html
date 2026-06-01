@@ -52,22 +52,21 @@
   .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
-  .product{max-width:1400px;margin:0 auto;padding:24px 30px 70px;display:grid;grid-template-columns:1.45fr 1fr;gap:54px;align-items:start}
+  .product{max-width:1500px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.6fr 1fr;gap:50px;align-items:start}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   .gallery{position:sticky;top:104px;width:100%;min-width:0}
-  .main-img{width:100%;aspect-ratio:1/1.1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
+  .main-img{width:100%;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:10px}
+  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:4px}
   .main-img #mainImg svg{width:70%;height:70%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
   .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
   /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
   .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px}
   .sw-label b{color:var(--ink);font-weight:600}
   .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:8px}
-  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);overflow:hidden;background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
-  .sw img{width:100%;height:100%;object-fit:cover}
-  .sw:hover,.sw.active{transform:scale(1.12);border-color:var(--accent);box-shadow:0 2px 8px rgba(28,28,26,.18);z-index:1}
+  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
+  .sw:hover,.sw.active{transform:scale(1.12);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 2px 8px rgba(28,28,26,.18);z-index:1}
   .thumbs{display:flex;gap:10px}
   .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
   .thumbs .t img{width:100%;height:100%;object-fit:contain;padding:5px}
@@ -250,7 +249,6 @@
   <!-- GALLERY -->
   <div class="gallery rise">
     <div class="main-img">
-      <div class="tag">BCI Certified</div>
       <div id="mainImg"></div>
     </div>
     <div class="sw-label" id="swLabel"></div>
@@ -605,12 +603,11 @@
   setMain(firstWithImg);
   _setMainFn = setMain;
 
-  // 색상 동그라미 칩 격자 (사진 있으면 사진, 없으면 색). 마우스 올리면 메인 바뀜
+  // 색상 동그라미 칩 격자 (색으로 꽉 채움). 마우스 올리면 위 큰 사진 바뀜
   colors.forEach(c=>{
     const sw=document.createElement('button');
     sw.className='sw'; sw.dataset.name=c.name; sw.title=c.name;
-    sw.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : '';
-    if(!c.img) sw.style.background=c.hex;
+    sw.style.background=c.hex;
     const activate=()=>setMain(c);
     sw.addEventListener('mouseenter',activate);
     sw.addEventListener('click',activate);

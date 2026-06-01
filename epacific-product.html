@@ -354,6 +354,12 @@
   /* 색상 셀 위 사진 편집 오버레이 (수정모드일 때만) */
   .cimg{position:relative}
   .editmode .cimg .editov{display:flex}
+  /* 수정모드: 사이즈 헤더 켜기/끄기 */
+  .szh-edit{position:relative;border-radius:8px 8px 0 0;background:var(--accent-soft)}
+  .szh-edit::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
+  .szh-edit.szh-off{background:#f0efe9;color:var(--faint);text-decoration:line-through;opacity:.6}
+  .szh-edit.szh-off::after{content:'+';color:var(--faint);text-decoration:none}
+  td.size-off{opacity:.4}
   .cimg .editov{display:none;position:absolute;inset:0;background:rgba(61,90,64,.78);color:#fff;font-size:9px;font-weight:600;align-items:center;justify-content:center;text-align:center;cursor:pointer;border-radius:inherit;line-height:1.2}
   .cimg .editov.dragover{background:rgba(61,90,64,.95);outline:2px dashed #fff;outline-offset:-3px}
   /* 로그인 모달 */
@@ -374,7 +380,7 @@
 </style>
 <script>
   // 카탈로그·재고는 pacific-data.js 에서 불러옵니다 (init()에서 채움)
-  let sizes=[], colors=[], casePer={}, stockMap={}, product=null, currentStyle='1368';
+  let sizes=[], allSizes=[], hiddenSizes=[], colors=[], casePer={}, stockMap={}, product=null, currentStyle='1368';
 
   // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
 
@@ -427,49 +433,75 @@
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span><span class="cn">${c.name}</span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
-    const cells=sizes.map((s,i)=>{
-      const avail=st[i];
+    // 수정모드면 전체 사이즈, 평소엔 보이는 사이즈만. 재고는 사이즈 이름으로 찾음(allSizes 순서)
+    const showList = editOn ? allSizes : sizes;
+    const cells=showList.map((s)=>{
+      const stIdx=allSizes.indexOf(s);
+      const avail=stIdx>=0 ? (st[stIdx]||0) : 0;
       const out=avail===0;
+      const offCol = editOn && hiddenSizes.includes(s);  // 수정모드에서 꺼진 열 흐리게
       const stockHtml = out
         ? `<span class="stock out">Out of<br>stock</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
-      return `<td data-si="${i}" class="${out?'is-out':''}"><div class="cellwrap">`+
+      return `<td data-si="${stIdx}" data-size="${s}" class="${out?'is-out':''}${offCol?' size-off':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
         stockHtml+`</div></td>`;
     }).join('');
     tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
     rowsBody.appendChild(tr);
-    tr.querySelectorAll('input').forEach((inp,idx)=>inp.addEventListener('input',()=>{
-      const avail=st[idx];
-      let q=parseInt(inp.value)||0;
-      if(q>avail){ q=avail; inp.value=avail||''; }
-      inp.classList.toggle('has',q>0);
-      tr.classList.toggle('active-row',[...tr.querySelectorAll('input')].some(i=>(parseInt(i.value)||0)>0));
-      recalc();
-    }));
+    tr.querySelectorAll('input').forEach((inp)=>{
+      const td=inp.closest('td'); const stIdx=parseInt(td.getAttribute('data-si'));
+      inp.addEventListener('input',()=>{
+        const avail=stIdx>=0 ? (st[stIdx]||0) : 0;
+        let q=parseInt(inp.value)||0;
+        if(q>avail){ q=avail; inp.value=avail||''; }
+        inp.classList.toggle('has',q>0);
+        tr.classList.toggle('active-row',[...tr.querySelectorAll('input')].some(i=>(parseInt(i.value)||0)>0));
+        recalc();
+      });
+    });
   }
 
-  // 사이즈 헤더를 product.sizes 에 맞춰 동적으로 채움
+  // 사이즈 헤더를 채움 (수정모드면 전체+토글, 평소엔 보이는 것만)
   function renderSizeHeaders(){
     const thColor=document.getElementById('thColor');
     if(!thColor) return;
     const headRow=thColor.parentElement;
-    // 기존 동적 사이즈 th 제거 (szh 클래스)
     headRow.querySelectorAll('th.szh').forEach(th=>th.remove());
     const piecesTh=headRow.querySelector('th:last-child'); // Pieces
-    sizes.forEach(s=>{
+    // 수정모드+직원이면 전체 사이즈(숨긴 것 포함)에 토글, 아니면 보이는 사이즈만
+    const list = (editOn ? allSizes : sizes);
+    list.forEach(s=>{
       const th=document.createElement('th'); th.className='szh'; th.textContent=s;
+      if(editOn){
+        const off=hiddenSizes.includes(s);
+        th.classList.add('szh-edit'); if(off) th.classList.add('szh-off');
+        th.title = off ? 'Hidden — click to show' : 'Shown — click to hide';
+        th.style.cursor='pointer';
+        th.addEventListener('click',()=>toggleSize(s));
+      }
       headRow.insertBefore(th, piecesTh);
     });
-    // 케이스 안내 문구 + 칩 업데이트
     const note=document.getElementById('caseNote');
     if(note){
-      const big=sizes.filter(s=>casePer[s]===48).join('·');
-      const std=sizes.filter(s=>casePer[s]===72).join('–').replace(/·/g,'–');
       note.innerHTML=`Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL+ 1 case = 48 pcs · see <b>Size Guide</b> above for measurements`;
     }
     const chip=document.getElementById('sizeChip');
     if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
+  }
+
+  // 사이즈 켜기/끄기 (직원 수정모드)
+  async function toggleSize(s){
+    if(hiddenSizes.includes(s)) hiddenSizes = hiddenSizes.filter(x=>x!==s);
+    else hiddenSizes = [...hiddenSizes, s];
+    // 보이는 사이즈 다시 계산 + 화면 다시 그림
+    sizes = allSizes.filter(x=>!hiddenSizes.includes(x));
+    renderSizeHeaders();
+    buildAllRows();
+    recalc();
+    // 저장
+    const ok=await saveHiddenSizes(currentStyle, hiddenSizes);
+    if(!ok) alert('Could not save. Please check your connection and try again.');
   }
 
   // 색상마다 SC줄 + CA줄 두 줄 생성
@@ -648,6 +680,26 @@
   });
 
   // ── 데이터 로드 후 화면 구성 ──────────────────────────────
+  // ── 스타일별 숨긴 사이즈 (style_settings 테이블) ──
+  const _SBcfg=window.PACIFIC_CONFIG||{};
+  async function loadHiddenSizes(style){
+    try{
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes',
+        {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
+      if(!r.ok) return [];
+      const d=await r.json();
+      return (d&&d[0]&&Array.isArray(d[0].hidden_sizes))?d[0].hidden_sizes:[];
+    }catch(e){ return []; }
+  }
+  async function saveHiddenSizes(style,hidden){
+    const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:style,hidden_sizes:hidden,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
+
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
@@ -658,7 +710,9 @@
       const STYLE = currentStyle;
       product   = await PacificData.getProduct(STYLE);
       if(!product){ throw new Error('Style '+STYLE+' not found.'); }
-      sizes     = product.sizes;
+      allSizes  = product.sizes;                  // IMS에 있는 전체 사이즈
+      hiddenSizes = await loadHiddenSizes(STYLE);  // 직원이 숨긴 사이즈
+      sizes     = allSizes.filter(s=>!hiddenSizes.includes(s));  // 손님이 보는 사이즈
       colors    = product.colors;
       casePer   = product.casePer || cfg.casePer;
       stockMap  = await PacificData.getInventory(STYLE, product);
@@ -713,6 +767,10 @@
     document.body.classList.toggle('editmode',editOn);
     el('editToggle').classList.toggle('on',editOn);
     el('editToggle').textContent=editOn?'Done editing':'Edit Photos';
+    // 수정모드에선 사이즈 헤더에 켜기/끄기 토글이 나타나도록 다시 그림
+    renderSizeHeaders();
+    buildAllRows();
+    recalc();
   });
   // 로그아웃
   if(el('staffLogout')) el('staffLogout').addEventListener('click',()=>{ PacificAuth.logout(); refreshStaff(); });

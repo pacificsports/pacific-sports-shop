@@ -240,8 +240,18 @@
   <span>· Turn on Edit to manage photos and show/hide sizes</span>
   <span class="sp">
     <button class="toggle" id="editToggle">Edit</button>
+    <button id="bulkBtn" style="display:none">Bulk upload photos</button>
     <button id="staffLogout">Log out</button>
   </span>
+</div>
+<input type="file" id="bulkInput" accept="image/*" multiple style="display:none">
+<!-- 일괄 업로드 진행 패널 (Edit + Bulk 시) -->
+<div id="bulkPanel" style="display:none;position:fixed;right:20px;bottom:20px;width:330px;max-height:60vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px -20px rgba(28,28,26,.4);padding:16px 18px;z-index:400;font-size:13px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+    <b id="bulkTitle">Uploading…</b>
+    <button id="bulkClose" style="border:none;background:none;font-size:18px;cursor:pointer;color:var(--faint)">×</button>
+  </div>
+  <div id="bulkLog" style="line-height:1.7"></div>
 </div>
 
 <div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb">Style #1368</span></div>
@@ -767,6 +777,7 @@
     document.body.classList.toggle('editmode',editOn);
     el('editToggle').classList.toggle('on',editOn);
     el('editToggle').textContent=editOn?'Done editing':'Edit';
+    if(el('bulkBtn')) el('bulkBtn').style.display = editOn ? '' : 'none';
   });
   // 로그아웃
   if(el('staffLogout')) el('staffLogout').addEventListener('click',()=>{ PacificAuth.logout(); refreshStaff(); });
@@ -796,19 +807,18 @@
   }
   async function uploadPhoto(file, color, ov){
     if(!file.type.startsWith('image/')){ alert('Only image files are allowed.'); return; }
-    // 로그인한 직원의 토큰으로 업로드 (DB가 직원만 허용하도록 잠겨있음)
+    // 로그인 확인 (이 도구는 직원만 접근), 업로드는 anon 정책 사용 (admin 도구와 동일 방식)
     let token=null;
     try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
     if(!token){ alert('Session expired. Please log in again.'); return; }
     const path=safeName(color,file); const prev=ov.textContent; ov.textContent='Uploading…';
-    const H={apikey:SB_KEY,Authorization:'Bearer '+token};
+    const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
     try{
-      // 1) 파일을 Storage에 업로드. 이미 있으면 덮어쓰기(PUT), 처음이면 만들기(POST)
+      // 1) 파일을 Storage에 업로드 (POST upsert 먼저, 안되면 PUT)
       const objUrl = SB_URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path);
-      let up=await fetch(objUrl, {method:'PUT', headers:{...H,'Content-Type':file.type}, body:file});
-      if(up.status===400 || up.status===404){
-        // 아직 없는 파일이면 PUT이 막힐 수 있어 POST로 새로 생성
-        up=await fetch(objUrl, {method:'POST', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file});
+      let up=await fetch(objUrl, {method:'POST', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file});
+      if(!up.ok){
+        up=await fetch(objUrl, {method:'PUT', headers:{...H,'Content-Type':file.type,'x-upsert':'true'}, body:file});
       }
       if(!up.ok) throw new Error('Upload '+up.status+': '+(await up.text()).slice(0,120));
 
@@ -841,6 +851,83 @@
       ov.innerHTML='Replace<br>photo';
     }catch(e){ ov.textContent=prev; alert('Failed: '+e.message); }
   }
+
+  /* ===== 일괄 업로드 (Edit 모드) ===== */
+  function normColor(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function parseFileName(filename){
+    const base=filename.replace(/\.[^.]+$/,'');
+    const m=base.match(/^(\d{3,5}[A-Za-z]?)[-_\s]+(.+)$/);  // 스타일번호-색상
+    if(m) return { style:m[1], colorText:m[2] };
+    // 스타일번호 없이 "navy.jpg" 처럼 색만 있으면 현재 스타일로 간주
+    return { style: currentStyle, colorText: base };
+  }
+  function blog(html){ const l=el('bulkLog'); if(l){ l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; } }
+
+  async function bulkUpload(files){
+    let token=null;
+    try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
+    if(!token){ alert('Session expired. Please log in again.'); return; }
+    el('bulkPanel').style.display='block';
+    el('bulkLog').innerHTML='';
+    // 현재 스타일 색상 → 정규화 매칭표
+    const byNorm={}; colors.forEach(c=>{ byNorm[normColor(c.raw||c.name)]=c; });
+    const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
+    let ok=0, skip=0, fail=0, done=0;
+    for(const file of files){
+      done++;
+      el('bulkTitle').textContent='Uploading… '+done+' / '+files.length;
+      if(!file.type.startsWith('image/')){ skip++; blog('<span style="color:#999">— '+file.name+' (not an image, skipped)</span>'); continue; }
+      const {style, colorText}=parseFileName(file.name);
+      // 다른 스타일 파일이면 그 스타일로 올림(색 매칭은 현재 스타일 표만 있으니 이름 그대로)
+      const matched = (style===currentStyle) ? (byNorm[normColor(colorText)]) : null;
+      const colorName = matched ? (matched.raw||matched.name) : colorText;
+      try{
+        const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+        const path=style+'/'+normColor(colorName).toLowerCase()+'.'+ext;
+        const objUrl=SB_URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path);
+        let up=await fetch(objUrl,{method:'POST',headers:{...H,'Content-Type':file.type,'x-upsert':'true'},body:file});
+        if(!up.ok) up=await fetch(objUrl,{method:'PUT',headers:{...H,'Content-Type':file.type,'x-upsert':'true'},body:file});
+        if(!up.ok) throw new Error('upload '+up.status);
+        // DB 연결
+        const cf=(colorName===null||colorName==='')?'color=is.null':'color=eq.'+encodeURIComponent(colorName);
+        const fr=await fetch(SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(style)+'&'+cf+'&select=id',{headers:H});
+        const ex=await fr.json();
+        if(ex&&ex.length){
+          await fetch(SB_URL+'/rest/v1/product_images?id=eq.'+ex[0].id,{method:'PATCH',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({image_path:path})});
+        }else{
+          await fetch(SB_URL+'/rest/v1/product_images',{method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({style_number:style,color:colorName,image_path:path})});
+        }
+        ok++;
+        blog('<span style="color:var(--accent)">✓ '+style+' · '+colorName+'</span>');
+        // 현재 스타일이고 화면에 그 색이 있으면 썸네일 즉시 교체
+        if(style===currentStyle && matched){
+          const url=SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+path+'?t='+Date.now();
+          document.querySelectorAll('#rows .colcell').forEach(cell=>{
+            const nm=cell.querySelector('.cn'); if(nm && nm.textContent.trim()===matched.name){
+              const cimg=cell.querySelector('.cimg');
+              if(cimg){ cimg.querySelector('img')?.remove(); cimg.querySelector('svg')?.remove();
+                cimg.insertAdjacentHTML('afterbegin',`<img src="${url}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`); }
+            }
+          });
+          matched.img=url;
+        }
+      }catch(e){ fail++; blog('<span style="color:#b04">✗ '+file.name+' — '+e.message+'</span>'); }
+    }
+    el('bulkTitle').textContent='Done: '+ok+' uploaded'+(skip?' · '+skip+' skipped':'')+(fail?' · '+fail+' failed':'');
+    blog('<span style="color:#999">Refresh to see all changes.</span>');
+  }
+
+  // Bulk 버튼 → 파일 고르기 / 드롭
+  if(el('bulkBtn')) el('bulkBtn').addEventListener('click',()=>el('bulkInput').click());
+  if(el('bulkInput')) el('bulkInput').addEventListener('change',e=>{ if(e.target.files.length) bulkUpload([...e.target.files]); e.target.value=''; });
+  if(el('bulkClose')) el('bulkClose').addEventListener('click',()=>el('bulkPanel').style.display='none');
+  // Edit 모드일 때 페이지 어디든 사진 여러 장 드롭하면 일괄 업로드
+  document.addEventListener('dragover',e=>{ if(editOn){ e.preventDefault(); } });
+  document.addEventListener('drop',e=>{
+    if(!editOn) return;
+    const fs=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
+    if(fs.length>1){ e.preventDefault(); bulkUpload(fs); }  // 2장 이상이면 일괄
+  });
 </script>
 </body>
 </html>

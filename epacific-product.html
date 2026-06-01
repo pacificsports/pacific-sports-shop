@@ -718,14 +718,33 @@
     const path=safeName(color,file); const prev=ov.textContent; ov.textContent='올리는 중…';
     const H={apikey:SB_KEY,Authorization:'Bearer '+SB_KEY};
     try{
+      // 1) 파일을 Storage에 업로드 (이미 있으면 덮어쓰기)
       const up=await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path)+'?upsert=true',
         {method:'POST',headers:{...H,'Content-Type':file.type,'x-upsert':'true'},body:file});
       if(!up.ok) throw new Error('업로드 '+up.status);
-      const r=await fetch(SB_URL+'/rest/v1/product_images?on_conflict=style_number,color',
-        {method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-         body:JSON.stringify({style_number:currentStyle,color:color,image_path:path})});
-      if(!r.ok) throw new Error('저장 '+r.status);
-      // 화면의 해당 색상 썸네일을 새 사진으로 교체
+
+      // 2) 이 스타일+색의 기존 기록이 있는지 확인
+      const colorFilter = (color===null||color===undefined||color==='')
+        ? 'color=is.null' : 'color=eq.'+encodeURIComponent(color);
+      const findUrl = SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(currentStyle)+'&'+colorFilter+'&select=id';
+      const fr=await fetch(findUrl,{headers:H});
+      if(!fr.ok) throw new Error('조회 '+fr.status);
+      const existing=await fr.json();
+
+      // 3) 있으면 수정(PATCH), 없으면 추가(POST)
+      let r;
+      if(existing && existing.length){
+        r=await fetch(SB_URL+'/rest/v1/product_images?id=eq.'+existing[0].id,
+          {method:'PATCH',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},
+           body:JSON.stringify({image_path:path})});
+      }else{
+        r=await fetch(SB_URL+'/rest/v1/product_images',
+          {method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},
+           body:JSON.stringify({style_number:currentStyle,color:color,image_path:path})});
+      }
+      if(!r.ok) throw new Error('저장 '+r.status+': '+(await r.text()).slice(0,120));
+
+      // 4) 화면의 해당 색상 썸네일을 새 사진으로 교체
       const url=SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+path+'?t='+Date.now();
       const cell=ov.closest('.cimg');
       if(cell){ cell.querySelector('img')?.remove(); cell.querySelector('svg')?.remove();

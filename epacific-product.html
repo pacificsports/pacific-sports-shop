@@ -237,9 +237,9 @@
 <!-- 직원 수정 바 (로그인 시 표시) -->
 <div class="staff-bar" id="staffBar">
   <b id="staffName">Staff</b>
-  <span>· Turn on photo edit mode to upload images on each color</span>
+  <span>· Turn on Edit to manage photos and show/hide sizes</span>
   <span class="sp">
-    <button class="toggle" id="editToggle">Edit Photos</button>
+    <button class="toggle" id="editToggle">Edit</button>
     <button id="staffLogout">Log out</button>
   </span>
 </div>
@@ -354,12 +354,15 @@
   /* 색상 셀 위 사진 편집 오버레이 (수정모드일 때만) */
   .cimg{position:relative}
   .editmode .cimg .editov{display:flex}
-  /* 수정모드: 사이즈 헤더 켜기/끄기 */
-  .szh-edit{position:relative;border-radius:8px 8px 0 0;background:var(--accent-soft)}
-  .szh-edit::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
-  .szh-edit.szh-off{background:#f0efe9;color:var(--faint);text-decoration:line-through;opacity:.6}
-  .szh-edit.szh-off::after{content:'+';color:var(--faint);text-decoration:none}
-  td.size-off{opacity:.4}
+  /* 숨긴 사이즈 열: 손님에겐 완전히 숨김 */
+  .size-hidden{display:none}
+  /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
+  .editmode .size-hidden{display:table-cell;opacity:.35}
+  /* 수정모드: 사이즈 헤더에 켜기/끄기 표시 */
+  .editmode th.szh{cursor:pointer;position:relative;background:var(--accent-soft);border-radius:8px 8px 0 0}
+  .editmode th.szh::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
+  .editmode th.szh.size-hidden{background:#f0efe9}
+  .editmode th.szh.size-hidden::after{content:'+ add';color:var(--faint);font-size:9px}
   .cimg .editov{display:none;position:absolute;inset:0;background:rgba(61,90,64,.78);color:#fff;font-size:9px;font-weight:600;align-items:center;justify-content:center;text-align:center;cursor:pointer;border-radius:inherit;line-height:1.2}
   .cimg .editov.dragover{background:rgba(61,90,64,.95);outline:2px dashed #fff;outline-offset:-3px}
   /* 로그인 모달 */
@@ -433,17 +436,16 @@
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span><span class="cn">${c.name}</span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
-    // 수정모드면 전체 사이즈, 평소엔 보이는 사이즈만. 재고는 사이즈 이름으로 찾음(allSizes 순서)
-    const showList = editOn ? allSizes : sizes;
-    const cells=showList.map((s)=>{
+    // 항상 전체 사이즈를 그려두고, 숨김/표시는 CSS로 (Edit 토글 시 재생성 안 함 → 빠름)
+    const cells=allSizes.map((s)=>{
       const stIdx=allSizes.indexOf(s);
       const avail=stIdx>=0 ? (st[stIdx]||0) : 0;
       const out=avail===0;
-      const offCol = editOn && hiddenSizes.includes(s);  // 수정모드에서 꺼진 열 흐리게
+      const isHidden = hiddenSizes.includes(s);  // 숨긴 사이즈 열
       const stockHtml = out
         ? `<span class="stock out">Out of<br>stock</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
-      return `<td data-si="${stIdx}" data-size="${s}" class="${out?'is-out':''}${offCol?' size-off':''}"><div class="cellwrap">`+
+      return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
         stockHtml+`</div></td>`;
     }).join('');
@@ -462,24 +464,20 @@
     });
   }
 
-  // 사이즈 헤더를 채움 (수정모드면 전체+토글, 평소엔 보이는 것만)
+  // 사이즈 헤더: 항상 전체를 그려두고 숨김은 CSS. 수정모드면 클릭 토글.
   function renderSizeHeaders(){
     const thColor=document.getElementById('thColor');
     if(!thColor) return;
     const headRow=thColor.parentElement;
     headRow.querySelectorAll('th.szh').forEach(th=>th.remove());
     const piecesTh=headRow.querySelector('th:last-child'); // Pieces
-    // 수정모드+직원이면 전체 사이즈(숨긴 것 포함)에 토글, 아니면 보이는 사이즈만
-    const list = (editOn ? allSizes : sizes);
-    list.forEach(s=>{
-      const th=document.createElement('th'); th.className='szh'; th.textContent=s;
-      if(editOn){
-        const off=hiddenSizes.includes(s);
-        th.classList.add('szh-edit'); if(off) th.classList.add('szh-off');
-        th.title = off ? 'Hidden — click to show' : 'Shown — click to hide';
-        th.style.cursor='pointer';
-        th.addEventListener('click',()=>toggleSize(s));
-      }
+    allSizes.forEach(s=>{
+      const th=document.createElement('th');
+      const isHidden=hiddenSizes.includes(s);
+      th.className='szh szcol'+(isHidden?' size-hidden':'');
+      th.dataset.size=s;
+      th.textContent=s;
+      th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
     const note=document.getElementById('caseNote');
@@ -490,16 +488,19 @@
     if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
   }
 
-  // 사이즈 켜기/끄기 (직원 수정모드)
+  // 사이즈 켜기/끄기 — 다시 안 그리고 CSS 클래스만 토글 (빠름)
   async function toggleSize(s){
     if(hiddenSizes.includes(s)) hiddenSizes = hiddenSizes.filter(x=>x!==s);
     else hiddenSizes = [...hiddenSizes, s];
-    // 보이는 사이즈 다시 계산 + 화면 다시 그림
     sizes = allSizes.filter(x=>!hiddenSizes.includes(x));
-    renderSizeHeaders();
-    buildAllRows();
+    const hidden = hiddenSizes.includes(s);
+    // 해당 사이즈의 헤더+모든 칸에 size-hidden 클래스만 토글
+    document.querySelectorAll('.szcol').forEach(el=>{
+      if(el.getAttribute('data-size')===s) el.classList.toggle('size-hidden', hidden);
+    });
+    const chip=document.getElementById('sizeChip');
+    if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
     recalc();
-    // 저장
     const ok=await saveHiddenSizes(currentStyle, hiddenSizes);
     if(!ok) alert('Could not save. Please check your connection and try again.');
   }
@@ -525,10 +526,13 @@
     let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       let rt=0;
-      tr.querySelectorAll('input').forEach((inp,idx)=>{
+      tr.querySelectorAll('input').forEach((inp)=>{
+        const td=inp.closest('td');
+        if(td && td.classList.contains('size-hidden')) return; // 숨긴 사이즈는 합계 제외
         const q=parseInt(inp.value)||0;
         rt+=q;
-        if(casePer[sizes[idx]]===48) bigPcs+=q; else stdPcs+=q;
+        const sname=td?td.getAttribute('data-size'):null;
+        if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
       });
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
@@ -761,16 +765,12 @@
     location.href = 'epacific-login.html?next=' + encodeURIComponent(back);
   });
 
-  // 수정 모드 토글
+  // 수정 모드 토글 (행 재생성 없음 → 즉시 반응)
   if(el('editToggle')) el('editToggle').addEventListener('click',()=>{
     editOn=!editOn;
     document.body.classList.toggle('editmode',editOn);
     el('editToggle').classList.toggle('on',editOn);
-    el('editToggle').textContent=editOn?'Done editing':'Edit Photos';
-    // 수정모드에선 사이즈 헤더에 켜기/끄기 토글이 나타나도록 다시 그림
-    renderSizeHeaders();
-    buildAllRows();
-    recalc();
+    el('editToggle').textContent=editOn?'Done editing':'Edit';
   });
   // 로그아웃
   if(el('staffLogout')) el('staffLogout').addEventListener('click',()=>{ PacificAuth.logout(); refreshStaff(); });

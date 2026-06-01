@@ -119,7 +119,7 @@
     if(!SESSION) return;  // 리다이렉트 중
     try{
       styles = await PacificData.getStyles();
-      $('connWho').innerHTML = `${SESSION.email} (${SESSION.role}) · 스타일 ${styles.length}개 &nbsp; <a href="#" id="logout" style="color:var(--accent)">로그아웃</a>`;
+      $('connWho').innerHTML = `${SESSION.name} (${SESSION.role}) · 스타일 ${styles.length}개 &nbsp; <a href="#" id="logout" style="color:var(--accent)">로그아웃</a>`;
       const lo=$('logout'); if(lo) lo.addEventListener('click',e=>{e.preventDefault();PacificAuth.logout();location.href='admin-login.html';});
       fillStyleSelect(styles);
     }catch(e){

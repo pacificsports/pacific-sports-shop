@@ -263,7 +263,7 @@
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
       card.innerHTML=`
         <div class="thumb">
-          ${thumbs[p.no] ? `<img src="${thumbs[p.no]}" alt="Style ${p.no}" style="width:100%;height:100%;object-fit:cover;display:block">` : `<div class="ph">${p.no}</div>`}
+          ${thumbs[p.no] ? `<img src="${thumbs[p.no]}" alt="Style ${p.no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${p.no}</div>`}
           <div class="quick">View &amp; order →</div>
         </div>
         <div class="style-no">Style #${p.no}</div>

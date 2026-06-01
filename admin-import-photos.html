@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — 사진 가져오기</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#fbfbf9;--paper:#fff;--ink:#1c1c1a;--soft:#56564f;--faint:#8e8e85;--line:#e8e7e1;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f;--ok:#3d5a40;--body:'Geist',sans-serif;--display:'Instrument Serif',serif}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);background:var(--bg);color:var(--ink);padding:30px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:780px;margin:0 auto}
+  h1{font-family:var(--display);font-weight:400;font-size:30px;margin-bottom:6px}
+  .sub{color:var(--faint);font-size:14px;margin-bottom:24px;line-height:1.6}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:18px}
+  label{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:8px}
+  input,select{font-family:var(--body);font-size:15px;padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:var(--bg);width:100%;margin-bottom:14px}
+  button{font-family:var(--body);font-size:15px;font-weight:500;padding:12px 22px;border:none;border-radius:9px;background:var(--ink);color:#fff;cursor:pointer}
+  button:hover{background:var(--accent)}
+  button:disabled{opacity:.5;cursor:default}
+  .bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:14px 0 8px}
+  .bar>div{height:100%;background:var(--accent);width:0;transition:width .3s}
+  .log{font-size:13px;line-height:1.7;max-height:340px;overflow:auto;margin-top:12px;border-top:1px solid var(--line);padding-top:12px}
+  .log .ok{color:var(--ok)} .log .er{color:var(--err)} .log .sk{color:var(--faint)}
+  .who{font-size:13px;color:var(--faint);margin-bottom:18px}
+  .who a{color:var(--accent)}
+  .note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:12px 14px;font-size:13px;color:var(--soft);line-height:1.6;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>옛날 사이트 사진 가져오기</h1>
+  <div class="sub">옛 사이트(epacificsports.com)에 올라간 색상별 제품 사진을 새 서버로 복사하고, 색상에 자동 연결해요.</div>
+  <div class="who" id="who">확인 중…</div>
+
+  <div class="note">처음엔 <b>1368</b>만 가져와서 잘 되는지 확인해요. 잘 되면 다른 스타일도 추가할게요. 사진은 사장님 브라우저를 거쳐 새 서버(Supabase)로 복사돼요. 색상 수가 많으면 몇 분 걸릴 수 있어요.</div>
+
+  <div class="card">
+    <label>스타일 번호</label>
+    <select id="style"><option value="1368">1368 · Adult 30/1 CVC Short Sleeve (52색)</option></select>
+    <button id="startBtn">사진 가져오기 시작</button>
+    <div class="bar" id="barWrap" style="display:none"><div id="bar"></div></div>
+    <div id="count" style="font-size:13px;color:var(--soft);display:none"></div>
+    <div class="log" id="log" style="display:none"></div>
+  </div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script src="pacific-data.js"></script>
+<script>
+  const CFG=window.PACIFIC_CONFIG||{}, SB=CFG.SUPABASE_URL, KEY=CFG.SUPABASE_ANON_KEY, BUCKET=CFG.IMAGE_BUCKET||'product-images';
+  const $=id=>document.getElementById(id);
+  let SESSION=null;
+
+  // 옛 1368 색상→사진주소
+  const IMG_1368 = {"NATURAL": "https://epacificsports.com/wp-content/uploads/2022/03/NATURAL-2-800x800.jpg", "ABYSS": "https://epacificsports.com/wp-content/uploads/2022/03/ABYSS_0130.jpg", "ARTICHOKE": "https://epacificsports.com/wp-content/uploads/2022/03/ARTICHOKE_0056.jpg", "BABY BLUE": "https://epacificsports.com/wp-content/uploads/2022/03/BABY-BLUE-800x800.png", "BERMUDA": "https://epacificsports.com/wp-content/uploads/2022/03/BERMUDA_0046.jpg", "BLACK": "https://epacificsports.com/wp-content/uploads/2022/03/BLACK_0041.jpg", "BLACK PEARL": "https://epacificsports.com/wp-content/uploads/2022/03/BLACKPEARL_0237.jpg", "BROWN": "https://epacificsports.com/wp-content/uploads/2022/03/BROWN_0288.jpg", "BUTTER": "https://epacificsports.com/wp-content/uploads/2022/03/BUTTER-800x800.png", "CANARY": "https://epacificsports.com/wp-content/uploads/2022/03/CANARY_0100.jpg", "CANTALOUPE": "https://epacificsports.com/wp-content/uploads/2022/03/CANTALOUPE_0033.jpg", "CARDINAL": "https://epacificsports.com/wp-content/uploads/2022/03/CARDINAL_0264.jpg", "CHAMBRAY": "https://epacificsports.com/wp-content/uploads/2022/03/CHAMBRAY_0257.jpg", "CHARCOAL HTR": "https://epacificsports.com/wp-content/uploads/2022/03/CHARCOALHEATHER_0319-1.jpg", "CINNAMON": "https://epacificsports.com/wp-content/uploads/2022/03/CINNAMON_0009.jpg", "CLOVER": "https://epacificsports.com/wp-content/uploads/2022/03/CLOVER_0116.jpg", "FROST BLUE": "https://epacificsports.com/wp-content/uploads/2022/03/FROSTBLUE_0108.jpg", "FUTURE DUSK": "https://epacificsports.com/wp-content/uploads/2022/03/FUTURE-DUSK-800x800.png", "GREY HTR": "https://epacificsports.com/wp-content/uploads/2022/03/GREYHEATHER_0304.jpg", "HONEYCOMB": "https://epacificsports.com/wp-content/uploads/2022/03/HONEYCOMB_0148.jpg", "ICE BERG": "https://epacificsports.com/wp-content/uploads/2022/03/ICEBERG_0242.jpg", "KEY LIME": "https://epacificsports.com/wp-content/uploads/2022/03/KEY-LIME-800x800.png", "LIGHT BLUE HTR": "https://epacificsports.com/wp-content/uploads/2022/03/LIGHTBLUEHEATHER_0155.jpg", "MAKO": "https://epacificsports.com/wp-content/uploads/2022/03/MAKO_0313.jpg", "MIDNIGHT BLUE": "https://epacificsports.com/wp-content/uploads/2022/03/MIDNIGHTBLUE_0298.jpg", "MONACO BLUE": "https://epacificsports.com/wp-content/uploads/2022/03/MONACOBLUE_0084.jpg", "NAVY": "https://epacificsports.com/wp-content/uploads/2022/03/1368_NAVY_0063.jpg", "NAVY HTR": "https://epacificsports.com/wp-content/uploads/2022/03/1368_NAVYHEATHER_0141.jpg", "OLIVE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_Olive_0026.jpg", "PAPAYA": "https://epacificsports.com/wp-content/uploads/2022/03/1368_PAPAYA_0270.jpg", "PEACH ROSE": "https://epacificsports.com/wp-content/uploads/2022/03/PEACH-ROSE-800x800.png", "PEWTER": "https://epacificsports.com/wp-content/uploads/2022/03/1368_PEWTER_0123.jpg", "PINK ICE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_PINKICE_0202.jpg", "PISTACHIO": "https://epacificsports.com/wp-content/uploads/2022/03/1368_PISTACHIO_0166.jpg", "PURPLE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_PURPLE_0227.jpg", "RED HTR": "https://epacificsports.com/wp-content/uploads/2022/03/1368_REDHEATHER_0211.jpg", "RIVER GREEN": "https://epacificsports.com/wp-content/uploads/2022/03/1368_RIVERGREEN_0173.jpg", "ROOTBEER": "https://epacificsports.com/wp-content/uploads/2022/03/1368_ROOTBEER_0278.jpg", "ROYAL HTR": "https://epacificsports.com/wp-content/uploads/2022/03/1368_ROYALHEATHER_0187.jpg", "RUST": "https://epacificsports.com/wp-content/uploads/2022/03/RUST-800x800.png", "SAND": "https://epacificsports.com/wp-content/uploads/2022/03/1368_SAND_0180.jpg", "SAPPHIRE": "https://epacificsports.com/wp-content/uploads/2022/03/SAPPHIRE-800x800.png", "SEASIDE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_SEASIDE_0161.jpg", "SHADOW GREY": "https://epacificsports.com/wp-content/uploads/2022/03/1368_SHADOWGREY_0194.jpg", "SLATE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_SLATE_0019.jpg", "SMOKE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_SMOKE_0324.jpg", "TABASCO": "https://epacificsports.com/wp-content/uploads/2022/03/1368_TABASCO_0219.jpg", "TAN": "https://epacificsports.com/wp-content/uploads/2022/03/1368_TAN_0093.jpg", "TURQUOISE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_TURQUOISE_0249.jpg", "WHEAT": "https://epacificsports.com/wp-content/uploads/2022/03/1368_WHEAT_0077.jpg", "WHITE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_WHITE_0071.jpg", "WINE": "https://epacificsports.com/wp-content/uploads/2022/03/1368_WINE_0335.jpg"};
+
+  (async()=>{
+    if(!SB||!KEY){ $('who').textContent='설정 없음 (pacific-config.js 확인)'; return; }
+    // 직원 로그인 필요
+    let staff=null; try{ staff=await PacificAuth.currentStaff(); }catch(e){}
+    if(!staff){ location.href='epacific-login.html?next=admin-import-photos.html'; return; }
+    SESSION=staff;
+    $('who').innerHTML=staff.name+' ('+staff.role+') · <a href="#" id="lo">로그아웃</a>';
+    $('lo').onclick=e=>{e.preventDefault();PacificAuth.logout();location.reload();};
+  })();
+
+  function token(){ try{ return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
+  function norm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); } // 매칭용: 공백/기호/대소문자 무시
+  function log(html){ const l=$('log'); l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; }
+
+  $('startBtn').onclick=async()=>{
+    const style=$('style').value;
+    const tk=token(); if(!tk){ alert('로그인이 풀렸어요. 다시 로그인해주세요.'); return; }
+    $('startBtn').disabled=true; $('barWrap').style.display='block'; $('count').style.display='block'; $('log').style.display='block'; $('log').innerHTML='';
+
+    // 1) IMS 색상 목록 (정확한 색상명) 가져오기 — 이걸 기준으로 매칭
+    let imsColors=[];
+    try{
+      const prod=await PacificData.getProduct(style);
+      imsColors=(prod.colors||[]).map(c=>c.raw||c.name);
+    }catch(e){}
+    const imsByNorm={}; imsColors.forEach(c=>imsByNorm[norm(c)]=c);
+
+    const entries=Object.entries(IMG_1368);
+    let done=0, ok=0, skip=0, fail=0;
+    for(const [oldColor, url] of entries){
+      done++;
+      $('bar').style.width=Math.round(done/entries.length*100)+'%';
+      $('count').textContent=done+' / '+entries.length;
+      // IMS 색상명으로 매칭 (없으면 옛 색상명 그대로 사용)
+      const matched = imsByNorm[norm(oldColor)] || oldColor;
+      try{
+        // (a) 옛 사이트에서 사진 다운로드
+        const resp=await fetch(url);
+        if(!resp.ok){ throw new Error('다운로드 '+resp.status); }
+        const blob=await resp.blob();
+        const ext=(url.split('.').pop().split('?')[0]||'jpg').toLowerCase();
+        const safe=norm(matched).toLowerCase()||('c'+done);
+        const path=style+'/'+safe+'.'+ext;
+        // (b) 새 Storage에 업로드
+        const H={apikey:KEY,Authorization:'Bearer '+tk};
+        let up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
+          {method:'PUT',headers:{...H,'Content-Type':blob.type||'image/jpeg'},body:blob});
+        if(up.status===400||up.status===404)
+          up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
+            {method:'POST',headers:{...H,'Content-Type':blob.type||'image/jpeg','x-upsert':'true'},body:blob});
+        if(!up.ok) throw new Error('업로드 '+up.status);
+        // (c) DB 연결 (있으면 PATCH, 없으면 POST)
+        const find=await fetch(SB+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(style)+'&color=eq.'+encodeURIComponent(matched)+'&select=id',{headers:H});
+        const ex=await find.json();
+        if(ex&&ex.length){
+          await fetch(SB+'/rest/v1/product_images?id=eq.'+ex[0].id,{method:'PATCH',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({image_path:path})});
+        }else{
+          await fetch(SB+'/rest/v1/product_images',{method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({style_number:style,color:matched,image_path:path})});
+        }
+        ok++; log('<span class="ok">✓ '+matched+'</span>');
+      }catch(e){
+        fail++; log('<span class="er">✗ '+oldColor+' — '+e.message+'</span>');
+      }
+    }
+    log('<br><b>완료: 성공 '+ok+' · 실패 '+fail+'</b>');
+    $('startBtn').disabled=false;
+  };
+</script>
+</body>
+</html>

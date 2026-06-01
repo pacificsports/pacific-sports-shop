@@ -116,13 +116,13 @@
         const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
         const path=style+'/'+norm(matched).toLowerCase()+'.'+ext;
         const H={apikey:KEY,Authorization:'Bearer '+tk};
-        // Storage 업로드 (덮어쓰기)
+        // Storage 업로드 — POST(upsert) 먼저 (제품화면에서 성공한 방식), 안되면 PUT
         let up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
-          {method:'PUT',headers:{...H,'Content-Type':file.type||'image/jpeg'},body:file});
-        if(up.status===400||up.status===404)
+          {method:'POST',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
+        if(!up.ok)
           up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
-            {method:'POST',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
-        if(!up.ok) throw new Error('업로드 '+up.status);
+            {method:'PUT',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
+        if(!up.ok) throw new Error('업로드 '+up.status+': '+(await up.text()).slice(0,200));
         // DB 연결 (있으면 PATCH 없으면 POST)
         const find=await fetch(SB+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(style)+'&color=eq.'+encodeURIComponent(matched)+'&select=id',{headers:H});
         const ex=await find.json();

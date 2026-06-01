@@ -229,7 +229,7 @@
     <div class="h-icons">
       <button>Search</button>
       <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
-      <button id="staffBtn" style="background:transparent;border:1px solid var(--line-2);color:var(--soft-ink);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer">Staff Login</button>
+      <button id="staffBtn" onclick="location.href='epacific-login.html?next='+encodeURIComponent('epacific-product.html'+location.search)" style="background:transparent;border:1px solid var(--line-2);color:var(--soft-ink);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer">Staff Login</button>
     </div>
   </div>
 </header>
@@ -344,7 +344,7 @@
 <script src="pacific-data.js"></script>
 <style>
   /* 직원 로그인 / 사진 수정 UI */
-  .staff-bar{display:none;background:var(--accent);color:#fff;padding:8px 30px;font-size:13.5px;align-items:center;gap:14px;position:sticky;top:0;z-index:120}
+  .staff-bar{display:none;background:var(--accent);color:#fff;padding:8px 30px;font-size:13.5px;align-items:center;gap:14px;position:relative;z-index:90}
   .staff-bar.show{display:flex}
   .staff-bar b{font-weight:600}
   .staff-bar .sp{margin-left:auto;display:flex;gap:10px;align-items:center}
@@ -759,11 +759,7 @@
   }
   refreshStaff();
 
-  // 헤더 "직원 로그인" → 로그인 화면으로 (로그인 후 이 제품 화면으로 복귀)
-  if(el('staffBtn')) el('staffBtn').addEventListener('click',()=>{
-    const back = 'epacific-product.html' + location.search;
-    location.href = 'epacific-login.html?next=' + encodeURIComponent(back);
-  });
+  // (Staff Login 버튼은 inline onclick으로 동작 — 스크립트 오류와 무관하게 항상 작동)
 
   // 수정 모드 토글 (행 재생성 없음 → 즉시 반응)
   if(el('editToggle')) el('editToggle').addEventListener('click',()=>{

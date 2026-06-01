@@ -579,24 +579,47 @@
     if(!e.target.closest('.color-search')) sugBox.classList.remove('show');
   });
 
+  let _setMainFn=null;
   function setupGallery(){
   if(!colors || !colors.length) return;
-  // 갤러리: 대표 색상 4개를 큰 SVG 썸네일로, 클릭 시 메인 전환
   const mainImg=document.getElementById('mainImg');
   const thumbsEl=document.getElementById('thumbs');
-  let featured=['Natural','Black','Navy','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean); if(featured.length<4) featured=colors.slice(0,4);
-  function setMain(c){ mainImg.innerHTML=colorThumb(c,true); }
+  // 사진이 있는 색을 앞에 우선 배치, 그다음 나머지 (대표색 순서 참고)
+  const withImg=colors.filter(c=>c.img);
+  const pref=['White','Black','Navy','Natural','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean);
+  let featured=[];
+  // 사진 있는 색 우선, 없으면 대표색, 최대 5개
+  [...withImg, ...pref, ...colors].forEach(c=>{ if(c && !featured.includes(c) && featured.length<5) featured.push(c); });
+  if(!featured.length) featured=colors.slice(0,4);
+
+  // 큰 사진: 사진 있으면 사진(꽉 차게 contain), 없으면 SVG. 수정 오버레이는 큰 사진엔 없음.
+  function setMain(c){
+    mainImg.innerHTML = c.img
+      ? `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`
+      : teeSVG(c.hex,true);
+  }
   setMain(featured[0]);
+  _setMainFn = setMain;
+
   featured.forEach((c,i)=>{
     const t=document.createElement('div');
     t.className='t'+(i===0?' active':'');
-    t.innerHTML=`${colorThumb(c,false)}<span class="tlabel">${c.name}</span>`;
-    t.addEventListener('click',()=>{
-      thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active'));
-      t.classList.add('active');
-      setMain(c);
-    });
+    // 썸네일: 사진 있으면 사진, 없으면 SVG (수정 오버레이 없이 깔끔하게)
+    const thumbInner = c.img
+      ? `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:contain;display:block">`
+      : teeSVG(c.hex,false);
+    t.innerHTML=`${thumbInner}<span class="tlabel">${c.name}</span>`;
+    const activate=()=>{ thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active')); t.classList.add('active'); setMain(c); };
+    t.addEventListener('click',activate);
+    t.addEventListener('mouseenter',activate);   // 마우스 올리면 큰 사진이 그 색으로 바뀜
     thumbsEl.appendChild(t);
+  });
+  // 아래 색상 목록의 색칩을 클릭해도 위 큰 사진이 그 색으로 바뀜
+  document.addEventListener('click',e=>{
+    const cell=e.target.closest('.colcell'); if(!cell||!_setMainFn) return;
+    const nameEl=cell.querySelector('.cn'); if(!nameEl) return;
+    const c=colors.find(x=>x.name===nameEl.textContent.trim());
+    if(c) _setMainFn(c);
   });
   }
 

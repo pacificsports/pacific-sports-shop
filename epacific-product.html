@@ -266,8 +266,8 @@
       <span class="chip">60:40 Cotton / Poly</span>
       <span class="chip">Tear-away label</span>
       <span class="chip">BCI Certified</span>
-      <span class="chip">52 colors</span>
-      <span class="chip">XS–3XL</span>
+      <span class="chip" id="colorCountChip">52 colors</span>
+      <span class="chip" id="sizeChip">XS–3XL</span>
     </div>
     <p class="desc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
 
@@ -379,12 +379,12 @@
   // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
 
   // 색상 썸네일: 사진 있으면 사진, 없으면 티셔츠 SVG
-  function colorThumb(c,big){
+  function colorThumb(c,big,withEdit){
     const inner = c.img
       ? `<img src="${c.img}" alt="${c.name}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`
       : teeSVG(c.hex,big);
-    // 색상 행 썸네일(작은 것)에만 수정 오버레이 (수정모드+로그인 시 .editmode로 표시)
-    if(!big){
+    // 수정 오버레이는 주문 그리드 썸네일에만 (검색 드롭다운/기타엔 없음)
+    if(!big && withEdit){
       const rawc = c.raw || c.name;
       return inner + `<div class="editov" data-editcolor="${String(rawc).replace(/"/g,'&quot;')}" data-prettyname="${String(c.name).replace(/"/g,'&quot;')}">${c.img?'Replace<br>photo':'Add<br>photo'}</div>`;
     }
@@ -424,7 +424,7 @@
     const st=stockMap[c.name][wh];
     // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
     const colorCell = isFirst
-      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false)}</span><span class="cn">${c.name}</span></div></td>`
+      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span><span class="cn">${c.name}</span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
     const cells=sizes.map((s,i)=>{
@@ -468,7 +468,7 @@
       const std=sizes.filter(s=>casePer[s]===72).join('–').replace(/·/g,'–');
       note.innerHTML=`Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL+ 1 case = 48 pcs · see <b>Size Guide</b> above for measurements`;
     }
-    const chip=document.querySelector('.chip');
+    const chip=document.getElementById('sizeChip');
     if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
   }
 
@@ -603,6 +603,9 @@
   const firstWithImg = colors.find(c=>c.img) || colors[0];
   setMain(firstWithImg);
   _setMainFn = setMain;
+  // 색상 수 칩을 실제 색상 수로
+  const ccChip=document.getElementById('colorCountChip');
+  if(ccChip) ccChip.textContent = colors.length+' colors';
 
   // 색상 칩: 클릭으로만 바뀜 (hover 미리보기 없음 — 깜빡임 방지)
   colors.forEach(c=>{

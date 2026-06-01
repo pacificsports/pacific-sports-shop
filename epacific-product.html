@@ -54,13 +54,20 @@
 
   .product{max-width:1280px;margin:0 auto;padding:24px 30px 70px;display:grid;grid-template-columns:1.15fr 1fr;gap:56px;align-items:start}
 
-  /* gallery — Abercrombie-style clean studio look */
-  .gallery{position:sticky;top:104px;width:100%}
-  .main-img{width:100%;aspect-ratio:1/1.05;border-radius:16px;overflow:hidden;background:#ffffff;display:flex;align-items:center;justify-content:center;margin-bottom:12px;position:relative;box-shadow:0 1px 2px rgba(28,28,26,.04);border:1px solid var(--line)}
+  /* gallery — 큰 메인 사진 + 아래 색상 칩 그리드 */
+  .gallery{position:sticky;top:104px;width:100%;min-width:0}
+  .main-img{width:100%;aspect-ratio:1/1.08;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:8px}
-  .main-img #mainImg svg{filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
+  .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:18px}
+  .main-img #mainImg svg{width:62%;height:62%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
   .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
+  /* 색상 칩 그리드: 작은 칩 + 색 이름, 마우스 올리면 메인 사진 바뀜 */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:6px 12px;max-height:340px;overflow-y:auto;padding-right:4px}
+  .sw{display:flex;align-items:center;gap:9px;padding:5px 7px;border-radius:9px;cursor:pointer;border:1px solid transparent;transition:.12s}
+  .sw:hover,.sw.active{background:var(--accent-soft);border-color:#dce4da}
+  .sw .swc{width:30px;height:30px;border-radius:7px;background:#fff;border:1px solid var(--line);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .sw .swc img{width:100%;height:100%;object-fit:contain}
+  .sw .swn{font-size:12.5px;font-weight:500;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .thumbs{display:flex;gap:10px}
   .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
   .thumbs .t img{width:100%;height:100%;object-fit:contain;padding:5px}
@@ -246,7 +253,7 @@
       <div class="tag">BCI Certified</div>
       <div id="mainImg"></div>
     </div>
-    <div class="thumbs" id="thumbs"></div>
+    <div class="swatches" id="thumbs"></div>
   </div>
 
   <!-- INFO -->
@@ -585,43 +592,30 @@
   function setupGallery(){
   if(!colors || !colors.length) return;
   const mainImg=document.getElementById('mainImg');
-  const thumbsEl=document.getElementById('thumbs');
-  // 사진이 있는 색을 앞에 우선 배치, 그다음 나머지 (대표색 순서 참고)
-  const withImg=colors.filter(c=>c.img);
-  const pref=['White','Black','Navy','Natural','Sand'].map(n=>colors.find(c=>c.name===n)).filter(Boolean);
-  let featured=[];
-  // 사진 있는 색 우선, 없으면 대표색, 최대 5개
-  [...withImg, ...pref, ...colors].forEach(c=>{ if(c && !featured.includes(c) && featured.length<5) featured.push(c); });
-  if(!featured.length) featured=colors.slice(0,4);
+  const swEl=document.getElementById('thumbs');
 
-  // 큰 사진: 사진 있으면 사진(꽉 차게 contain), 없으면 SVG. 수정 오버레이는 큰 사진엔 없음.
+  // 큰 메인 사진 (사진 있으면 사진, 없으면 SVG)
   function setMain(c){
-    mainImg.innerHTML = c.img
-      ? `<img src="${c.img}" alt="${c.name}">`
-      : teeSVG(c.hex,true);
+    mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
+    swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
-  setMain(featured[0]);
+  // 첫 화면: 사진 있는 색 우선, 없으면 첫 색
+  const firstWithImg = colors.find(c=>c.img) || colors[0];
+  setMain(firstWithImg);
   _setMainFn = setMain;
 
-  featured.forEach((c,i)=>{
-    const t=document.createElement('div');
-    t.className='t'+(i===0?' active':'');
-    // 썸네일: 사진 있으면 사진, 없으면 SVG (수정 오버레이 없이 깔끔하게)
-    const thumbInner = c.img
-      ? `<img src="${c.img}" alt="${c.name}">`
-      : teeSVG(c.hex,false);
-    t.innerHTML=`${thumbInner}<span class="tlabel">${c.name}</span>`;
-    const activate=()=>{ thumbsEl.querySelectorAll('.t').forEach(x=>x.classList.remove('active')); t.classList.add('active'); setMain(c); };
-    t.addEventListener('click',activate);
-    t.addEventListener('mouseenter',activate);   // 마우스 올리면 큰 사진이 그 색으로 바뀜
-    thumbsEl.appendChild(t);
-  });
-  // 아래 색상 목록의 색칩을 클릭해도 위 큰 사진이 그 색으로 바뀜
-  document.addEventListener('click',e=>{
-    const cell=e.target.closest('.colcell'); if(!cell||!_setMainFn) return;
-    const nameEl=cell.querySelector('.cn'); if(!nameEl) return;
-    const c=colors.find(x=>x.name===nameEl.textContent.trim());
-    if(c) _setMainFn(c);
+  // 아래: 전체 색상을 칩+이름으로
+  colors.forEach(c=>{
+    const sw=document.createElement('div');
+    sw.className='sw'; sw.dataset.name=c.name;
+    const chip = c.img
+      ? `<span class="swc"><img src="${c.img}" alt="${c.name}"></span>`
+      : `<span class="swc" style="background:${c.hex}"></span>`;
+    sw.innerHTML=`${chip}<span class="swn">${c.name}</span>`;
+    const activate=()=>setMain(c);
+    sw.addEventListener('mouseenter',activate);  // 마우스 올리면 메인 사진 바뀜
+    sw.addEventListener('click',activate);
+    swEl.appendChild(sw);
   });
   }
 

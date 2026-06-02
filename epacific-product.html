@@ -373,6 +373,11 @@
   .editmode th.szh::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
   .editmode th.szh.size-hidden{background:#f0efe9}
   .editmode th.szh.size-hidden::after{content:'+ add';color:var(--faint);font-size:9px}
+  /* 숨긴 색상: 손님엔 안 보임, Edit 모드에선 흐리게 */
+  .sw-hidden{display:none}
+  .editmode .sw-hidden{display:inline-block;opacity:.32;outline:1.5px dashed var(--faint);outline-offset:1px}
+  tr.color-hidden{display:none}
+  .editmode tr.color-hidden{display:table-row;opacity:.4}
   .cimg .editov{display:none;position:absolute;inset:0;background:rgba(61,90,64,.78);color:#fff;font-size:9px;font-weight:600;align-items:center;justify-content:center;text-align:center;cursor:pointer;border-radius:inherit;line-height:1.2}
   .cimg .editov.dragover{background:rgba(61,90,64,.95);outline:2px dashed #fff;outline-offset:-3px}
   /* 로그인 모달 */
@@ -393,7 +398,7 @@
 </style>
 <script>
   // 카탈로그·재고는 pacific-data.js 에서 불러옵니다 (init()에서 채움)
-  let sizes=[], allSizes=[], hiddenSizes=[], colors=[], casePer={}, stockMap={}, product=null, currentStyle='1368';
+  let sizes=[], allSizes=[], hiddenSizes=[], colors=[], allColors=[], hiddenColors=[], casePer={}, stockMap={}, product=null, currentStyle='1368';
 
   // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
 
@@ -435,12 +440,15 @@
   }
 
   // 한 창고(SC 또는 CA)의 한 줄을 만든다
-  function buildWHRow(c,wh,isFirst){
+  function buildWHRow(c,wh,isFirst,hidden){
     const tr=document.createElement('tr');
     tr.dataset.color=c.name; tr.dataset.wh=wh;
-    tr.className='wh-row wh-'+wh+(isFirst?' color-start':'');
+    tr.className='wh-row wh-'+wh+(isFirst?' color-start':'')+(hidden?' color-hidden':'');
     if(isFirst) tr.id='color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
-    const st=stockMap[c.name][wh];
+    // 재고는 여러 키로 안전하게 찾음 (이름 변경돼도 동작)
+    const raw=c._raw||c.raw||c.name;
+    const sm = stockMap[c.name] || stockMap[raw] || stockMap[c.rawName] || null;
+    const st = (sm && sm[wh]) ? sm[wh] : [];
     // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
     const colorCell = isFirst
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span><span class="cn">${c.name}</span></div></td>`
@@ -517,9 +525,12 @@
 
   // 색상마다 SC줄 + CA줄 두 줄 생성
   function buildAllRows(){
-    colors.forEach(c=>{
-      buildWHRow(c,'SC',true);
-      buildWHRow(c,'CA',false);
+    rowsBody.innerHTML='';
+    const list = editOn ? allColors : colors;
+    list.forEach(c=>{
+      const hidden = editOn && hiddenColors.includes(c._raw||c.raw);
+      buildWHRow(c,'SC',true,hidden);
+      buildWHRow(c,'CA',false,hidden);
     });
   }
 
@@ -634,7 +645,69 @@
     if(!e.target.closest('.color-search')) sugBox.classList.remove('show');
   });
 
-  let _setMainFn=null;
+  let _setMainFn=null, _renderSwatchesFn=null;
+
+  // 사진에서 실제 색 뽑기 (셔츠 중앙 영역 평균색). 결과는 캐시.
+  const _imgColorCache={};
+  function extractColorFromImage(url){
+    if(_imgColorCache[url]) return Promise.resolve(_imgColorCache[url]);
+    return new Promise((resolve)=>{
+      const img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=()=>{
+        try{
+          const W=40,H=40, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+          const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,W,H);
+          // 셔츠 가운데 영역만 (흰 배경 제외): 가로 35~65%, 세로 45~70%
+          const d=ctx.getImageData(Math.floor(W*0.35),Math.floor(H*0.45),Math.floor(W*0.3),Math.floor(H*0.25)).data;
+          let r=0,g=0,b=0,n=0;
+          for(let i=0;i<d.length;i+=4){
+            const rr=d[i],gg=d[i+1],bb=d[i+2],a=d[i+3];
+            if(a<200) continue;
+            // 거의 흰색(배경) 픽셀은 제외
+            if(rr>245&&gg>245&&bb>245) continue;
+            r+=rr; g+=gg; b+=bb; n++;
+          }
+          if(n===0){ resolve(null); return; }
+          const hex='#'+[r,g,b].map(x=>Math.round(x/n).toString(16).padStart(2,'0')).join('');
+          _imgColorCache[url]=hex; resolve(hex);
+        }catch(e){ resolve(null); }
+      };
+      img.onerror=()=>resolve(null);
+      img.src=url;
+    });
+  }
+
+  // 색상 숨기기/켜기 (Edit 모드) — style_settings에 저장
+  async function toggleColor(raw){
+    if(hiddenColors.includes(raw)) hiddenColors=hiddenColors.filter(x=>x!==raw);
+    else hiddenColors=[...hiddenColors,raw];
+    colors = allColors.filter(c=>!hiddenColors.includes(c._raw));
+    rebuildColorViews();
+    const ok=await saveSettings(currentStyle,{hidden_colors:hiddenColors});
+    if(!ok) alert('Could not save. Please try again.');
+  }
+  // 색상 이름 바꾸기 (Edit 모드, 더블클릭)
+  async function renameColor(raw, currentName){
+    const nn=prompt('Show this color as:', currentName);
+    if(nn===null) return;
+    const name=nn.trim(); if(!name) return;
+    const map=Object.assign({}, styleSettings.color_names||{});
+    map[raw]=name; styleSettings.color_names=map;
+    // allColors/colors에 즉시 반영
+    allColors.forEach(c=>{ if(c._raw===raw) c.name=name; });
+    colors = allColors.filter(c=>!hiddenColors.includes(c._raw));
+    rebuildColorViews();
+    const ok=await saveSettings(currentStyle,{color_names:map});
+    if(!ok) alert('Could not save. Please try again.');
+  }
+  // 색 변경 후 화면 다시 그림 (칩 + 주문그리드)
+  function rebuildColorViews(){
+    if(_renderSwatchesFn) _renderSwatchesFn();
+    buildAllRows();
+    recalc();
+  }
+
   function setupGallery(){
   if(!colors || !colors.length) return;
   const mainImg=document.getElementById('mainImg');
@@ -653,14 +726,34 @@
   const ccChip=document.getElementById('colorCountChip');
   if(ccChip) ccChip.textContent = colors.length+' colors';
 
-  // 색상 칩: 클릭으로만 바뀜 (hover 미리보기 없음 — 깜빡임 방지)
-  colors.forEach(c=>{
-    const sw=document.createElement('button');
-    sw.className='sw'; sw.dataset.name=c.name; sw.title=c.name;
-    sw.style.background=c.hex;
-    sw.addEventListener('click',()=>setMain(c));
-    swEl.appendChild(sw);
-  });
+  // 색상 칩 그리기 (평소=보이는 색만, Edit=전체+숨김표시)
+  function renderSwatches(){
+    swEl.innerHTML='';
+    const list = editOn ? allColors : colors;
+    list.forEach(c=>{
+      const raw=c._raw||c.raw||c.name;
+      const isHidden = hiddenColors.includes(raw);
+      const sw=document.createElement('button');
+      sw.className='sw'+(isHidden?' sw-hidden':'');
+      sw.dataset.name=c.name; sw.dataset.raw=raw; sw.title=c.name;
+      sw.style.background=c.hex;
+      // 사진이 있으면 그 사진에서 실제 색을 뽑아 칩에 적용 (실제 셔츠 색과 일치)
+      if(c.img){ extractColorFromImage(c.img).then(hex=>{ if(hex) sw.style.background=hex; }).catch(()=>{}); }
+      if(editOn){
+        // Edit 모드: 클릭=숨기기/켜기 토글, 더블클릭=이름 바꾸기
+        sw.addEventListener('click',()=>toggleColor(raw));
+        sw.addEventListener('dblclick',()=>renameColor(raw,c.name));
+        sw.title = (isHidden?'Hidden — click to show':'Shown — click to hide')+' · double-click to rename';
+      }else{
+        sw.addEventListener('click',()=>setMain(c));
+      }
+      swEl.appendChild(sw);
+    });
+    const ccChip=document.getElementById('colorCountChip');
+    if(ccChip) ccChip.textContent = colors.length+' colors';
+  }
+  renderSwatches();
+  _renderSwatchesFn = renderSwatches;
 
   // 주문 그리드의 색상 사진/이름 클릭 → 왼쪽 큰 사진 변경
   const rb=document.getElementById('rows');
@@ -694,25 +787,35 @@
   });
 
   // ── 데이터 로드 후 화면 구성 ──────────────────────────────
-  // ── 스타일별 숨긴 사이즈 (style_settings 테이블) ──
+  // ── 스타일별 표시 설정 (style_settings 테이블: 숨긴 사이즈/색상, 색 이름) ──
   const _SBcfg=window.PACIFIC_CONFIG||{};
-  async function loadHiddenSizes(style){
+  let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{} };
+  async function loadStyleSettings(style){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names',
         {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
-      if(!r.ok) return [];
+      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{} };
       const d=await r.json();
-      return (d&&d[0]&&Array.isArray(d[0].hidden_sizes))?d[0].hidden_sizes:[];
-    }catch(e){ return []; }
+      const row=(d&&d[0])||{};
+      return {
+        hidden_sizes: Array.isArray(row.hidden_sizes)?row.hidden_sizes:[],
+        hidden_colors: Array.isArray(row.hidden_colors)?row.hidden_colors:[],
+        color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{}
+      };
+    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{} }; }
   }
-  async function saveHiddenSizes(style,hidden){
+  async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
+  // 부분 저장 (바뀐 칸만 merge)
+  async function saveSettings(style, patch){
     const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
     if(!tk){ alert('Session expired. Please log in again.'); return false; }
     const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const body=Object.assign({style_number:style, updated_at:new Date().toISOString()}, patch);
     const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
-      {method:'POST',headers:H,body:JSON.stringify({style_number:style,hidden_sizes:hidden,updated_at:new Date().toISOString()})});
+      {method:'POST',headers:H,body:JSON.stringify(body)});
     return r.ok;
   }
+  async function saveHiddenSizes(style,hidden){ return saveSettings(style,{hidden_sizes:hidden}); }
 
   async function init(){
     try{
@@ -725,9 +828,17 @@
       product   = await PacificData.getProduct(STYLE);
       if(!product){ throw new Error('Style '+STYLE+' not found.'); }
       allSizes  = product.sizes;                  // IMS에 있는 전체 사이즈
-      hiddenSizes = await loadHiddenSizes(STYLE);  // 직원이 숨긴 사이즈
+      styleSettings = await loadStyleSettings(STYLE);   // 직원 설정 (사이즈/색상)
+      hiddenSizes = styleSettings.hidden_sizes;
       sizes     = allSizes.filter(s=>!hiddenSizes.includes(s));  // 손님이 보는 사이즈
-      colors    = product.colors;
+      // 색상: IMS 전체(allColors) → 직원이 숨긴/이름바꾼 것 적용
+      allColors = product.colors.map(c=>{
+        const raw=c.raw||c.name;
+        const custom = styleSettings.color_names[raw];   // 직원이 바꾼 이름
+        return Object.assign({}, c, { name: custom || c.name, _raw: raw });
+      });
+      hiddenColors = styleSettings.hidden_colors || [];
+      colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
       stockMap  = await PacificData.getInventory(STYLE, product);
       // 제목·브레드크럼·H1 을 이 스타일로 채움
@@ -778,6 +889,10 @@
     el('editToggle').classList.toggle('on',editOn);
     el('editToggle').textContent=editOn?'Done editing':'Edit';
     if(el('bulkBtn')) el('bulkBtn').style.display = editOn ? '' : 'none';
+    // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드 다시 그림
+    if(_renderSwatchesFn) _renderSwatchesFn();
+    buildAllRows();
+    recalc();
   });
   // 로그아웃
   if(el('staffLogout')) el('staffLogout').addEventListener('click',()=>{ PacificAuth.logout(); refreshStaff(); });

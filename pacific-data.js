@@ -46,11 +46,32 @@ window.PacificData = (function () {
   function prettyColor(name) {
     return String(name).toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   }
+
+  // ── 색상 표시 규칙 (IMS는 그대로, 화면 표시만 조정) ──
+  // hide: 화면에서 숨길 IMS 색상 (대문자 raw)
+  // rename: IMS 색상(raw) → 화면에 보일 이름
+  const COLOR_RULES = {
+    '1210': {
+      hide: ['CHARCOAL (DS)'],
+      rename: { 'CHARCOAL (HT)': 'Charcoal' }
+    }
+  };
+  function colorRules(style){ return COLOR_RULES[style] || { hide:[], rename:{} }; }
+  function isHiddenColor(style, raw){
+    const up=String(raw||'').toUpperCase();
+    return colorRules(style).hide.map(x=>x.toUpperCase()).includes(up);
+  }
+  function displayColorName(style, raw){
+    const up=String(raw||'').toUpperCase();
+    const rn=colorRules(style).rename;
+    for(const k in rn){ if(k.toUpperCase()===up) return rn[k]; }
+    return prettyColor(raw);
+  }
   const COLOR_HEX = {
     'ABYSS':'#2c3e4f','ARTICHOKE':'#7d8064','BABY BLUE':'#a9c9e0','BERMUDA':'#5bbcb6',
     'BLACK':'#232323','BLACK PEARL':'#33353a','BROWN':'#6b4a36','BUTTER':'#f3e3a0',
     'CANARY':'#f5d935','CANTALOUPE':'#f0a875','CARDINAL':'#8e2535','CHAMBRAY':'#6d8aa8',
-    'CHARCOAL HTR':'#4a4a4d','CINNAMON':'#b05c33','CLOVER':'#3f7d4f','FROST BLUE':'#bcd6dc',
+    'CHARCOAL HTR':'#4a4a4d','CHARCOAL (HT)':'#4a4a4d','CHARCOAL (DS)':'#3f3f42','CHARCOAL':'#4a4a4d','CINNAMON':'#b05c33','CLOVER':'#3f7d4f','FROST BLUE':'#bcd6dc',
     'FUTURE DUSK':'#6b7a99','GREY HTR':'#a8a8a4','GREY HEATHER':'#a8a8a4',
     'HONEYCOMB':'#e8b84a','ICEBERG':'#aac6cc','KEY LIME':'#cfe08a',
     'LIGHT BLUE HTR':'#9fb8cc','MAKO':'#3a4a52','MIDNIGHT BLUE':'#27314a','MONACO BLUE':'#2f5b8f',
@@ -259,14 +280,16 @@ window.PacificData = (function () {
     let imgMap = {};
     try { imgMap = await _supabaseImages(styleNo); } catch(e){}
 
-    const colors = Object.keys(colorMap).sort().map(raw=>{
-      const pretty = prettyColor(raw);
-      return {
-        name: pretty, raw, hex: colorHex(raw),
-        img: imgMap[pretty] || imgMap['_default'] || '',
-        sizes: [...colorMap[raw]].sort(_sizeSort)
-      };
-    });
+    const colors = Object.keys(colorMap).sort()
+      .filter(raw => !isHiddenColor(styleNo, raw))            // 숨길 색 제외
+      .map(raw=>{
+        const display = displayColorName(styleNo, raw);       // 화면 이름 (Charcoal 등)
+        return {
+          name: display, raw, hex: colorHex(raw),
+          img: imgMap[display] || imgMap[prettyColor(raw)] || imgMap['_default'] || '',
+          sizes: [...colorMap[raw]].sort(_sizeSort)
+        };
+      });
 
     return {
       styleNo,
@@ -280,10 +303,11 @@ window.PacificData = (function () {
     const whMap = await _warehouseMap();
     const rows = await _sb('inventory?style_number=eq.'+encodeURIComponent(styleNo)
                           +'&select=color,size,warehouse_id,qty_on_hand');
-    const out = {};   // prettyColor → { SC:{size:qty}, CA:{size:qty} }
+    const out = {};   // 화면색상명 → { SC:{size:qty}, CA:{size:qty} }
     rows.forEach(r=>{
       const wh = whMap[r.warehouse_id]; if (!wh) return;          // SC/CA/PCR만
-      const color = prettyColor(r.color); const size = r.size;
+      if (isHiddenColor(styleNo, r.color)) return;                // 숨긴 색(예: DS)의 재고는 제외
+      const color = displayColorName(styleNo, r.color); const size = r.size;  // 화면 이름으로(Charcoal=HT만)
       if (!out[color]) out[color] = { SC:{}, CA:{} };
       out[color][wh][size] = (out[color][wh][size]||0) + (r.qty_on_hand||0);  // 중복행 합산
     });

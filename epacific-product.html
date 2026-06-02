@@ -64,8 +64,10 @@
   /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
   .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px}
   .sw-label b{color:var(--ink);font-weight:600}
-  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:7px;max-height:none}
-  .sw{width:30px;height:30px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:8px;max-height:none}
+  .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
+  /* 사진 칩: 셔츠 가슴 부분을 줌인해서 원단/색이 보이게 */
+  .sw.sw-photo{background-repeat:no-repeat;background-size:230%;background-position:50% 42%}
   .sw:hover,.sw.active{transform:scale(1.12);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 2px 8px rgba(28,28,26,.18);z-index:1}
   .thumbs{display:flex;gap:10px}
   .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
@@ -734,13 +736,15 @@
       const raw=c._raw||c.raw||c.name;
       const isHidden = hiddenColors.includes(raw);
       const sw=document.createElement('button');
-      sw.className='sw'+(isHidden?' sw-hidden':'');
+      sw.className='sw'+(isHidden?' sw-hidden':'')+(c.img?' sw-photo':'');
       sw.dataset.name=c.name; sw.dataset.raw=raw; sw.title=c.name;
-      sw.style.background=c.hex;
-      // 사진이 있으면 그 사진에서 실제 색을 뽑아 칩에 적용 (실제 셔츠 색과 일치)
-      if(c.img){ extractColorFromImage(c.img).then(hex=>{ if(hex) sw.style.background=hex; }).catch(()=>{}); }
+      if(c.img){
+        // 색칩 = 그 색 셔츠 사진을 줌인해서 원단/색이 그대로 보이게
+        sw.style.backgroundImage='url("'+c.img+'")';
+      }else{
+        sw.style.background=c.hex;   // 사진 없으면 단색
+      }
       if(editOn){
-        // Edit 모드: 클릭=숨기기/켜기 토글, 더블클릭=이름 바꾸기
         sw.addEventListener('click',()=>toggleColor(raw));
         sw.addEventListener('dblclick',()=>renameColor(raw,c.name));
         sw.title = (isHidden?'Hidden — click to show':'Shown — click to hide')+' · double-click to rename';

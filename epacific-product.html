@@ -87,6 +87,9 @@
   .chip-edit{cursor:pointer;user-select:none}
   .chip-edit.chip-on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   .chip-edit.chip-off{opacity:.45;border-style:dashed}
+  /* Edit 모드: 설명 더블클릭 수정 표시 */
+  .desc-editable{cursor:text;outline:1px dashed var(--line-2);outline-offset:6px;border-radius:4px}
+  .desc-editable:hover{outline-color:var(--accent)}
   .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
 
   .login-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:12px;padding:14px 18px;font-size:14px;color:var(--accent);margin-bottom:28px;display:flex;align-items:center;gap:10px}
@@ -299,7 +302,7 @@
       <span class="chip" id="colorCountChip"></span>
       <span class="chip" id="sizeChip"></span>
     </div>
-    <p class="desc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
+    <p class="desc" id="pDesc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
 
     <div class="sizeguide">
       <button class="sg-toggle" id="sgToggle"><span>📏 Size Guide</span><span class="sg-arrow">▾</span></button>
@@ -793,6 +796,49 @@
     }
   }
 
+  /* ===== 제품 설명 (스타일별 수정) ===== */
+  const DEFAULT_DESC=document.getElementById('pDesc')?document.getElementById('pDesc').textContent:'';
+  function applyDescription(){
+    const p=document.getElementById('pDesc'); if(!p) return;
+    p.textContent = styleSettings.description || DEFAULT_DESC;
+    p.title = editOn ? 'Double-click to edit description' : '';
+    p.classList.toggle('desc-editable', editOn);
+  }
+  function editDescription(){
+    const p=document.getElementById('pDesc'); if(!p) return;
+    const cur=p.textContent;
+    const ta=document.createElement('textarea');
+    ta.value=cur;
+    ta.style.cssText='width:100%;min-height:110px;font-family:var(--body);font-size:15px;line-height:1.65;color:var(--ink);border:1px solid var(--accent);border-radius:10px;padding:12px;outline:none;resize:vertical;background:var(--paper)';
+    const bar=document.createElement('div');
+    bar.style.cssText='display:flex;gap:8px;margin-top:8px';
+    bar.innerHTML='<button id="descSave" style="background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13.5px">Save</button>'+
+                  '<button id="descCancel" style="background:none;border:1px solid var(--line-2);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--soft-ink)">Cancel</button>';
+    const wrap=document.createElement('div');
+    wrap.appendChild(ta); wrap.appendChild(bar);
+    p.replaceWith(wrap); ta.focus();
+    const restore=(text)=>{
+      const np=document.createElement('p');
+      np.className='desc'; np.id='pDesc'; np.textContent=text;
+      wrap.replaceWith(np);
+      applyDescription();
+    };
+    bar.querySelector('#descCancel').addEventListener('click',()=>restore(cur));
+    bar.querySelector('#descSave').addEventListener('click',async()=>{
+      const nv=ta.value.trim();
+      if(!nv || nv===cur){ restore(cur); return; }
+      styleSettings.description=nv;
+      restore(nv);
+      const ok=await saveSettings(currentStyle,{description:nv});
+      if(!ok) alert('Could not save. Please try again.');
+    });
+  }
+  // 더블클릭으로 수정 (Edit 모드에서만) — 이벤트 위임으로 교체된 요소에도 작동
+  document.addEventListener('dblclick',e=>{
+    if(!editOn) return;
+    if(e.target && e.target.id==='pDesc'){ e.preventDefault(); editDescription(); }
+  });
+
   function setupGallery(){
   if(!colors || !colors.length) return;
   const mainImg=document.getElementById('mainImg');
@@ -891,18 +937,19 @@
   let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
   async function loadStyleSettings(style){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips,description',
         {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
-      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
+      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null };
       const d=await r.json();
       const row=(d&&d[0])||{};
       return {
         hidden_sizes: Array.isArray(row.hidden_sizes)?row.hidden_sizes:[],
         hidden_colors: Array.isArray(row.hidden_colors)?row.hidden_colors:[],
         color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{},
-        spec_chips: Array.isArray(row.spec_chips)?row.spec_chips:null
+        spec_chips: Array.isArray(row.spec_chips)?row.spec_chips:null,
+        description: (typeof row.description==='string'&&row.description.trim())?row.description:null
       };
-    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null }; }
+    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null }; }
   }
   async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
   // 부분 저장 (바뀐 칸만 merge)
@@ -951,6 +998,7 @@
       buildAllRows();
       setupGallery();
       renderSpecChips();
+      applyDescription();
       recalc();
     }catch(e){
       console.error('Data load failed:', e);
@@ -993,6 +1041,7 @@
     // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드, 스펙칩 다시 그림
     if(_renderSwatchesFn) _renderSwatchesFn();
     renderSpecChips();
+    applyDescription();
     buildAllRows();
     recalc();
   });

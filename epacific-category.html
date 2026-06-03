@@ -85,6 +85,11 @@
   /* product grid */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 22px}
   .card{cursor:pointer;animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+  /* 직원 Edit: 숨긴 스타일 흐리게 + 숨김 토글 배지 */
+  .card.style-hidden{opacity:.5}
+  .editmode .card .thumb{position:relative}
+  .hide-toggle{position:absolute;top:8px;left:8px;right:8px;background:rgba(28,28,26,.82);color:#fff;font-size:11px;font-weight:600;text-align:center;padding:6px 8px;border-radius:7px;cursor:pointer;z-index:5}
+  .card.style-hidden .hide-toggle{background:rgba(176,64,64,.9)}
   .thumb{position:relative;aspect-ratio:3/3.6;border-radius:14px;overflow:hidden;background:var(--paper);border:1px solid var(--line);margin-bottom:14px}
   .thumb .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:30px;color:#c8c8bd;background:linear-gradient(165deg,#f4f4ee,#e9e9e0);transition:transform .55s cubic-bezier(.2,.7,.3,1)}
   .card:hover .thumb .ph{transform:scale(1.05)}
@@ -236,6 +241,16 @@
       </select>
     </div>
 
+    <!-- 직원 바: 스타일 숨기기 관리 -->
+    <div id="catStaffBar" style="display:none;margin-bottom:18px;padding:11px 16px;background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;font-size:13.5px;color:var(--soft-ink);align-items:center;gap:14px">
+      <span id="catStaffInner">
+        <b>Staff</b> · Turn on edit to show/hide whole styles
+        <button id="catEditToggle" style="margin-left:12px;border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px">Edit styles</button>
+        <button id="catLogout" style="margin-left:6px;border:none;background:none;color:var(--faint);cursor:pointer;font-size:13px">Log out</button>
+      </span>
+      <button id="catLoginBtn" style="border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px;display:none">Staff Login</button>
+    </div>
+
     <div class="grid" id="grid"></div>
   </div>
 </div>
@@ -254,25 +269,56 @@
 </footer>
 
 <script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
 <script>
   const colors=['#f1ece0','#2c2c2c','#6b7b5e','#8a9aa8','#b0383a','#33414f','#6e6e6e','#c9a87c','#9c5a3c'];
   const grid=document.getElementById('grid');
   let allStyles=[], activeCat='All', thumbs={};
+  let hiddenStyles=new Set();   // 숨긴 스타일 번호
+  let editOn=false, isStaff=false;
+  const _SBcfg=window.PACIFIC_CONFIG||{};
+
+  // 숨긴 스타일 목록 로드 (style_settings.is_hidden=true)
+  async function loadHiddenStyles(){
+    try{
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?is_hidden=eq.true&select=style_number',
+        {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
+      if(!r.ok) return;
+      const d=await r.json();
+      hiddenStyles=new Set((d||[]).map(x=>String(x.style_number)));
+    }catch(e){}
+  }
+  // 스타일 숨김 저장
+  async function saveStyleHidden(styleNo, hidden){
+    const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:String(styleNo),is_hidden:hidden,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
 
   function renderGrid(){
-    const list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat);
+    let list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat);
+    // 손님(또는 Edit 꺼짐)에겐 숨긴 스타일 제외. 직원 Edit 모드면 전부 표시(숨긴 건 흐리게)
+    if(!(isStaff && editOn)) list = list.filter(s=>!hiddenStyles.has(String(s.no)));
     grid.innerHTML='';
     if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:var(--faint)">No styles in this category.</div>'; return; }
     list.forEach((p,idx)=>{
       const dots=colors.slice(0,5).map(c=>`<span class="sm" style="background:${c}"></span>`).join('');
+      const hidden=hiddenStyles.has(String(p.no));
       const card=document.createElement('div');
-      card.className='card';
+      card.className='card'+(hidden?' style-hidden':'');
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
+      const editBadge = (isStaff && editOn)
+        ? `<div class="hide-toggle" data-no="${p.no}">${hidden?'Hidden — click to show':'Showing — click to hide'}</div>`
+        : '';
       card.innerHTML=`
         <div class="thumb">
           ${thumbs[p.no] ? `<img src="${thumbs[p.no]}" alt="Style ${p.no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${p.no}</div>`}
           <div class="quick">View &amp; order →</div>
+          ${editBadge}
         </div>
         <div class="style-no">Style #${p.no}</div>
         <div class="pname">${p.desc}</div>
@@ -280,8 +326,21 @@
         <div class="swatches-mini">${dots}</div>
         <div class="pcolors">View colors &amp; stock</div>
       `;
-      // 클릭하면 그 스타일의 주문 그리드로 이동
-      card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      // Edit 모드: 숨김 토글 클릭은 이동 막고 토글. 그 외엔 제품으로 이동
+      if(isStaff && editOn){
+        const tg=card.querySelector('.hide-toggle');
+        if(tg) tg.addEventListener('click',async(e)=>{
+          e.stopPropagation();
+          const no=String(p.no); const willHide=!hiddenStyles.has(no);
+          if(willHide) hiddenStyles.add(no); else hiddenStyles.delete(no);
+          renderGrid();
+          const ok=await saveStyleHidden(no, willHide);
+          if(!ok){ alert('Could not save.'); }
+        });
+        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      }else{
+        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      }
       grid.appendChild(card);
     });
     const cnt=document.getElementById('resultCount');
@@ -305,7 +364,9 @@
     try{
       allStyles = await PacificData.getStyles();
       thumbs = await PacificData.getStyleThumbs();   // 사진 있으면 카드에 표시
-      // URL ?cat= 로 들어오면 그 카테고리로 시작 (메뉴 링크용)
+      await loadHiddenStyles();                       // 숨긴 스타일 로드
+      try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentUser()); }catch(e){ isStaff=false; }
+      setupStaffBar();
       const q=new URLSearchParams(location.search).get('cat');
       if(q) activeCat=q;
       buildCategoryFilter();
@@ -315,6 +376,31 @@
       grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:#b04">Could not load the style list.</div>';
     }
   })();
+
+  // 직원 바: 로그인 상태면 Edit 토글 노출
+  function setupStaffBar(){
+    const bar=document.getElementById('catStaffBar');
+    if(!bar) return;
+    if(isStaff){
+      bar.style.display='flex';
+      const inner=document.getElementById('catStaffInner');
+      const login=document.getElementById('catLoginBtn');
+      if(inner) inner.style.display='';
+      if(login) login.style.display='none';
+      const et=document.getElementById('catEditToggle');
+      if(et) et.addEventListener('click',()=>{
+        editOn=!editOn;
+        et.textContent=editOn?'Done editing':'Edit styles';
+        et.classList.toggle('on',editOn);
+        document.body.classList.toggle('editmode',editOn);
+        renderGrid();
+      });
+      const lo=document.getElementById('catLogout');
+      if(lo) lo.addEventListener('click',()=>{ if(window.PacificAuth)PacificAuth.logout(); location.reload(); });
+    }else{
+      bar.style.display='none';  // 손님에겐 직원 바 안 보임 (헤더의 Staff Login 사용)
+    }
+  }
 </script>
 
 

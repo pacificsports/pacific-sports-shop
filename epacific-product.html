@@ -156,6 +156,15 @@
   .colcell .cimg{width:42px;height:42px;border-radius:8px;background:#ffffff;border:1px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .colcell .cimg svg{display:block}
   .colcell .cn{font-size:14px;font-weight:500;white-space:nowrap}
+  .cn-wrap{display:flex;align-items:center;gap:8px}
+  /* Edit 모드: 색 이름 옆 체크(켜기/끄기) */
+  .cn-check{display:none}
+  .editmode .cn-check{display:inline-flex;width:18px;height:18px;border:1.5px solid var(--accent);border-radius:5px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:var(--accent)}
+  .editmode .cn-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
+  .editmode tr.color-hidden .cn-check{background:#fff;border-color:var(--line-2)}
+  .editmode tr.color-hidden .cn-check::after{content:''}
+  .editmode .cn{cursor:text;border-bottom:1px dashed transparent}
+  .editmode .cn:hover{border-bottom-color:var(--faint)}
   /* 숫자 스피너 화살표 숨김 (공간 확보) */
   .otable input::-webkit-outer-spin-button,.otable input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .otable input[type=number]{-moz-appearance:textfield;appearance:textfield}
@@ -461,7 +470,9 @@
     const st = (sm && sm[wh]) ? sm[wh] : [];
     // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
     const colorCell = isFirst
-      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span><span class="cn">${c.name}</span></div></td>`
+      ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span>`+
+        `<span class="cn-wrap"><span class="cn-check" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Show/hide this color"></span>`+
+        `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
     // 항상 전체 사이즈를 그려두고, 숨김/표시는 CSS로 (Edit 토글 시 재생성 안 함 → 빠름)
@@ -753,9 +764,9 @@
         sw.style.background=c.hex;   // 사진 없으면 단색
       }
       if(editOn){
-        sw.addEventListener('click',()=>toggleColor(raw));
-        sw.addEventListener('dblclick',()=>renameColor(raw,c.name));
-        sw.title = (isHidden?'Hidden — click to show':'Shown — click to hide')+' · double-click to rename';
+        // Edit 모드: 숨긴 색은 칩도 흐리게(아래 주문표에서 체크로 관리). 칩 클릭은 사진 보기.
+        sw.addEventListener('click',()=>setMain(c));
+        sw.title = c.name + (isHidden?' (hidden)':'');
       }else{
         sw.addEventListener('click',()=>setMain(c));
       }
@@ -767,9 +778,18 @@
   renderSwatches();
   _renderSwatchesFn = renderSwatches;
 
-  // 주문 그리드의 색상 사진/이름 클릭 → 왼쪽 큰 사진 변경
+  // 주문 그리드 색 셀 클릭: Edit 모드면 체크(숨기기)/이름수정, 아니면 사진 변경
   const rb=document.getElementById('rows');
   if(rb) rb.addEventListener('click',e=>{
+    if(editOn){
+      // 체크박스 클릭 → 숨기기/켜기
+      const chk=e.target.closest('.cn-check');
+      if(chk){ toggleColor(chk.dataset.raw); return; }
+      // 이름 클릭 → 이름 수정
+      const nm=e.target.closest('.cn');
+      if(nm){ const cur=nm.textContent.trim(); renameColor(nm.dataset.raw, cur); return; }
+      return; // Edit 모드에선 사진 변경 안 함
+    }
     const cell=e.target.closest('.colcell'); if(!cell) return;
     const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
     const c=colors.find(x=>x.name===name);

@@ -142,6 +142,20 @@
   </div>
 </header>
 
+<!-- 사이트 검색 (헤더에서 펼쳐짐) -->
+<div id="searchBar" style="display:none;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:130">
+  <div style="max-width:900px;margin:0 auto;padding:14px 30px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:17px">🔍</span>
+      <input id="searchInput" type="text" placeholder="Search by style number or name…  (e.g. 1210, ring spun, hoodie)" autocomplete="off"
+        style="flex:1;border:none;outline:none;font-family:var(--body);font-size:16px;background:transparent;color:var(--ink)">
+      <button id="searchClose" style="border:none;background:none;font-size:22px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+    </div>
+    <div id="searchResults" style="max-height:50vh;overflow:auto;margin-top:8px"></div>
+  </div>
+</div>
+
+
 <div class="crumb"><a href="#">Home</a><span>/</span>Cart</div>
 
 <div class="page">
@@ -296,41 +310,31 @@
 
   render();
 </script>
-<!-- 사이트 검색 오버레이 -->
-<div id="searchOverlay" style="display:none;position:fixed;inset:0;background:rgba(28,28,26,.45);z-index:500;align-items:flex-start;justify-content:center;padding-top:9vh">
-  <div style="background:#fff;width:92%;max-width:620px;border-radius:16px;box-shadow:0 30px 70px -20px rgba(0,0,0,.4);overflow:hidden">
-    <div style="display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid var(--line)">
-      <span style="font-size:18px">🔍</span>
-      <input id="searchInput" type="text" placeholder="Search by style number or name…  (e.g. 1210, ring spun, hoodie)" autocomplete="off"
-        style="flex:1;border:none;outline:none;font-family:var(--body);font-size:16px;background:transparent;color:var(--ink)">
-      <button id="searchClose" style="border:none;background:none;font-size:22px;cursor:pointer;color:var(--faint);line-height:1">×</button>
-    </div>
-    <div id="searchResults" style="max-height:58vh;overflow:auto;padding:6px"></div>
-  </div>
-</div>
 
 <script src="pacific-config.js"></script>
 <script src="pacific-data.js"></script>
 
+
 <script>
 (function(){
   function boot(){
-  /* ===== 사이트 검색 (스타일 번호/이름) ===== */
+  /* ===== 사이트 검색 (헤더에서 펼쳐짐) ===== */
   (function(){
-    const ov=document.getElementById('searchOverlay');
+    const bar=document.getElementById('searchBar');
     const inp=document.getElementById('searchInput');
     const res=document.getElementById('searchResults');
-    if(!ov||!inp) return;
+    if(!bar||!inp) return;
     let allStyles=[];
     async function ensureStyles(){
       if(allStyles.length) return;
       try{ allStyles = await PacificData.getStyles(); }catch(e){ allStyles=[]; }
     }
     function openSearch(){
-      ov.style.display='flex'; inp.value=''; res.innerHTML='';
+      if(bar.style.display==='block'){ closeSearch(); return; }  // 다시 누르면 닫힘(토글)
+      bar.style.display='block'; inp.value=''; res.innerHTML='';
       ensureStyles().then(()=>{ render(''); }); setTimeout(()=>inp.focus(),50);
     }
-    function closeSearch(){ ov.style.display='none'; }
+    function closeSearch(){ bar.style.display='none'; }
     function render(q){
       q=q.trim().toLowerCase();
       let list=allStyles;
@@ -338,9 +342,9 @@
         String(s.no).toLowerCase().includes(q) ||
         String(s.desc||'').toLowerCase().includes(q) ||
         String(s.cat||'').toLowerCase().includes(q));
-      if(!list.length){ res.innerHTML='<div style="padding:22px;text-align:center;color:var(--faint);font-size:14px">No styles found.</div>'; return; }
+      if(!list.length){ res.innerHTML='<div style="padding:18px 4px;color:var(--faint);font-size:14px">No styles found.</div>'; return; }
       res.innerHTML = list.slice(0,40).map(s=>
-        `<a href="epacific-product.html?style=${encodeURIComponent(s.no)}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;text-decoration:none;color:var(--ink)" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='none'">`+
+        `<a href="epacific-product.html?style=${encodeURIComponent(s.no)}" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;text-decoration:none;color:var(--ink)" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='none'">`+
         `<b style="min-width:54px;font-size:14px">#${s.no}</b>`+
         `<span style="font-size:13.5px;color:var(--soft-ink)">${s.desc||''}</span></a>`
       ).join('');
@@ -348,7 +352,6 @@
     const btn=document.getElementById('searchBtn');
     if(btn) btn.addEventListener('click',openSearch);
     document.getElementById('searchClose').addEventListener('click',closeSearch);
-    ov.addEventListener('click',e=>{ if(e.target===ov) closeSearch(); });
     inp.addEventListener('input',()=>render(inp.value));
     document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
   })();

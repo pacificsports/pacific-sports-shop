@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pacific Sports — Style #1368</title>
+<title>Pacific Sports</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -272,7 +272,7 @@
   <div id="bulkLog" style="line-height:1.7"></div>
 </div>
 
-<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb">Style #1368</span></div>
+<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb"></span></div>
 
 <div class="product">
   <!-- GALLERY -->
@@ -287,8 +287,8 @@
   <!-- INFO -->
   <div class="info rise">
     <div class="ct">Men's · 60/40 Combed Ring Spun</div>
-    <h1 id="pTitle">1368 Short Sleeve Crew</h1>
-    <div class="style-no" id="pStyleNo">Style #1368</div>
+    <h1 id="pTitle"></h1>
+    <div class="style-no" id="pStyleNo"></div>
     <div class="specs">
       <span class="chip">4.3 oz / 145 gram</span>
       <span class="chip">60:40 Cotton / Poly</span>
@@ -708,19 +708,38 @@
     const ok=await saveSettings(currentStyle,{hidden_colors:hiddenColors});
     if(!ok) alert('Could not save. Please try again.');
   }
-  // 색상 이름 바꾸기 (Edit 모드, 더블클릭)
-  async function renameColor(raw, currentName){
-    const nn=prompt('Show this color as:', currentName);
-    if(nn===null) return;
-    const name=nn.trim(); if(!name) return;
+  // 색 이름 저장 (실제 저장 로직)
+  async function applyColorName(raw, name){
+    name=(name||'').trim(); if(!name) return;
     const map=Object.assign({}, styleSettings.color_names||{});
     map[raw]=name; styleSettings.color_names=map;
-    // allColors/colors에 즉시 반영
     allColors.forEach(c=>{ if(c._raw===raw) c.name=name; });
     colors = allColors.filter(c=>!hiddenColors.includes(c._raw));
     rebuildColorViews();
     const ok=await saveSettings(currentStyle,{color_names:map});
     if(!ok) alert('Could not save. Please try again.');
+  }
+  // 이름 자리에서 바로 수정 (더블클릭 → 입력칸)
+  function inlineEditName(nmEl){
+    const raw=nmEl.dataset.raw; const cur=nmEl.textContent.trim();
+    const input=document.createElement('input');
+    input.type='text'; input.value=cur;
+    input.style.cssText='font-family:var(--body);font-size:14px;font-weight:500;width:130px;border:1px solid var(--accent);border-radius:6px;padding:3px 6px;outline:none';
+    nmEl.replaceWith(input); input.focus(); input.select();
+    let done=false;
+    const finish=(save)=>{
+      if(done) return; done=true;
+      const newName = save ? input.value.trim() : cur;
+      const span=document.createElement('span');
+      span.className='cn'; span.dataset.raw=raw; span.textContent=newName||cur;
+      input.replaceWith(span);
+      if(save && newName && newName!==cur) applyColorName(raw, newName);
+    };
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); finish(true); }
+      else if(e.key==='Escape'){ finish(false); }
+    });
+    input.addEventListener('blur',()=>finish(true));
   }
   // 색 변경 후 화면 다시 그림 (칩 + 주문그리드)
   function rebuildColorViews(){
@@ -785,15 +804,18 @@
       // 체크박스 클릭 → 숨기기/켜기
       const chk=e.target.closest('.cn-check');
       if(chk){ toggleColor(chk.dataset.raw); return; }
-      // 이름 클릭 → 이름 수정
-      const nm=e.target.closest('.cn');
-      if(nm){ const cur=nm.textContent.trim(); renameColor(nm.dataset.raw, cur); return; }
-      return; // Edit 모드에선 사진 변경 안 함
+      return; // Edit 모드에선 (이름은 더블클릭으로 수정) 사진 변경 안 함
     }
     const cell=e.target.closest('.colcell'); if(!cell) return;
     const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
     const c=colors.find(x=>x.name===name);
     if(c) setMain(c);
+  });
+  // 이름 더블클릭 → 그 자리에서 바로 수정
+  if(rb) rb.addEventListener('dblclick',e=>{
+    if(!editOn) return;
+    const nm=e.target.closest('.cn');
+    if(nm){ e.preventDefault(); inlineEditName(nm); }
   });
   }
 

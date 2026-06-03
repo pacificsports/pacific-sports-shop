@@ -82,6 +82,10 @@
   .style-no{font-size:14px;color:var(--faint);margin-bottom:22px}
   .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
   .chip{background:var(--paper);border:1px solid var(--line-2);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--soft-ink)}
+  /* Edit 모드 스펙 칩: 클릭으로 켜고 끄기 */
+  .chip-edit{cursor:pointer;user-select:none}
+  .chip-edit.chip-on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .chip-edit.chip-off{opacity:.45;border-style:dashed}
   .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
 
   .login-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:12px;padding:14px 18px;font-size:14px;color:var(--accent);margin-bottom:28px;display:flex;align-items:center;gap:10px}
@@ -289,13 +293,10 @@
     <div class="ct">Men's · 60/40 Combed Ring Spun</div>
     <h1 id="pTitle"></h1>
     <div class="style-no" id="pStyleNo"></div>
-    <div class="specs">
-      <span class="chip">4.3 oz / 145 gram</span>
-      <span class="chip">60:40 Cotton / Poly</span>
-      <span class="chip">Tear-away label</span>
-      <span class="chip">BCI Certified</span>
-      <span class="chip" id="colorCountChip">52 colors</span>
-      <span class="chip" id="sizeChip">XS–3XL</span>
+    <div class="specs" id="specsRow">
+      <span id="specChips"></span>
+      <span class="chip" id="colorCountChip"></span>
+      <span class="chip" id="sizeChip"></span>
     </div>
     <p class="desc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
 
@@ -748,6 +749,48 @@
     recalc();
   }
 
+  /* ===== 스펙 칩 (스타일별 켜고 끄기) ===== */
+  // 선택 가능한 칩 목록 (필요하면 여기 추가)
+  const ALL_SPEC_CHIPS=[
+    '4.3 oz / 145 gram',
+    '60:40 Cotton / Poly',
+    '100% Cotton',
+    'US Cotton',
+    'Tear-away label',
+    'BCI Certified'
+  ];
+  // 기본 칩 (설정 없을 때)
+  const DEFAULT_SPEC_CHIPS=['4.3 oz / 145 gram','60:40 Cotton / Poly','Tear-away label','BCI Certified'];
+  function activeChips(){
+    return Array.isArray(styleSettings.spec_chips) ? styleSettings.spec_chips : DEFAULT_SPEC_CHIPS.slice();
+  }
+  function renderSpecChips(){
+    const box=document.getElementById('specChips');
+    if(!box) return;
+    const act=activeChips();
+    if(editOn){
+      // Edit: 전체 목록 보여주고 켜진 건 진하게, 클릭으로 토글
+      box.innerHTML=ALL_SPEC_CHIPS.map(c=>
+        `<span class="chip chip-edit ${act.includes(c)?'chip-on':'chip-off'}" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`
+      ).join('');
+      box.querySelectorAll('.chip-edit').forEach(el=>{
+        el.addEventListener('click',async()=>{
+          const c=el.dataset.chip;
+          let list=activeChips();
+          if(list.includes(c)) list=list.filter(x=>x!==c); else list=[...list,c];
+          // ALL 순서대로 정렬해 일관성 유지
+          list=ALL_SPEC_CHIPS.filter(x=>list.includes(x));
+          styleSettings.spec_chips=list;
+          renderSpecChips();
+          const ok=await saveSettings(currentStyle,{spec_chips:list});
+          if(!ok) alert('Could not save. Please try again.');
+        });
+      });
+    }else{
+      box.innerHTML=act.map(c=>`<span class="chip">${c}</span>`).join('');
+    }
+  }
+
   function setupGallery(){
   if(!colors || !colors.length) return;
   const mainImg=document.getElementById('mainImg');
@@ -843,20 +886,21 @@
   // ── 데이터 로드 후 화면 구성 ──────────────────────────────
   // ── 스타일별 표시 설정 (style_settings 테이블: 숨긴 사이즈/색상, 색 이름) ──
   const _SBcfg=window.PACIFIC_CONFIG||{};
-  let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{} };
+  let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
   async function loadStyleSettings(style){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips',
         {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
-      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{} };
+      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
       const d=await r.json();
       const row=(d&&d[0])||{};
       return {
         hidden_sizes: Array.isArray(row.hidden_sizes)?row.hidden_sizes:[],
         hidden_colors: Array.isArray(row.hidden_colors)?row.hidden_colors:[],
-        color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{}
+        color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{},
+        spec_chips: Array.isArray(row.spec_chips)?row.spec_chips:null
       };
-    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{} }; }
+    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null }; }
   }
   async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
   // 부분 저장 (바뀐 칸만 merge)
@@ -904,6 +948,7 @@
       renderSizeHeaders();
       buildAllRows();
       setupGallery();
+      renderSpecChips();
       recalc();
     }catch(e){
       console.error('Data load failed:', e);
@@ -943,8 +988,9 @@
     el('editToggle').classList.toggle('on',editOn);
     el('editToggle').textContent=editOn?'Done editing':'Edit';
     if(el('bulkBtn')) el('bulkBtn').style.display = editOn ? '' : 'none';
-    // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드 다시 그림
+    // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드, 스펙칩 다시 그림
     if(_renderSwatchesFn) _renderSwatchesFn();
+    renderSpecChips();
     buildAllRows();
     recalc();
   });

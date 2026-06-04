@@ -87,6 +87,8 @@
   .chip-edit{cursor:pointer;user-select:none}
   .chip-edit.chip-on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   .chip-edit.chip-off{opacity:.45;border-style:dashed}
+  .chip-edit.chip-on[draggable]{cursor:grab}
+  .chip-edit.chip-on[draggable]:active{cursor:grabbing}
   .chip-add{border-style:dashed;color:var(--accent);font-weight:600}
   /* Edit 모드: 설명 더블클릭 수정 표시 */
   .desc-editable{cursor:text;outline:1px dashed var(--line-2);outline-offset:6px;border-radius:4px}
@@ -777,21 +779,42 @@
     if(!box) return;
     const act=activeChips();
     if(editOn){
-      // Edit: 기본 목록 + 직접 추가한 칩 + "+ Add" 버튼
-      const custom=act.filter(c=>!ALL_SPEC_CHIPS.includes(c));   // 직접 추가한 칩
-      const presets=ALL_SPEC_CHIPS.map(c=>
-        `<span class="chip chip-edit ${act.includes(c)?'chip-on':'chip-off'}" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
-      const customs=custom.map(c=>
-        `<span class="chip chip-edit chip-on" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
-      box.innerHTML=presets.join('')+customs.join('')+
+      // 켜진 칩(저장된 순서, 드래그 가능) + 꺼진 기본 칩 + "+ Add"
+      const onChips=act.map(c=>
+        `<span class="chip chip-edit chip-on" draggable="true" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
+      const offChips=ALL_SPEC_CHIPS.filter(c=>!act.includes(c)).map(c=>
+        `<span class="chip chip-edit chip-off" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
+      box.innerHTML=onChips.join('')+offChips.join('')+
         `<span class="chip chip-edit chip-add" id="chipAdd">+ Add</span>`;
+      // 클릭 = 켜기/끄기 (순서는 저장된 그대로 유지)
       box.querySelectorAll('.chip-edit:not(.chip-add)').forEach(el=>{
         el.addEventListener('click',async()=>{
+          if(el.dataset.dragged==='1'){ el.dataset.dragged=''; return; }  // 드래그 직후 클릭 무시
           const c=el.dataset.chip;
           let list=activeChips();
-          if(list.includes(c)) list=list.filter(x=>x!==c); else list=[...list,c];
-          // 기본 목록 순서 + 직접 추가한 건 뒤에
-          list=[...ALL_SPEC_CHIPS.filter(x=>list.includes(x)), ...list.filter(x=>!ALL_SPEC_CHIPS.includes(x))];
+          if(list.includes(c)) list=list.filter(x=>x!==c);
+          else list=[...list,c];
+          styleSettings.spec_chips=list;
+          renderSpecChips();
+          const ok=await saveSettings(currentStyle,{spec_chips:list});
+          if(!ok) alert('Could not save. Please try again.');
+        });
+      });
+      // 드래그로 순서 바꾸기 (켜진 칩들끼리)
+      let dragSrc=null;
+      box.querySelectorAll('.chip-on[draggable]').forEach(el=>{
+        el.addEventListener('dragstart',e=>{ dragSrc=el; el.style.opacity='.4'; e.dataTransfer.effectAllowed='move'; });
+        el.addEventListener('dragend',()=>{ if(dragSrc){dragSrc.style.opacity='';} dragSrc=null; });
+        el.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+        el.addEventListener('drop',async e=>{
+          e.preventDefault();
+          if(!dragSrc || dragSrc===el) return;
+          const from=dragSrc.dataset.chip, to=el.dataset.chip;
+          let list=activeChips().slice();
+          const fi=list.indexOf(from), ti=list.indexOf(to);
+          if(fi<0||ti<0) return;
+          list.splice(fi,1); list.splice(ti,0,from);   // from을 to 자리로
+          dragSrc.dataset.dragged='1';
           styleSettings.spec_chips=list;
           renderSpecChips();
           const ok=await saveSettings(currentStyle,{spec_chips:list});
@@ -1224,6 +1247,7 @@
   document.addEventListener('dragover',e=>{ if(editOn){ e.preventDefault(); } });
   document.addEventListener('drop',e=>{
     if(!editOn) return;
+    if(!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;  // 파일 드롭일 때만 (칩 드래그 무시)
     const fs=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
     if(fs.length>1){ e.preventDefault(); bulkUpload(fs); }  // 2장 이상이면 일괄
   });

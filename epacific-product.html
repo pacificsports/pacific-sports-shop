@@ -299,7 +299,7 @@
 
   <!-- INFO -->
   <div class="info rise">
-    <div class="ct">Men's · 60/40 Combed Ring Spun</div>
+    <div class="ct" id="pKicker"></div>
     <h1 id="pTitle"></h1>
     <div class="style-no" id="pStyleNo"></div>
     <div class="specs" id="specsRow">
@@ -309,7 +309,7 @@
       <span class="chip" id="colorCountChip"></span>
       <span class="chip" id="sizeChip"></span>
     </div>
-    <p class="desc" id="pDesc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Tubular construction with proprietary dye-house finishing for excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
+    <p class="desc" id="pDesc">A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Proprietary dye-house finishing delivers excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization.</p>
 
     <div class="sizeguide">
       <button class="sg-toggle" id="sgToggle"><span>📏 Size Guide</span><span class="sg-arrow">▾</span></button>
@@ -1054,6 +1054,20 @@
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=niceName;
       const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='Style #'+STYLE;
       const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
+      // 상단 작은 라벨: 카테고리 + 원단 (스타일 설명에서 자동 추출)
+      const kick=document.getElementById('pKicker');
+      if(kick){
+        const rawCat = product.category || '';
+        // "Adult S/S" → "Men's", "Youth" 계열은 그대로
+        const cat = /youth|kid/i.test(rawCat) ? 'Youth' : "Men's";
+        // 설명에서 원단 부분 추출: "1390 Adult 30/1 100% Cotton PFD Short Sleeve Tee" → "30/1 100% Cotton PFD"
+        let fabric = String(niceName)
+          .replace(/^\d+[A-Za-z]?\s*/,'')              // 앞 스타일번호 제거
+          .replace(/^(Adult|Mens|Men's|Youth|Kids)\s*/i,'')  // 대상 제거
+          .replace(/\s*(Short Sleeve|Long Sleeve|Tank Top|Hooded|V-?neck|Raglan|Crew|Tee|Top)\s*.*$/i,'') // 제품형 제거
+          .trim();
+        kick.textContent = cat + (fabric ? ' · ' + fabric : '');
+      }
       renderSizeHeaders();
       buildAllRows();
       setupGallery();

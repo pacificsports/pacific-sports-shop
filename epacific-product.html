@@ -285,7 +285,7 @@
   <div id="bulkLog" style="line-height:1.7"></div>
 </div>
 
-<div class="crumb"><a href="#">Home</a><span>/</span><a href="epacific-category.html" id="crumbCat1">Men's</a><span>/</span><a href="#" id="crumbCat2"></a><span>/</span><span id="pCrumb"></span></div>
+<div class="crumb"><a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html" id="crumbCat1">Men's</a><span>/</span><a href="epacific-category.html" id="crumbCat2"></a><span>/</span><span id="pCrumb"></span></div>
 
 <div class="product">
   <!-- GALLERY -->
@@ -1066,7 +1066,11 @@
         if(/Raglan/i.test(rawCat)) seg2='Raglan';
         if(/Performance/i.test(rawCat)) seg2='Performance';
         const c1=document.getElementById('crumbCat1'); if(c1) c1.textContent=seg1;
-        const c2=document.getElementById('crumbCat2'); if(c2) c2.textContent=seg2;
+        const c2=document.getElementById('crumbCat2');
+        if(c2){
+          c2.textContent=seg2;
+          c2.href='epacific-category.html?cat='+encodeURIComponent(rawCat);  // 그 카테고리로 필터된 목록
+        }
       })();
       // 상단 작은 라벨: 카테고리 + 원단 (스타일 설명에서 자동 추출)
       const kick=document.getElementById('pKicker');

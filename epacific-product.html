@@ -1059,6 +1059,18 @@
       setupGallery();
       renderSpecChips();
       applyDescription();
+      // 자동 칩 = 바로가기: 색상 칩 → 색칩으로, 사이즈 칩 → Size Guide로
+      const ccChip=document.getElementById('colorCountChip');
+      if(ccChip){ ccChip.style.cursor='pointer'; ccChip.title='See all colors';
+        ccChip.addEventListener('click',()=>{ const t=document.getElementById('thumbs'); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); }); }
+      const szChip=document.getElementById('sizeChip');
+      if(szChip){ szChip.style.cursor='pointer'; szChip.title='Open size guide';
+        szChip.addEventListener('click',()=>{
+          const tg=document.getElementById('sgToggle');
+          const panel=document.getElementById('sgPanel');
+          if(tg && panel && !panel.classList.contains('open')) tg.click();  // 닫혀 있으면 열기
+          if(tg) tg.scrollIntoView({behavior:'smooth',block:'center'});
+        }); }
       recalc();
     }catch(e){
       console.error('Data load failed:', e);

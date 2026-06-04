@@ -87,6 +87,7 @@
   .chip-edit{cursor:pointer;user-select:none}
   .chip-edit.chip-on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   .chip-edit.chip-off{opacity:.45;border-style:dashed}
+  .chip-add{border-style:dashed;color:var(--accent);font-weight:600}
   /* Edit 모드: 설명 더블클릭 수정 표시 */
   .desc-editable{cursor:text;outline:1px dashed var(--line-2);outline-offset:6px;border-radius:4px}
   .desc-editable:hover{outline-color:var(--accent)}
@@ -757,6 +758,8 @@
   // 선택 가능한 칩 목록 (필요하면 여기 추가)
   const ALL_SPEC_CHIPS=[
     '4.3 oz / 145 gram',
+    '4.7 oz / 160 gram',
+    '4.8 oz / 165 gram',
     '60:40 Cotton / Poly',
     '100% Cotton',
     'US Cotton',
@@ -774,22 +777,52 @@
     if(!box) return;
     const act=activeChips();
     if(editOn){
-      // Edit: 전체 목록 보여주고 켜진 건 진하게, 클릭으로 토글
-      box.innerHTML=ALL_SPEC_CHIPS.map(c=>
-        `<span class="chip chip-edit ${act.includes(c)?'chip-on':'chip-off'}" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`
-      ).join('');
-      box.querySelectorAll('.chip-edit').forEach(el=>{
+      // Edit: 기본 목록 + 직접 추가한 칩 + "+ Add" 버튼
+      const custom=act.filter(c=>!ALL_SPEC_CHIPS.includes(c));   // 직접 추가한 칩
+      const presets=ALL_SPEC_CHIPS.map(c=>
+        `<span class="chip chip-edit ${act.includes(c)?'chip-on':'chip-off'}" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
+      const customs=custom.map(c=>
+        `<span class="chip chip-edit chip-on" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
+      box.innerHTML=presets.join('')+customs.join('')+
+        `<span class="chip chip-edit chip-add" id="chipAdd">+ Add</span>`;
+      box.querySelectorAll('.chip-edit:not(.chip-add)').forEach(el=>{
         el.addEventListener('click',async()=>{
           const c=el.dataset.chip;
           let list=activeChips();
           if(list.includes(c)) list=list.filter(x=>x!==c); else list=[...list,c];
-          // ALL 순서대로 정렬해 일관성 유지
-          list=ALL_SPEC_CHIPS.filter(x=>list.includes(x));
+          // 기본 목록 순서 + 직접 추가한 건 뒤에
+          list=[...ALL_SPEC_CHIPS.filter(x=>list.includes(x)), ...list.filter(x=>!ALL_SPEC_CHIPS.includes(x))];
           styleSettings.spec_chips=list;
           renderSpecChips();
           const ok=await saveSettings(currentStyle,{spec_chips:list});
           if(!ok) alert('Could not save. Please try again.');
         });
+      });
+      // + Add → 입력칸으로
+      const addBtn=box.querySelector('#chipAdd');
+      if(addBtn) addBtn.addEventListener('click',()=>{
+        const input=document.createElement('input');
+        input.type='text'; input.placeholder='New spec…';
+        input.style.cssText='font-family:var(--body);font-size:13px;border:1px solid var(--accent);border-radius:999px;padding:7px 14px;outline:none;width:150px';
+        addBtn.replaceWith(input); input.focus();
+        const done=async(save)=>{
+          const v=input.value.trim();
+          if(save && v){
+            let list=activeChips();
+            if(!list.includes(v)) list=[...list,v];
+            styleSettings.spec_chips=list;
+            renderSpecChips();
+            const ok=await saveSettings(currentStyle,{spec_chips:list});
+            if(!ok) alert('Could not save. Please try again.');
+          }else{
+            renderSpecChips();
+          }
+        };
+        input.addEventListener('keydown',e=>{
+          if(e.key==='Enter'){ e.preventDefault(); done(true); }
+          else if(e.key==='Escape'){ done(false); }
+        });
+        input.addEventListener('blur',()=>done(true));
       });
     }else{
       box.innerHTML=act.map(c=>`<span class="chip">${c}</span>`).join('');

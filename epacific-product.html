@@ -1068,8 +1068,10 @@
         szChip.addEventListener('click',()=>{
           const tg=document.getElementById('sgToggle');
           const panel=document.getElementById('sgPanel');
-          if(tg && panel && !panel.classList.contains('open')) tg.click();  // 닫혀 있으면 열기
-          if(tg) tg.scrollIntoView({behavior:'smooth',block:'center'});
+          if(!tg || !panel) return;
+          const wasOpen=panel.classList.contains('open');
+          tg.click();                                     // 토글: 열려 있으면 닫고, 닫혀 있으면 열기
+          if(!wasOpen) tg.scrollIntoView({behavior:'smooth',block:'center'});  // 열 때만 스크롤
         }); }
       recalc();
     }catch(e){

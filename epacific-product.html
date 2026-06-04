@@ -178,6 +178,11 @@
   .editmode tr.color-hidden .cn-check::after{content:''}
   .editmode .cn{cursor:text;border-bottom:1px dashed transparent}
   .editmode .cn:hover{border-bottom-color:var(--faint)}
+  /* Edit 모드: ★ = 메인 사진 색 지정 */
+  .cn-star{display:none}
+  .editmode .cn-star{display:inline-flex;cursor:pointer;color:#d8d5cc;font-size:15px;line-height:1;flex-shrink:0}
+  .editmode .cn-star:hover{color:#e8b73c}
+  .editmode .cn-star.on{color:#e8b73c}
   /* 숫자 스피너 화살표 숨김 (공간 확보) */
   .otable input::-webkit-outer-spin-button,.otable input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
   .otable input[type=number]{-moz-appearance:textfield;appearance:textfield}
@@ -484,6 +489,7 @@
     const colorCell = isFirst
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span>`+
         `<span class="cn-wrap"><span class="cn-check" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Show/hide this color"></span>`+
+        `<span class="cn-star${(styleSettings.default_color===(c._raw||c.raw||c.name))?' on':''}" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Set as main photo">★</span>`+
         `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span></div></td>`
       : '';
     const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
@@ -910,8 +916,23 @@
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
-  const firstWithImg = colors.find(c=>c.img) || colors[0];
-  setMain(firstWithImg);
+  // 메인 사진 기본 색 선택: 직접 지정 > 대표색 우선순위 > 사진 있는 첫 색
+  function pickDefaultColor(){
+    // 1) 사장님이 ★로 지정한 색
+    if(styleSettings.default_color){
+      const t=colors.find(c=>(c._raw||c.raw||c.name)===styleSettings.default_color);
+      if(t) return t;
+    }
+    // 2) 대표색 우선순위 (사진 있는 것 중에서)
+    const PREF=['BLACK','NAVY','ATHLETIC HTR','ATHLETIC HEATHER','HEATHER GREY','HEATHER GRAY','CHARCOAL','CHARCOAL (HT)','WHITE','ROYAL','RED'];
+    for(const p of PREF){
+      const t=colors.find(c=>c.img && String(c._raw||c.raw||c.name).toUpperCase()===p);
+      if(t) return t;
+    }
+    // 3) 사진 있는 첫 색 → 없으면 첫 색
+    return colors.find(c=>c.img) || colors[0];
+  }
+  setMain(pickDefaultColor());
   _setMainFn = setMain;
   // 색상 수 칩을 실제 색상 수로
   const ccChip=document.getElementById('colorCountChip');
@@ -955,6 +976,17 @@
       // 체크박스 클릭 → 숨기기/켜기
       const chk=e.target.closest('.cn-check');
       if(chk){ toggleColor(chk.dataset.raw); return; }
+      // ★ 클릭 → 메인 사진 색으로 지정 (다시 누르면 해제=자동)
+      const st=e.target.closest('.cn-star');
+      if(st){
+        const raw=st.dataset.raw;
+        const newVal = (styleSettings.default_color===raw) ? null : raw;
+        styleSettings.default_color=newVal;
+        buildAllRows(); recalc();
+        setMain(pickDefaultColor());
+        saveSettings(currentStyle,{default_color:newVal}).then(ok=>{ if(!ok) alert('Could not save.'); });
+        return;
+      }
       return; // Edit 모드에선 (이름은 더블클릭으로 수정) 사진 변경 안 함
     }
     const cell=e.target.closest('.colcell'); if(!cell) return;
@@ -997,9 +1029,9 @@
   let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
   async function loadStyleSettings(style){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips,description',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips,description,default_color',
         {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
-      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null };
+      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null, default_color:null };
       const d=await r.json();
       const row=(d&&d[0])||{};
       return {
@@ -1007,9 +1039,10 @@
         hidden_colors: Array.isArray(row.hidden_colors)?row.hidden_colors:[],
         color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{},
         spec_chips: Array.isArray(row.spec_chips)?row.spec_chips:null,
-        description: (typeof row.description==='string'&&row.description.trim())?row.description:null
+        description: (typeof row.description==='string'&&row.description.trim())?row.description:null,
+        default_color: (typeof row.default_color==='string'&&row.default_color.trim())?row.default_color:null
       };
-    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null }; }
+    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null, default_color:null }; }
   }
   async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
   // 부분 저장 (바뀐 칸만 merge)

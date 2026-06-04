@@ -285,7 +285,7 @@
   <div id="bulkLog" style="line-height:1.7"></div>
 </div>
 
-<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">Men's</a><span>/</span><a href="#">Short Sleeve</a><span>/</span><span id="pCrumb"></span></div>
+<div class="crumb"><a href="#">Home</a><span>/</span><a href="epacific-category.html" id="crumbCat1">Men's</a><span>/</span><a href="#" id="crumbCat2"></a><span>/</span><span id="pCrumb"></span></div>
 
 <div class="product">
   <!-- GALLERY -->
@@ -1054,6 +1054,20 @@
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=niceName;
       const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='Style #'+STYLE;
       const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
+      // 빵부스러기 중간 단계도 카테고리에 맞게 (Men's/Kids, Short Sleeve/Long Sleeve/Tank Top 등)
+      (function(){
+        const rawCat = product.category || '';
+        const seg1 = /youth|kid|juvy|toddler/i.test(rawCat) ? 'Kids & Youth' : "Men's";
+        let seg2 = 'Short Sleeve';
+        if(/L\/S|Long/i.test(rawCat)) seg2='Long Sleeve';
+        if(/Tank/i.test(rawCat)) seg2='Tank Top';
+        if(/V-?Neck/i.test(rawCat)) seg2='V-Neck';
+        if(/Hood/i.test(rawCat)) seg2='Hoodie';
+        if(/Raglan/i.test(rawCat)) seg2='Raglan';
+        if(/Performance/i.test(rawCat)) seg2='Performance';
+        const c1=document.getElementById('crumbCat1'); if(c1) c1.textContent=seg1;
+        const c2=document.getElementById('crumbCat2'); if(c2) c2.textContent=seg2;
+      })();
       // 상단 작은 라벨: 카테고리 + 원단 (스타일 설명에서 자동 추출)
       const kick=document.getElementById('pKicker');
       if(kick){

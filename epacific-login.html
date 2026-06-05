@@ -288,19 +288,40 @@
     if(pw.length<6){ rmsg('Password must be at least 6 characters.','err'); return; }
     const btn=document.getElementById('regBtn'); btn.disabled=true; btn.textContent='Submitting…';
     try{
-      // 1) 계정 생성
+      // 1) 계정 생성 (이미 있으면 로그인으로 이어감 — 이전 시도가 중간에 실패한 경우)
+      let userId=null, token=null;
       const r=await fetch(_URL+'/auth/v1/signup',{
         method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({email,password:pw})
       });
       const data=await r.json();
-      if(!r.ok){
+      if(r.ok){
+        userId=(data.user&&data.user.id)||data.id||null;
+        token=data.access_token||null;
+      }else{
         const m=(data.error_description||data.msg||'').toLowerCase();
-        if(m.includes('already')) throw new Error('This email is already registered. Try logging in instead.');
-        throw new Error(data.error_description||data.msg||'Could not create the account');
+        if(!m.includes('already')) throw new Error(data.error_description||data.msg||'Could not create the account');
+        // 계정은 이미 있음 → 같은 비밀번호로 로그인해서 신청 이어가기
+        const lr=await fetch(_URL+'/auth/v1/token?grant_type=password',{
+          method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
+          body:JSON.stringify({email,password:pw})
+        });
+        const ld=await lr.json();
+        if(!lr.ok) throw new Error('This email is already registered. If it\'s yours, use the same password — or go to Log in.');
+        userId=(ld.user&&ld.user.id)||null;
+        token=ld.access_token||null;
+        // 이미 신청이 들어가 있는지 확인
+        const ck=await fetch(_URL+'/rest/v1/customers?user_id=eq.'+userId+'&select=id,status',
+          {headers:{apikey:_KEY,Authorization:'Bearer '+token}});
+        if(ck.ok){
+          const rows=await ck.json();
+          if(rows&&rows.length){
+            document.getElementById('regForm').style.display='none';
+            document.getElementById('okMsg').classList.add('show');
+            return;   // 이미 신청됨 — 성공 화면만
+          }
+        }
       }
-      const userId=(data.user&&data.user.id)||data.id||null;
-      const token=data.access_token||null;
       // 1.5) 서류 파일이 있으면 업로드 (비공개 보관함)
       let docPath=null;
       const docFile=document.getElementById('regDoc').files[0];

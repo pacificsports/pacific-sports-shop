@@ -332,7 +332,7 @@
         docPath='taxdocs/'+Date.now()+'-'+safe;
         const up=await fetch(_URL+'/storage/v1/object/customer-docs/'+encodeURI(docPath),{
           method:'POST',
-          headers:{apikey:_KEY,Authorization:'Bearer '+_KEY,'Content-Type':docFile.type||'application/octet-stream','x-upsert':'true'},
+          headers:{apikey:_KEY,Authorization:'Bearer '+_KEY,'Content-Type':docFile.type||'application/octet-stream'},
           body:docFile
         });
         if(!up.ok){ const t=await up.text(); throw new Error('Could not upload the certificate: '+t.slice(0,100)); }

@@ -423,15 +423,17 @@
   }
 
   function addEditToCart(oi){
-    let total=0; editState[oi].forEach(ln=>total+=lineQty(ln.sizes));
-    if(total===0){ showToast('Enter at least one quantity'); return; }
-    cartCount+=total;
-    document.getElementById('cartCount').textContent=cartCount;
-    showToast(`✓ Added to cart · ${total} pcs`);
+    const items=[];
+    editState[oi].forEach(ln=>{ for(const sz in ln.sizes){ const q=ln.sizes[sz]; if(q>0) items.push({style:ln.style,styleName:styleName(ln.style),color:ln.color,wh:ln.wh,size:sz,qty:q}); } });
+    if(!items.length){ showToast('Enter at least one quantity'); return; }
+    const t=items.reduce((s,i)=>s+i.qty,0);
+    if(window.PacificCart) window.PacificCart.add(items);
+    showToast(`\u2713 Added to cart \u00b7 ${t} pcs`);
     cancelEdit(oi);
+    setTimeout(()=>{ location.href='epacific-cart.html'; },700);
   }
 
-  function viewInvoice(id){ showToast(`Invoice ${id} — (demo)`); }
+  function viewInvoice(id){ location.href='epacific-invoice.html?id='+encodeURIComponent(id); }
 
   let toastT;
   function showToast(msg){
@@ -524,5 +526,6 @@
   else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
 })();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

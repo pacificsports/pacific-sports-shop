@@ -362,8 +362,18 @@
   const tU=document.getElementById('totalUnits'),sT=document.getElementById('subtotal'),addBtn=document.getElementById('addBtn');
   function recalc(){let u=0,m=0;inputs.forEach(i=>{const q=parseInt(i.value)||0;u+=q;m+=q*parseFloat(i.dataset.price)});tU.textContent=u;sT.textContent='$'+m.toFixed(2);addBtn.disabled=u===0}
   inputs.forEach(i=>i.addEventListener('input',recalc));
-  let cart=0;const cc=document.getElementById('cartCount'),toast=document.getElementById('toast');
-  addBtn.addEventListener('click',()=>{let u=0;inputs.forEach(i=>u+=parseInt(i.value)||0);if(u===0)return;cart+=u;cc.textContent=cart;const color=document.querySelector('.swatch.active').dataset.name;toast.textContent='✓ '+u+' units added ('+color+')';toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200);inputs.forEach(i=>i.value=0);recalc()});
+  const SIZES_HOME=['XS','S','M','L','XL','2XL','3XL'];
+  const toast=document.getElementById('toast');
+  addBtn.addEventListener('click',()=>{
+    const color=document.querySelector('.swatch.active').dataset.name;
+    const items=[]; let u=0;
+    inputs.forEach((inp,idx)=>{ const q=parseInt(inp.value)||0; if(q>0){ u+=q; items.push({style:'1368',styleName:'1368 30/1 60:40 Short Sleeve Crew',color:color,wh:'SC',size:SIZES_HOME[idx]||('S'),qty:q}); } });
+    if(u===0) return;
+    if(window.PacificCart) window.PacificCart.add(items);
+    toast.textContent='\u2713 '+u+' units added ('+color+') \u2014 see Cart';
+    toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2400);
+    inputs.forEach(i=>i.value=0); recalc();
+  });
 </script>
 
 <script src="pacific-config.js"></script>
@@ -437,5 +447,6 @@
   else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
 })();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

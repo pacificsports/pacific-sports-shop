@@ -80,10 +80,11 @@
 <script src="pacific-admin-auth.js"></script>
 <script>
   const _C=window.PACIFIC_CONFIG||{};
+  const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }
   function cartSet(c){ try{localStorage.setItem('pacific_cart',JSON.stringify(c));}catch(e){} }
-  function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
-  function customer(){ try{return JSON.parse(sessionStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
   function esc(t){ return String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
   function render(){
@@ -133,7 +134,7 @@
         const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId+'&select=status,company_name,contact_name,phone',
           {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
         if(r.ok){ const rows=await r.json();
-          if(rows&&rows[0]&&rows[0].status==='approved'){ allowed=true; sessionStorage.setItem('pacific_customer',JSON.stringify(rows[0])); }
+          if(rows&&rows[0]&&rows[0].status==='approved'){ allowed=true; localStorage.setItem('pacific_customer',JSON.stringify(rows[0])); }
           else if(rows&&rows[0]){ note.style.display='block'; note.textContent='🔒 Your wholesale account is pending approval — you can submit orders once approved.'; }
           else { note.style.display='block'; note.innerHTML='🔒 No wholesale account found. <a href="epacific-login.html?pane=reg" style="color:var(--accent);font-weight:700">Apply here</a>.'; }
         }
@@ -165,6 +166,15 @@
         })
       });
       if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,140)); }
+      // 확인 이메일 (거래처 + 사장님 알림) — 실패해도 주문은 유지
+      if(EMAIL_WORKER){
+        fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({type:'order',to:s.email,data:{
+            order_number:ono,total_pcs:total,items:cart,
+            notes:document.getElementById('orderNotes').value.trim()||null,
+            company_name:cust.company_name||null,contact_name:cust.contact_name||null,phone:cust.phone||null
+          }})}).catch(()=>{});
+      }
       cartSet([]);
       document.getElementById('orderArea').style.display='none';
       document.getElementById('okBox').style.display='block';
@@ -180,5 +190,6 @@
   document.getElementById('submitBtn').addEventListener('click',submitOrder);
   init();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

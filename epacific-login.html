@@ -222,8 +222,10 @@
       const data=await r.json();
       if(!r.ok) throw new Error(data.error_description||data.msg||'Login failed');
       // 로그인 성공 — 세션 저장 (직원/거래처 공통). 이후 화면에서 권한 확인.
-      try{ sessionStorage.setItem('pacific_user', JSON.stringify({
-        token:data.access_token, userId:data.user&&data.user.id, email:data.user&&data.user.email
+      try{ localStorage.setItem('pacific_user', JSON.stringify({
+        token:data.access_token, refresh:data.refresh_token||null,
+        expires_at: Date.now() + ((data.expires_in||3600)*1000),
+        userId:data.user&&data.user.id, email:data.user&&data.user.email
       })); }catch(e){}
       // 거래처면 승인 상태 확인해서 안내
       let pendingNote='';
@@ -233,7 +235,7 @@
         if(cr.ok){
           const rows=await cr.json();
           if(rows&&rows[0]){
-            sessionStorage.setItem('pacific_customer', JSON.stringify(rows[0]));
+            localStorage.setItem('pacific_customer', JSON.stringify(rows[0]));
             if(rows[0].status!=='approved') pendingNote=' Your wholesale account is pending approval — pricing unlocks once approved.';
           }
         }
@@ -332,7 +334,7 @@
         docPath='taxdocs/'+Date.now()+'-'+safe;
         const up=await fetch(_URL+'/storage/v1/object/customer-docs/'+encodeURI(docPath),{
           method:'POST',
-          headers:{apikey:_KEY,Authorization:'Bearer '+_KEY,'Content-Type':docFile.type||'application/octet-stream'},
+          headers:{apikey:_KEY,Authorization:'Bearer '+(token||_KEY),'Content-Type':docFile.type||'application/octet-stream'},
           body:docFile
         });
         if(!up.ok){ const t=await up.text(); throw new Error('Could not upload the certificate: '+t.slice(0,100)); }

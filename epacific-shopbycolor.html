@@ -206,7 +206,7 @@
       </div>
       <div class="styles">
         ${STYLES.map(s=>`
-          <div class="st-card" onclick="alert('Demo: would open the #${s[0]} product page (${name} selected)')">
+          <div class="st-card" onclick="location.href='epacific-product.html?style=${s[0]}'">
             <div class="tee">${teeSVG(hex,40)}</div>
             <div class="si"><div class="no">#${s[0]}</div><div class="nm">${s[1]}</div><div class="meta">${s[2]}</div></div>
           </div>`).join('')}
@@ -289,5 +289,6 @@
   else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
 })();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

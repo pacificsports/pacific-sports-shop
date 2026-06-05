@@ -64,10 +64,11 @@
 <script>
   const _C=window.PACIFIC_CONFIG||{};
   const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
+  const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   const SIZE_ORDER=['XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL'];
   let view='new', rows=[];
 
-  function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
   function esc(t){ return String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
   async function load(){
@@ -116,6 +117,7 @@
         <div class="acts">
           ${hasSC?`<button class="pt" data-pt="SC" data-id="${r.id}">🖨 Pick ticket — SC</button>`:''}
           ${hasCA?`<button class="pt" data-pt="CA" data-id="${r.id}">🖨 Pick ticket — CA</button>`:''}
+          ${r.status==='new'?`<button data-id="${r.id}" data-act="accepted" style="background:#3d5a40;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600">Accept \u2713</button>`:''}
           ${r.status==='new'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
         ${active?`
@@ -148,6 +150,13 @@
        body:JSON.stringify(body)});
     if(!r.ok){ alert('Could not save ('+r.status+').'); return; }
     const row=rows.find(x=>x.id===id); if(row){ Object.assign(row,body); }
+    // 배송 알림 이메일 (실패해도 shipped 상태는 유지)
+    if(status==='shipped' && row && row.email && EMAIL_WORKER){
+      fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:'shipped',to:row.email,data:{
+          order_number:row.order_number,carrier:body.carrier||row.carrier,tracking_number:body.tracking_number||row.tracking_number
+        }})}).catch(()=>console.warn('shipped email failed'));
+    }
     render();
   }
 

@@ -57,7 +57,7 @@
   const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   let view='pending', rows=[];
 
-  function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
 
   async function load(){
     const s=session();

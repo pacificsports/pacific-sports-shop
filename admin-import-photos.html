@@ -69,7 +69,7 @@
     $('lo').onclick=e=>{e.preventDefault();PacificAuth.logout();location.reload();};
   })();
 
-  function token(){ try{ return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
+  function token(){ try{ return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
   function norm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   function log(html){ const l=$('log'); l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; }
 
@@ -115,7 +115,7 @@
         const matched=byNorm[norm(colorText)] || colorText; // IMS 색상명으로 맞춤
         const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
         const path=style+'/'+norm(matched).toLowerCase()+'.'+ext;
-        const H={apikey:KEY,Authorization:'Bearer '+KEY};
+        const H={apikey:KEY,Authorization:'Bearer '+tk};  // 직원 토큰으로 업로드
         // Storage 업로드 — POST(upsert) 먼저 (제품화면에서 성공한 방식), 안되면 PUT
         let up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
           {method:'POST',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});

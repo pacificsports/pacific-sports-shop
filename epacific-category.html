@@ -285,7 +285,7 @@
   }
   // 스타일 숨김 저장
   async function saveStyleHidden(styleNo, hidden){
-    const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
     if(!tk){ alert('Session expired. Please log in again.'); return false; }
     const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
     const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
@@ -470,5 +470,6 @@
   else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
 })();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

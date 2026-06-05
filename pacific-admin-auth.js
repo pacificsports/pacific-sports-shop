@@ -5,18 +5,18 @@
    여기서는 "지금 로그인한 사람이 수정 권한 있는 직원인지"만 판단.
    허용 role(user_roles): owner / accounting / sales.
 
-   세션은 sessionStorage 'pacific_user' 에 저장됨 (로그인 화면이 저장):
+   세션은 localStorage 'pacific_user' 에 저장됨 (로그인 화면이 저장):
      { token, userId, email }
    여기에 role 을 확인해서 staff 여부를 알려줌.
    ===================================================================== */
 window.PacificAuth = (function () {
   const CFG = window.PACIFIC_CONFIG || {};
   const URL = CFG.SUPABASE_URL, KEY = CFG.SUPABASE_ANON_KEY;
-  const STAFF_ROLES = ['owner', 'accounting', 'sales'];
+  const STAFF_ROLES = ['owner', 'accounting', 'sales', 'warehouse'];
   const SS_KEY = 'pacific_user';
 
-  function _session(){ try{ return JSON.parse(sessionStorage.getItem(SS_KEY)||'null'); }catch(e){ return null; } }
-  function logout(){ try{ sessionStorage.removeItem(SS_KEY); }catch(e){} }
+  function _session(){ try{ return JSON.parse(localStorage.getItem(SS_KEY)||'null'); }catch(e){ return null; } }
+  function logout(){ try{ localStorage.removeItem(SS_KEY); }catch(e){} }
 
   // 로그인한 사용자의 role 조회 (본인 토큰으로 user_roles)
   async function _fetchRole(s){

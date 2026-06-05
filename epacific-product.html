@@ -267,7 +267,7 @@
         <div id="searchResults" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:380px;max-height:60vh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px -18px rgba(28,28,26,.4);padding:6px;z-index:300"></div>
       </div>
       <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
-      <button id="staffBtn" onclick="location.href='epacific-login.html?next='+encodeURIComponent('epacific-product.html'+location.search)" style="background:transparent;border:1px solid var(--line-2);color:var(--soft-ink);font-size:13px;padding:8px 14px;border-radius:8px;cursor:pointer">Staff Login</button>
+      <button id="staffBtn" style="display:none"></button>
     </div>
   </div>
 </header>
@@ -1228,14 +1228,13 @@
       if(btn) btn.style.display='none';
       if(bar){ bar.classList.add('show'); el('staffName').textContent=staff.name+' ('+staff.role+')'; }
     }else{
-      if(btn) btn.style.display='';
+      if(btn) btn.style.display='none';   // 비직원에겐 직원용 UI 자체를 안 보임 (로그인은 헤더 Login으로)
       if(bar) bar.classList.remove('show');
       editOn=false; document.body.classList.remove('editmode');
     }
   }
   refreshStaff();
 
-  // (Staff Login 버튼은 inline onclick으로 동작 — 스크립트 오류와 무관하게 항상 작동)
 
   // 수정 모드 토글 (행 재생성 없음 → 즉시 반응)
   if(el('editToggle')) el('editToggle').addEventListener('click',()=>{

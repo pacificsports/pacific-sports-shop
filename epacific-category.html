@@ -242,7 +242,7 @@
         <button id="catEditToggle" style="margin-left:12px;border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px">Edit styles</button>
         <button id="catLogout" style="margin-left:6px;border:none;background:none;color:var(--faint);cursor:pointer;font-size:13px">Log out</button>
       </span>
-      <button id="catLoginBtn" style="border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px;display:none">Staff Login</button>
+      
     </div>
 
     <div class="grid" id="grid"></div>
@@ -397,7 +397,7 @@
       const lo=document.getElementById('catLogout');
       if(lo) lo.addEventListener('click',()=>{ if(window.PacificAuth)PacificAuth.logout(); location.reload(); });
     }else{
-      bar.style.display='none';  // 손님에겐 직원 바 안 보임 (헤더의 Staff Login 사용)
+      bar.style.display='none';  // 손님에겐 직원 바 안 보임 (직원도 헤더 Login으로 로그인)
     }
   }
 </script>

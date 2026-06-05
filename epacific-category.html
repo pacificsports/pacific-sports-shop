@@ -364,7 +364,7 @@
       allStyles = await PacificData.getStyles();
       thumbs = await PacificData.getStyleThumbs();   // 사진 있으면 카드에 표시
       await loadHiddenStyles();                       // 숨긴 스타일 로드
-      try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentUser()); }catch(e){ isStaff=false; }
+      try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }
       setupStaffBar();
       const q=new URLSearchParams(location.search).get('cat');
       if(q) activeCat=q;

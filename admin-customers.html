@@ -47,6 +47,7 @@
 </div>
 
 <script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
 <script>
   const _C=window.PACIFIC_CONFIG||{};
   const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
@@ -60,6 +61,11 @@
       document.getElementById('msg').innerHTML='Please <a href="epacific-login.html?next='+encodeURIComponent('admin-customers.html')+'">log in as staff</a> first.';
       return;
     }
+    // 직원(owner/accounting/sales)만 — 거래처 차단
+    try{
+      const st=await PacificAuth.currentStaff();
+      if(!st){ document.getElementById('msg').textContent='This page is for Pacific Sports staff only.'; return; }
+    }catch(e){ document.getElementById('msg').textContent='Could not verify staff access.'; return; }
     const r=await fetch(URL_+'/rest/v1/customer_applications?select=*&order=created_at.desc',
       {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
     if(!r.ok){ document.getElementById('msg').textContent='Could not load applications ('+r.status+'). Make sure you are logged in as staff.'; return; }

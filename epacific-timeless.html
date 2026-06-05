@@ -214,6 +214,31 @@
   </div>
 </header>
 
+<!-- 직원 바: 로그인한 직원에게만 표시 -->
+<div id="homeStaffBar" style="display:none;background:#243425;color:#e8e6df;padding:10px 24px;font-size:13.5px;align-items:center;gap:14px;flex-wrap:wrap">
+  <b id="homeStaffName">Staff</b>
+  <span style="opacity:.65">· Manage the shop</span>
+  <span style="flex:1"></span>
+  <button onclick="location.href='admin-customers.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Customer approvals</button>
+  <button onclick="location.href='epacific-category.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Manage styles</button>
+  <button id="homeStaffLogout" style="border:none;background:none;color:#b9b6ab;cursor:pointer;font-size:13px">Log out</button>
+</div>
+<script>
+(async function(){
+  try{
+    if(!window.PacificAuth) return;
+    const st=await PacificAuth.currentStaff();   // 직원(owner/accounting/sales)만 — 거래처에겐 안 보임
+    if(!st) return;
+    const bar=document.getElementById('homeStaffBar');
+    bar.style.display='flex';
+    const n=document.getElementById('homeStaffName');
+    if(n) n.textContent=(st.name||st.email)+' ('+st.role+')';
+    const lo=document.getElementById('homeStaffLogout');
+    if(lo) lo.addEventListener('click',()=>{ PacificAuth.logout(); location.reload(); });
+  }catch(e){}
+})();
+</script>
+
 
 
 <div class="hero">
@@ -336,6 +361,7 @@
 </script>
 
 <script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
 
 

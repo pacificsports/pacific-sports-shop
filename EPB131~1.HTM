@@ -205,7 +205,7 @@
   function acAddrInfo(){ toast('To update addresses, contact Pacific Sports.'); }
 
   const _C = window.PACIFIC_CONFIG || {};
-  function _sess(){ try{ return JSON.parse(sessionStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
+  function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
 
   async function acLoad(){
     const s=_sess();

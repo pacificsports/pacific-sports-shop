@@ -69,7 +69,7 @@
     $('lo').onclick=e=>{e.preventDefault();PacificAuth.logout();location.reload();};
   })();
 
-  function token(){ try{ return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
+  function token(){ try{ return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
   function norm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   function log(html){ const l=$('log'); l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; }
 

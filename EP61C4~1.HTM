@@ -1081,7 +1081,7 @@
   async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
   // 부분 저장 (바뀐 칸만 merge)
   async function saveSettings(style, patch){
-    const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
     if(!tk){ alert('Session expired. Please log in again.'); return false; }
     const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
     const body=Object.assign({style_number:style, updated_at:new Date().toISOString()}, patch);
@@ -1120,7 +1120,7 @@
         const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
         if(st){ canOrder=true; lockReason=null; }
         else{
-          const sess=(()=>{try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
           if(sess && sess.token && sess.userId){
             const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
               {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
@@ -1280,7 +1280,7 @@
     if(!file.type.startsWith('image/')){ alert('Only image files are allowed.'); return; }
     // 로그인 확인 (이 도구는 직원만 접근), 업로드는 anon 정책 사용 (admin 도구와 동일 방식)
     let token=null;
-    try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
+    try{ token=(JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
     if(!token){ alert('Session expired. Please log in again.'); return; }
     const path=safeName(color,file); const prev=ov.textContent; ov.textContent='Uploading…';
     const H={apikey:SB_KEY,Authorization:'Bearer '+token};  // 직원 토큰으로 업로드 (anon 아님)
@@ -1336,7 +1336,7 @@
 
   async function bulkUpload(files){
     let token=null;
-    try{ token=(JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
+    try{ token=(JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
     if(!token){ alert('Session expired. Please log in again.'); return; }
     el('bulkPanel').style.display='block';
     el('bulkLog').innerHTML='';
@@ -1458,5 +1458,6 @@
     document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
   })();
 </script>
+<script src="pacific-nav.js"></script>
 </body>
 </html>

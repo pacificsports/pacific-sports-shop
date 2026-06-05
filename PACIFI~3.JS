@@ -43,7 +43,7 @@
   }
 
   function logout() {
-    try { sessionStorage.removeItem('pacific_user'); sessionStorage.removeItem('pacific_customer'); } catch (e) {}
+    try { localStorage.removeItem('pacific_user'); localStorage.removeItem('pacific_customer'); } catch (e) {}
     location.href = 'epacific-login.html';
   }
 
@@ -81,7 +81,29 @@
 
   window.PacificCart = { getCart: getCart, setCart: setCart, total: total, add: add, refresh: refreshBadge, logout: logout };
 
-  function boot() { wireCartButtons(); wireLinks(); refreshBadge(); }
+  // 로그인 상태면 헤더의 Login → Log out, Register → My Account 로 토글
+  function getSession() {
+    try { return JSON.parse(localStorage.getItem('pacific_user') || 'null'); } catch (e) { return null; }
+  }
+  function applyAuthState() {
+    var s = getSession();
+    var loggedIn = !!(s && s.token);
+    if (!loggedIn) return;
+    var as = document.querySelectorAll('a[href^="epacific-login.html"]');
+    for (var i = 0; i < as.length; i++) {
+      var a = as[i], href = a.getAttribute('href') || '';
+      if (href.indexOf('pane=reg') > -1) {           // Register → My Account
+        a.textContent = 'My Account';
+        a.setAttribute('href', 'epacific-account.html');
+      } else {                                        // Login → Log out
+        a.textContent = 'Log out';
+        a.setAttribute('href', '#');
+        a.addEventListener('click', function (e) { e.preventDefault(); logout(); });
+      }
+    }
+  }
+
+  function boot() { wireCartButtons(); wireLinks(); applyAuthState(); refreshBadge(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();

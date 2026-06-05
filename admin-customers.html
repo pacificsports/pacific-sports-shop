@@ -53,6 +53,8 @@
   const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
   // AI 서류 검토 Worker 주소
   const CERT_AI_WORKER='https://cert-check.hjbae.workers.dev';
+  // 이메일 발송 Worker 주소
+  const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   let view='pending', rows=[];
 
   function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
@@ -174,6 +176,13 @@
        body:JSON.stringify(body)});
     if(!r.ok){ alert('Could not save ('+r.status+').'); return; }
     const row=rows.find(x=>x.id===id); if(row) row.status=status;
+    // 승인이면 거래처에게 승인 이메일 (실패해도 승인 자체는 유지)
+    if(status==='approved' && row && row.email && EMAIL_WORKER){
+      fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:'approval',to:row.email,data:{company_name:row.company_name,contact_name:row.contact_name}})})
+        .then(res=>res.ok?null:console.warn('approval email failed'))
+        .catch(()=>console.warn('approval email failed'));
+    }
     render();
   }
 

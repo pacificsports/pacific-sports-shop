@@ -92,6 +92,8 @@
   .chip-edit.chip-on[draggable]{cursor:grab}
   .chip-edit.chip-on[draggable]:active{cursor:grabbing}
   .chip-add{border-style:dashed;color:var(--accent);font-weight:600}
+  /* 권한 없을 때: 재고 가림 표시 */
+  .stock.lockd{color:var(--line-2);font-size:14px}
   /* Edit 모드: 설명 더블클릭 수정 표시 */
   .desc-editable{cursor:text;outline:1px dashed var(--line-2);outline-offset:6px;border-radius:4px}
   .desc-editable:hover{outline-color:var(--accent)}
@@ -336,7 +338,7 @@
       </div>
     </div>
 
-    <div class="login-note">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
+    <div class="login-note" id="loginNote">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
 
     <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력 -->
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
@@ -477,6 +479,9 @@
   }
 
   // 한 창고(SC 또는 CA)의 한 줄을 만든다
+  // 주문 권한: 직원 또는 승인된 거래처만 재고/수량 입력 가능
+  let canOrder=false, lockReason='login';   // 'login' | 'pending' | null
+
   function buildWHRow(c,wh,isFirst,hidden){
     const tr=document.createElement('tr');
     tr.dataset.color=c.name; tr.dataset.wh=wh;
@@ -500,6 +505,12 @@
       const avail=stIdx>=0 ? (st[stIdx]||0) : 0;
       const out=avail===0;
       const isHidden = hiddenSizes.includes(s);  // 숨긴 사이즈 열
+      // 권한 없으면: 재고 숨기고 입력 잠금
+      if(!canOrder && !editOn){
+        return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''}"><div class="cellwrap">`+
+          `<input type="number" min="0" placeholder="–" inputmode="numeric" disabled title="Available to approved wholesale accounts">`+
+          `<span class="stock lockd">·</span></div></td>`;
+      }
       const stockHtml = out
         ? `<span class="stock out">Out of<br>stock</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
@@ -1082,6 +1093,33 @@
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
       stockMap  = await PacificData.getInventory(STYLE, product);
+      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
+      try{
+        const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
+        if(st){ canOrder=true; lockReason=null; }
+        else{
+          const sess=(()=>{try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+          if(sess && sess.token && sess.userId){
+            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
+              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
+            if(ar.ok){
+              const rows=await ar.json();
+              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; }
+              else if(rows && rows[0]){ lockReason='pending'; }
+              else { lockReason='login'; }
+            }
+          }else{ lockReason='login'; }
+        }
+      }catch(e){ canOrder=false; lockReason='login'; }
+      // 안내문 갱신
+      (function(){
+        const note=document.getElementById('loginNote');
+        if(!note) return;
+        if(canOrder){ note.style.display='none'; return; }
+        note.innerHTML = lockReason==='pending'
+          ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
+          : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
+      })();
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;

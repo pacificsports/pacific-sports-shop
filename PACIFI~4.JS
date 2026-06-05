@@ -12,7 +12,7 @@
 window.PacificAuth = (function () {
   const CFG = window.PACIFIC_CONFIG || {};
   const URL = CFG.SUPABASE_URL, KEY = CFG.SUPABASE_ANON_KEY;
-  const STAFF_ROLES = ['owner', 'accounting', 'sales'];
+  const STAFF_ROLES = ['owner', 'accounting', 'sales', 'warehouse'];
   const SS_KEY = 'pacific_user';
 
   function _session(){ try{ return JSON.parse(sessionStorage.getItem(SS_KEY)||'null'); }catch(e){ return null; } }

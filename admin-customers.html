@@ -51,6 +51,8 @@
 <script>
   const _C=window.PACIFIC_CONFIG||{};
   const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
+  // AI 서류 검토 Worker 주소
+  const CERT_AI_WORKER='https://cert-check.hjbae.workers.dev';
   let view='pending', rows=[];
 
   function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
@@ -90,12 +92,67 @@
         <span class="badge ${r.status}">${r.status}</span>
         <div class="acts">
           ${r.tax_doc_path?`<button class="reject" data-doc="${esc(r.tax_doc_path)}">View certificate</button>`:''}
+          ${r.tax_doc_path?`<button class="reject" data-ai="${r.id}">🤖 AI check</button>`:''}
           ${r.status!=='approved'?`<button class="approve" data-id="${r.id}" data-act="approved">Approve</button>`:''}
           ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
+        ${aiBadge(r.ai_check)}
       </div>`).join('');
     list.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act)));
     list.querySelectorAll('button[data-doc]').forEach(b=>b.addEventListener('click',()=>viewDoc(b.dataset.doc)));
+    list.querySelectorAll('button[data-ai]').forEach(b=>b.addEventListener('click',()=>aiCheck(b.dataset.ai,b)));
+  }
+
+  // AI 검토 결과 배지
+  function aiBadge(ai){
+    if(!ai) return '';
+    if(ai.error) return `<div style="margin-top:10px;background:#f8ecea;color:#a8463f;border-radius:9px;padding:9px 13px;font-size:13.5px">🤖 AI check failed: ${esc(ai.error)}</div>`;
+    const v=ai.verdict||'warn';
+    const bg = v==='pass' ? 'var(--accent-soft)' : v==='fail' ? '#f8ecea' : '#fdf3e2';
+    const fg = v==='pass' ? 'var(--accent)' : v==='fail' ? '#a8463f' : '#9a6b1f';
+    const icon = v==='pass' ? '✓' : v==='fail' ? '✗' : '⚠';
+    const detail=[
+      ai.company_on_doc?('Doc company: '+esc(ai.company_on_doc)):null,
+      ai.tax_id_on_doc?('ID: '+esc(ai.tax_id_on_doc)):null,
+      ai.state?('State: '+esc(ai.state)):null,
+      ai.expiration?('Expires: '+esc(ai.expiration)):null
+    ].filter(Boolean).join(' · ');
+    return `<div style="margin-top:10px;background:${bg};color:${fg};border-radius:9px;padding:9px 13px;font-size:13.5px">
+      <b>🤖 ${icon} ${v.toUpperCase()}</b> — ${esc(ai.summary||'')}
+      ${detail?('<div style="margin-top:3px;font-size:12.5px;opacity:.85">'+detail+'</div>'):''}
+    </div>`;
+  }
+
+  // AI 서류 검토: 서명 링크 만들어 Worker로 보내고 결과 저장
+  async function aiCheck(id,btn){
+    if(!CERT_AI_WORKER){ alert('AI check worker is not set up yet.'); return; }
+    const r=rows.find(x=>x.id===id); if(!r||!r.tax_doc_path) return;
+    const s=session(); if(!s){ alert('Session expired.'); return; }
+    const orig=btn.textContent; btn.disabled=true; btn.textContent='🤖 Checking…';
+    try{
+      // 1) 서류 서명 링크 (1시간)
+      const sr=await fetch(URL_+'/storage/v1/object/sign/customer-docs/'+encodeURI(r.tax_doc_path),
+        {method:'POST',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json'},
+         body:JSON.stringify({expiresIn:3600})});
+      if(!sr.ok) throw new Error('Could not access the document ('+sr.status+')');
+      const sd=await sr.json();
+      const fileUrl=URL_+'/storage/v1'+sd.signedURL;
+      // 2) Worker 호출
+      const wr=await fetch(CERT_AI_WORKER,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({fileUrl,company_name:r.company_name,resale_tax_id:r.resale_tax_id,contact_name:r.contact_name})
+      });
+      const result=await wr.json();
+      // 3) 결과 저장 + 표시
+      r.ai_check=result;
+      await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+id,
+        {method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+         body:JSON.stringify({ai_check:result})});
+      render();
+    }catch(e){
+      alert('AI check failed: '+e.message);
+      btn.disabled=false; btn.textContent=orig;
+    }
   }
 
   // 비공개 서류 → 1시간짜리 서명 링크 만들어 새 탭으로

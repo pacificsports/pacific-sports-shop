@@ -219,23 +219,29 @@
   <b id="homeStaffName">Staff</b>
   <span style="opacity:.65">· Manage the shop</span>
   <span style="flex:1"></span>
+  <button onclick="location.href='admin-web-orders.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Web orders</button>
   <button onclick="location.href='admin-customers.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Customer approvals</button>
   <button onclick="location.href='epacific-category.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Manage styles</button>
   <button id="homeStaffLogout" style="border:none;background:none;color:#b9b6ab;cursor:pointer;font-size:13px">Log out</button>
 </div>
 <script>
-(async function(){
-  try{
-    if(!window.PacificAuth) return;
-    const st=await PacificAuth.currentStaff();   // 직원(owner/accounting/sales)만 — 거래처에겐 안 보임
-    if(!st) return;
-    const bar=document.getElementById('homeStaffBar');
-    bar.style.display='flex';
-    const n=document.getElementById('homeStaffName');
-    if(n) n.textContent=(st.name||st.email)+' ('+st.role+')';
-    const lo=document.getElementById('homeStaffLogout');
-    if(lo) lo.addEventListener('click',()=>{ PacificAuth.logout(); location.reload(); });
-  }catch(e){}
+(function(){
+  async function initStaffBar(){
+    try{
+      if(!window.PacificAuth) return;
+      const st=await PacificAuth.currentStaff();   // 직원(owner/accounting/sales)만 — 거래처에겐 안 보임
+      if(!st) return;
+      const bar=document.getElementById('homeStaffBar');
+      bar.style.display='flex';
+      const n=document.getElementById('homeStaffName');
+      if(n) n.textContent=(st.name||st.email)+' ('+st.role+')';
+      const lo=document.getElementById('homeStaffLogout');
+      if(lo) lo.addEventListener('click',()=>{ PacificAuth.logout(); location.reload(); });
+    }catch(e){}
+  }
+  // 아래쪽 스크립트(admin-auth)가 로드된 뒤에 실행
+  if(document.readyState==='complete'||document.readyState==='interactive') setTimeout(initStaffBar,0);
+  else document.addEventListener('DOMContentLoaded',initStaffBar);
 })();
 </script>
 

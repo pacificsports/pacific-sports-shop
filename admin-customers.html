@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacific Sports — Customer Approvals</title>
+<style>
+  :root{--paper:#fdfdfb;--ink:#1c1c1a;--soft-ink:#4c4a44;--faint:#8b8880;--line:#e7e4dc;--line-2:#d6d2c6;--accent:#3d5a40;--accent-soft:#eef1ec}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Avenir Next','Segoe UI',system-ui,sans-serif;background:#f6f5f1;color:var(--ink);padding:30px 16px}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:24px;margin-bottom:4px}
+  .sub{color:var(--faint);font-size:14px;margin-bottom:22px}
+  .tabs{display:flex;gap:8px;margin-bottom:16px}
+  .tabs button{border:1px solid var(--line-2);background:var(--paper);padding:8px 18px;border-radius:999px;cursor:pointer;font-size:13.5px;color:var(--soft-ink)}
+  .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .card .info{flex:1;min-width:240px}
+  .company{font-weight:700;font-size:16px}
+  .meta{color:var(--soft-ink);font-size:13.5px;margin-top:3px;line-height:1.6}
+  .badge{font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
+  .badge.pending{background:#fdf3e2;color:#9a6b1f}
+  .badge.approved{background:var(--accent-soft);color:var(--accent)}
+  .badge.rejected{background:#f8ecea;color:#a8463f}
+  .acts{display:flex;gap:8px}
+  .acts button{border:none;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
+  .approve{background:var(--accent);color:#fff}
+  .reject{background:#f1efe9;color:var(--soft-ink)}
+  #msg{padding:30px;text-align:center;color:var(--faint)}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .top a{color:var(--accent);font-size:13.5px;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Customer Approvals</h1>
+    <a href="epacific-timeless.html">← Back to site</a>
+  </div>
+  <div class="sub">Review wholesale account applications. Approved customers can log in and see pricing.</div>
+  <div class="tabs">
+    <button id="tabPending" class="on">Pending</button>
+    <button id="tabAll">All</button>
+  </div>
+  <div id="list"></div>
+  <div id="msg">Loading…</div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script>
+  const _C=window.PACIFIC_CONFIG||{};
+  const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
+  let view='pending', rows=[];
+
+  function session(){ try{return JSON.parse(sessionStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+
+  async function load(){
+    const s=session();
+    if(!s||!s.token){
+      document.getElementById('msg').innerHTML='Please <a href="epacific-login.html?next='+encodeURIComponent('admin-customers.html')+'">log in as staff</a> first.';
+      return;
+    }
+    const r=await fetch(URL_+'/rest/v1/customers?select=*&order=created_at.desc',
+      {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
+    if(!r.ok){ document.getElementById('msg').textContent='Could not load applications ('+r.status+'). Make sure you are logged in as staff.'; return; }
+    rows=await r.json();
+    render();
+  }
+
+  function render(){
+    const list=document.getElementById('list'); const msg=document.getElementById('msg');
+    const show = view==='pending' ? rows.filter(r=>r.status==='pending') : rows;
+    if(!show.length){ list.innerHTML=''; msg.style.display='block'; msg.textContent = view==='pending' ? 'No pending applications. 🎉' : 'No applications yet.'; return; }
+    msg.style.display='none';
+    list.innerHTML=show.map(r=>`
+      <div class="card">
+        <div class="info">
+          <div class="company">${esc(r.company_name||'(no name)')}</div>
+          <div class="meta">
+            ${esc(r.contact_name||'')} · ${esc(r.email||'')} · ${esc(r.phone||'')}<br>
+            Tax ID: ${esc(r.resale_tax_id||'—')} · Warehouse: ${esc(r.primary_warehouse||'—')} · Applied: ${(r.created_at||'').slice(0,10)}
+          </div>
+        </div>
+        <span class="badge ${r.status}">${r.status}</span>
+        <div class="acts">
+          ${r.status!=='approved'?`<button class="approve" data-id="${r.id}" data-act="approved">Approve</button>`:''}
+          ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act)));
+  }
+
+  async function setStatus(id,status){
+    const s=session(); if(!s){ alert('Session expired.'); return; }
+    const body={status}; if(status==='approved') body.approved_at=new Date().toISOString();
+    const r=await fetch(URL_+'/rest/v1/customers?id=eq.'+id,
+      {method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+       body:JSON.stringify(body)});
+    if(!r.ok){ alert('Could not save ('+r.status+').'); return; }
+    const row=rows.find(x=>x.id===id); if(row) row.status=status;
+    render();
+  }
+
+  function esc(t){ return String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+  document.getElementById('tabPending').addEventListener('click',()=>{view='pending';tab();render();});
+  document.getElementById('tabAll').addEventListener('click',()=>{view='all';tab();render();});
+  function tab(){
+    document.getElementById('tabPending').classList.toggle('on',view==='pending');
+    document.getElementById('tabAll').classList.toggle('on',view==='all');
+  }
+  load();
+</script>
+</body>
+</html>

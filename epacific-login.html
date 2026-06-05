@@ -137,36 +137,42 @@
       <div id="regForm">
         <div class="field">
           <label>Business name</label>
-          <input type="text" placeholder="Your company / brand">
+          <input type="text" id="regCompany" placeholder="Your company / brand">
         </div>
         <div class="row2">
           <div class="field">
             <label>Contact name</label>
-            <input type="text" placeholder="First & last">
+            <input type="text" id="regContact" placeholder="First &amp; last">
           </div>
           <div class="field">
             <label>Phone</label>
-            <input type="tel" placeholder="(000) 000-0000">
+            <input type="tel" id="regPhone" placeholder="(000) 000-0000">
           </div>
         </div>
         <div class="field">
           <label>Email</label>
-          <input type="email" placeholder="you@company.com">
+          <input type="email" id="regEmail" placeholder="you@company.com">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="regPw" placeholder="Create a password (6+ characters)">
+          <div class="hint">You'll use this to log in once your account is approved.</div>
         </div>
         <div class="field">
           <label>Resale certificate / Tax ID</label>
-          <input type="text" placeholder="Seller's permit or resale ID">
+          <input type="text" id="regTax" placeholder="Seller's permit or resale ID">
           <div class="hint">Required to buy at wholesale. We verify this before activating your account.</div>
         </div>
         <div class="field">
           <label>Primary warehouse</label>
-          <select>
+          <select id="regWh">
             <option>SC — Sumter (East Coast)</option>
             <option>CA — Eastvale (West Coast)</option>
             <option>Both</option>
           </select>
         </div>
-        <button class="btn" onclick="fakeRegister()">Submit application →</button>
+        <div id="regMsg" style="display:none;margin-bottom:12px;padding:10px 14px;border-radius:9px;font-size:13.5px"></div>
+        <button class="btn" id="regBtn" onclick="doRegister()">Submit application →</button>
         <div class="swap">Already have an account? <a onclick="showPane('login')">Log in</a></div>
       </div>
       <div class="ok-msg" id="okMsg">
@@ -214,9 +220,22 @@
       try{ sessionStorage.setItem('pacific_user', JSON.stringify({
         token:data.access_token, userId:data.user&&data.user.id, email:data.user&&data.user.email
       })); }catch(e){}
-      lmsg('✓ Logged in. Redirecting…','ok');
+      // 거래처면 승인 상태 확인해서 안내
+      let pendingNote='';
+      try{
+        const cr=await fetch(_URL+'/rest/v1/customers?user_id=eq.'+(data.user&&data.user.id)+'&select=company_name,status',
+          {headers:{apikey:_KEY,Authorization:'Bearer '+data.access_token}});
+        if(cr.ok){
+          const rows=await cr.json();
+          if(rows&&rows[0]){
+            sessionStorage.setItem('pacific_customer', JSON.stringify(rows[0]));
+            if(rows[0].status!=='approved') pendingNote=' Your wholesale account is pending approval — pricing unlocks once approved.';
+          }
+        }
+      }catch(e){}
+      lmsg('✓ Logged in.'+pendingNote+' Redirecting…','ok');
       const next = new URLSearchParams(location.search).get('next');
-      setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, 1000);
+      setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, pendingNote?2200:1000);
     }catch(e){
       lmsg('Login failed: '+e.message,'err');
       btn.disabled=false; btn.textContent='Log in →';
@@ -243,9 +262,61 @@
     document.getElementById('okMsg').classList.add('show');
   }
 
+  function rmsg(t,kind){
+    const m=document.getElementById('regMsg');
+    m.style.display='block'; m.textContent=t;
+    m.style.background = kind==='ok' ? '#eef1ec' : '#f8ecea';
+    m.style.color = kind==='ok' ? '#3d5a40' : '#a8463f';
+    m.style.border = '1px solid ' + (kind==='ok' ? '#dce4da' : '#ecd6d3');
+  }
+
+  // 진짜 가입: Supabase 계정 생성 + customers에 신청 저장 (status=pending)
+  async function doRegister(){
+    const company=document.getElementById('regCompany').value.trim();
+    const contact=document.getElementById('regContact').value.trim();
+    const phone=document.getElementById('regPhone').value.trim();
+    const email=document.getElementById('regEmail').value.trim();
+    const pw=document.getElementById('regPw').value;
+    const tax=document.getElementById('regTax').value.trim();
+    const wh=document.getElementById('regWh').value;
+    if(!company||!email||!pw){ rmsg('Business name, email, and password are required.','err'); return; }
+    if(pw.length<6){ rmsg('Password must be at least 6 characters.','err'); return; }
+    const btn=document.getElementById('regBtn'); btn.disabled=true; btn.textContent='Submitting…';
+    try{
+      // 1) 계정 생성
+      const r=await fetch(_URL+'/auth/v1/signup',{
+        method:'POST', headers:{apikey:_KEY,'Content-Type':'application/json'},
+        body:JSON.stringify({email,password:pw})
+      });
+      const data=await r.json();
+      if(!r.ok){
+        const m=(data.error_description||data.msg||'').toLowerCase();
+        if(m.includes('already')) throw new Error('This email is already registered. Try logging in instead.');
+        throw new Error(data.error_description||data.msg||'Could not create the account');
+      }
+      const userId=(data.user&&data.user.id)||data.id||null;
+      const token=data.access_token||null;
+      // 2) 신청 정보 저장 (pending)
+      const H={apikey:_KEY,Authorization:'Bearer '+(token||_KEY),'Content-Type':'application/json','Prefer':'return=minimal'};
+      const ins=await fetch(_URL+'/rest/v1/customers',{
+        method:'POST', headers:H,
+        body:JSON.stringify({user_id:userId,email,company_name:company,contact_name:contact,phone,resale_tax_id:tax,primary_warehouse:wh,status:'pending'})
+      });
+      if(!ins.ok){ const t=await ins.text(); throw new Error('Could not save your application: '+t.slice(0,120)); }
+      // 성공 화면
+      document.getElementById('regForm').style.display='none';
+      document.getElementById('okMsg').classList.add('show');
+    }catch(e){
+      rmsg(e.message,'err');
+      btn.disabled=false; btn.textContent='Submit application →';
+    }
+  }
+
   document.getElementById('loginBtn').addEventListener('click',doLogin);
   document.getElementById('forgotLink').addEventListener('click',e=>{e.preventDefault();doForgot();});
   document.getElementById('loginPw').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  // URL에 ?pane=reg 이면 가입 탭으로 시작
+  if(new URLSearchParams(location.search).get('pane')==='reg') showPane('reg');
 </script>
 </body>
 </html>

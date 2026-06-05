@@ -164,6 +164,11 @@
           <div class="hint">Required to buy at wholesale. We verify this before activating your account.</div>
         </div>
         <div class="field">
+          <label>Attach certificate (photo or PDF)</label>
+          <input type="file" id="regDoc" accept="image/*,.pdf" style="padding:10px;border:1.5px dashed var(--line-2);border-radius:10px;width:100%;background:var(--paper);font-size:13.5px;cursor:pointer">
+          <div class="hint">Optional but speeds up approval — attach your resale certificate or seller's permit.</div>
+        </div>
+        <div class="field">
           <label>Primary warehouse</label>
           <select id="regWh">
             <option>SC — Sumter (East Coast)</option>
@@ -296,11 +301,26 @@
       }
       const userId=(data.user&&data.user.id)||data.id||null;
       const token=data.access_token||null;
+      // 1.5) 서류 파일이 있으면 업로드 (비공개 보관함)
+      let docPath=null;
+      const docFile=document.getElementById('regDoc').files[0];
+      if(docFile){
+        if(docFile.size>10*1024*1024) throw new Error('Certificate file is too large (max 10 MB).');
+        btn.textContent='Uploading document…';
+        const safe=docFile.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+        docPath='taxdocs/'+Date.now()+'-'+safe;
+        const up=await fetch(_URL+'/storage/v1/object/customer-docs/'+encodeURI(docPath),{
+          method:'POST',
+          headers:{apikey:_KEY,Authorization:'Bearer '+_KEY,'Content-Type':docFile.type||'application/octet-stream','x-upsert':'true'},
+          body:docFile
+        });
+        if(!up.ok){ const t=await up.text(); throw new Error('Could not upload the certificate: '+t.slice(0,100)); }
+      }
       // 2) 신청 정보 저장 (pending)
       const H={apikey:_KEY,Authorization:'Bearer '+(token||_KEY),'Content-Type':'application/json','Prefer':'return=minimal'};
       const ins=await fetch(_URL+'/rest/v1/customers',{
         method:'POST', headers:H,
-        body:JSON.stringify({user_id:userId,email,company_name:company,contact_name:contact,phone,resale_tax_id:tax,primary_warehouse:wh,status:'pending'})
+        body:JSON.stringify({user_id:userId,email,company_name:company,contact_name:contact,phone,resale_tax_id:tax,primary_warehouse:wh,status:'pending',tax_doc_path:docPath})
       });
       if(!ins.ok){ const t=await ins.text(); throw new Error('Could not save your application: '+t.slice(0,120)); }
       // 성공 화면

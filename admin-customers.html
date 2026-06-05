@@ -83,11 +83,24 @@
         </div>
         <span class="badge ${r.status}">${r.status}</span>
         <div class="acts">
+          ${r.tax_doc_path?`<button class="reject" data-doc="${esc(r.tax_doc_path)}">View certificate</button>`:''}
           ${r.status!=='approved'?`<button class="approve" data-id="${r.id}" data-act="approved">Approve</button>`:''}
           ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
       </div>`).join('');
     list.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act)));
+    list.querySelectorAll('button[data-doc]').forEach(b=>b.addEventListener('click',()=>viewDoc(b.dataset.doc)));
+  }
+
+  // 비공개 서류 → 1시간짜리 서명 링크 만들어 새 탭으로
+  async function viewDoc(path){
+    const s=session(); if(!s){ alert('Session expired.'); return; }
+    const r=await fetch(URL_+'/storage/v1/object/sign/customer-docs/'+encodeURI(path),
+      {method:'POST',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json'},
+       body:JSON.stringify({expiresIn:3600})});
+    if(!r.ok){ alert('Could not open the document ('+r.status+').'); return; }
+    const d=await r.json();
+    if(d.signedURL) window.open(URL_+'/storage/v1'+d.signedURL,'_blank');
   }
 
   async function setStatus(id,status){

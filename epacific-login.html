@@ -228,7 +228,7 @@
       // 거래처면 승인 상태 확인해서 안내
       let pendingNote='';
       try{
-        const cr=await fetch(_URL+'/rest/v1/customers?user_id=eq.'+(data.user&&data.user.id)+'&select=company_name,status',
+        const cr=await fetch(_URL+'/rest/v1/customer_applications?user_id=eq.'+(data.user&&data.user.id)+'&select=company_name,status',
           {headers:{apikey:_KEY,Authorization:'Bearer '+data.access_token}});
         if(cr.ok){
           const rows=await cr.json();
@@ -311,7 +311,7 @@
         userId=(ld.user&&ld.user.id)||null;
         token=ld.access_token||null;
         // 이미 신청이 들어가 있는지 확인
-        const ck=await fetch(_URL+'/rest/v1/customers?user_id=eq.'+userId+'&select=id,status',
+        const ck=await fetch(_URL+'/rest/v1/customer_applications?user_id=eq.'+userId+'&select=id,status',
           {headers:{apikey:_KEY,Authorization:'Bearer '+token}});
         if(ck.ok){
           const rows=await ck.json();
@@ -339,7 +339,7 @@
       }
       // 2) 신청 정보 저장 (pending)
       const H={apikey:_KEY,Authorization:'Bearer '+(token||_KEY),'Content-Type':'application/json','Prefer':'return=minimal'};
-      const ins=await fetch(_URL+'/rest/v1/customers',{
+      const ins=await fetch(_URL+'/rest/v1/customer_applications',{
         method:'POST', headers:H,
         body:JSON.stringify({user_id:userId,email,company_name:company,contact_name:contact,phone,resale_tax_id:tax,primary_warehouse:wh,status:'pending',tax_doc_path:docPath})
       });

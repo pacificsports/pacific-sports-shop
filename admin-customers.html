@@ -60,7 +60,7 @@
       document.getElementById('msg').innerHTML='Please <a href="epacific-login.html?next='+encodeURIComponent('admin-customers.html')+'">log in as staff</a> first.';
       return;
     }
-    const r=await fetch(URL_+'/rest/v1/customers?select=*&order=created_at.desc',
+    const r=await fetch(URL_+'/rest/v1/customer_applications?select=*&order=created_at.desc',
       {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
     if(!r.ok){ document.getElementById('msg').textContent='Could not load applications ('+r.status+'). Make sure you are logged in as staff.'; return; }
     rows=await r.json();
@@ -106,7 +106,7 @@
   async function setStatus(id,status){
     const s=session(); if(!s){ alert('Session expired.'); return; }
     const body={status}; if(status==='approved') body.approved_at=new Date().toISOString();
-    const r=await fetch(URL_+'/rest/v1/customers?id=eq.'+id,
+    const r=await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+id,
       {method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
        body:JSON.stringify(body)});
     if(!r.ok){ alert('Could not save ('+r.status+').'); return; }

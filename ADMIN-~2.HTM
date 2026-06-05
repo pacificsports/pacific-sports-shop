@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Bulk Photo Upload</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#fbfbf9;--paper:#fff;--ink:#1c1c1a;--soft:#56564f;--faint:#8e8e85;--line:#e8e7e1;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f;--ok:#3d5a40;--body:'Geist',sans-serif;--display:'Instrument Serif',serif}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);background:var(--bg);color:var(--ink);padding:30px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto}
+  h1{font-family:var(--display);font-weight:400;font-size:30px;margin-bottom:6px}
+  .sub{color:var(--faint);font-size:14px;margin-bottom:24px;line-height:1.6}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:18px}
+  .who{font-size:13px;color:var(--faint);margin-bottom:18px}
+  .who a{color:var(--accent)}
+  .note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:13px 15px;font-size:13px;color:var(--soft);line-height:1.7;margin-bottom:18px}
+  .note b{color:var(--ink)}
+  .drop{border:2px dashed var(--line);border-radius:14px;padding:48px 20px;text-align:center;color:var(--faint);cursor:pointer;transition:.15s;background:var(--bg)}
+  .drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .drop .big{font-size:17px;font-weight:500;color:var(--ink);margin-bottom:6px}
+  button{font-family:var(--body);font-size:15px;font-weight:500;padding:12px 22px;border:none;border-radius:9px;background:var(--ink);color:#fff;cursor:pointer}
+  button:hover{background:var(--accent)}
+  button:disabled{opacity:.5;cursor:default}
+  .bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden;margin:18px 0 8px;display:none}
+  .bar>div{height:100%;background:var(--accent);width:0;transition:width .25s}
+  .log{font-size:13px;line-height:1.7;max-height:360px;overflow:auto;margin-top:14px;display:none}
+  .log .ok{color:var(--ok)} .log .er{color:var(--err)} .log .sk{color:var(--faint)}
+  .count{font-size:13px;color:var(--soft);display:none;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Bulk Photo Upload</h1>
+  <div class="sub">Upload your saved product photos all at once. They auto-link to colors by filename.</div>
+  <div class="who" id="who">Checking…</div>
+
+  <div class="note">
+    Filenames like <b>style-color.jpg</b> auto-link. (e.g. <b>1368-navy.jpg</b> → 1368 NAVY)<br>
+    Drag many files at once or click to choose. Photos are stored on the new server.
+  </div>
+
+  <div class="card">
+    <div class="drop" id="drop">
+      <div class="big">Drag photos here</div>
+      <div>or click to choose files (multiple allowed)</div>
+    </div>
+    <div class="count" id="count"></div>
+    <div class="bar" id="barWrap"><div id="bar"></div></div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<input type="file" id="filepick" accept="image/*" multiple style="display:none">
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script src="pacific-data.js"></script>
+<script>
+  const CFG=window.PACIFIC_CONFIG||{}, SB=CFG.SUPABASE_URL, KEY=CFG.SUPABASE_ANON_KEY, BUCKET=CFG.IMAGE_BUCKET||'product-images';
+  const $=id=>document.getElementById(id);
+
+  (async()=>{
+    if(!SB||!KEY){ $('who').textContent='No config (check pacific-config.js)'; return; }
+    let staff=null; try{ staff=await PacificAuth.currentStaff(); }catch(e){}
+    if(!staff){ location.href='epacific-login.html?next=admin-import-photos.html'; return; }
+    $('who').innerHTML=staff.name+' ('+staff.role+') · <a href="#" id="lo">Log out</a>';
+    $('lo').onclick=e=>{e.preventDefault();PacificAuth.logout();location.reload();};
+  })();
+
+  function token(){ try{ return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){ return null; } }
+  function norm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function log(html){ const l=$('log'); l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; }
+
+  // 파일명에서 스타일번호와 색상 뽑기: "1368-navy.jpg" → {style:1368, colorRaw:navy}
+  function parseName(filename){
+    const base=filename.replace(/\.[^.]+$/,'');           // 확장자 제거
+    const m=base.match(/^(\d{3,5})[-_\s]+(.+)$/);          // 숫자-나머지
+    if(m) return { style:m[1], colorText:m[2] };
+    return null;
+  }
+
+  // 드래그/클릭
+  const drop=$('drop'), pick=$('filepick');
+  drop.onclick=()=>pick.click();
+  pick.onchange=()=>{ if(pick.files.length) handleFiles([...pick.files]); };
+  drop.ondragover=e=>{ e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave=()=>drop.classList.remove('over');
+  drop.ondrop=e=>{ e.preventDefault(); drop.classList.remove('over'); const fs=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')); if(fs.length) handleFiles(fs); };
+
+  // IMS 색상 캐시 (스타일별)
+  const imsCache={};
+  async function imsColors(style){
+    if(imsCache[style]) return imsCache[style];
+    let cols=[];
+    try{ const p=await PacificData.getProduct(style); cols=(p.colors||[]).map(c=>c.raw||c.name); }catch(e){}
+    const byNorm={}; cols.forEach(c=>byNorm[norm(c)]=c);
+    imsCache[style]=byNorm; return byNorm;
+  }
+
+  async function handleFiles(files){
+    const tk=token(); if(!tk){ alert('Session expired. Please log in again.'); return; }
+    $('barWrap').style.display='block'; $('count').style.display='block'; $('log').style.display='block';
+    let done=0, ok=0, fail=0, skip=0;
+    for(const file of files){
+      done++;
+      $('bar').style.width=Math.round(done/files.length*100)+'%';
+      $('count').textContent=done+' / '+files.length;
+      const parsed=parseName(file.name);
+      if(!parsed){ skip++; log('<span class="sk">— '+file.name+' : could not read style/color from name (skipped)</span>'); continue; }
+      const {style, colorText}=parsed;
+      try{
+        const byNorm=await imsColors(style);
+        const matched=byNorm[norm(colorText)] || colorText; // IMS 색상명으로 맞춤
+        const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+        const path=style+'/'+norm(matched).toLowerCase()+'.'+ext;
+        const H={apikey:KEY,Authorization:'Bearer '+tk};  // 직원 토큰으로 업로드
+        // Storage 업로드 — POST(upsert) 먼저 (제품화면에서 성공한 방식), 안되면 PUT
+        let up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
+          {method:'POST',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
+        if(!up.ok)
+          up=await fetch(SB+'/storage/v1/object/'+BUCKET+'/'+encodeURI(path),
+            {method:'PUT',headers:{...H,'Content-Type':file.type||'image/jpeg','x-upsert':'true'},body:file});
+        if(!up.ok) throw new Error('업로드 '+up.status+': '+(await up.text()).slice(0,200));
+        // DB 연결 (있으면 PATCH 없으면 POST)
+        const find=await fetch(SB+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(style)+'&color=eq.'+encodeURIComponent(matched)+'&select=id',{headers:H});
+        const ex=await find.json();
+        if(ex&&ex.length){
+          await fetch(SB+'/rest/v1/product_images?id=eq.'+ex[0].id,{method:'PATCH',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({image_path:path})});
+        }else{
+          await fetch(SB+'/rest/v1/product_images',{method:'POST',headers:{...H,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({style_number:style,color:matched,image_path:path})});
+        }
+        ok++; log('<span class="ok">✓ '+style+' · '+matched+'</span>');
+      }catch(e){ fail++; log('<span class="er">✗ '+file.name+' — '+e.message+'</span>'); }
+    }
+    log('<br><b>Done: '+ok+' uploaded'+(skip?' · '+skip+' skipped':'')+(fail?' · '+fail+' failed':'')+'</b>');
+    log('<span class="sk">Refresh the product page to see the photos.</span>');
+  }
+</script>
+</body>
+</html>

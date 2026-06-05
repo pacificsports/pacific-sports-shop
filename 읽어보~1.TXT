@@ -1,0 +1,12 @@
+[이 폴더 = 웹사이트 본체]
+
+이 폴더 안의 파일 전부를 GitHub 새 레포에 올리세요.
+(supabase-setup.sql, shop-email-worker.js 는 여기 없습니다 — 다른 폴더에 있어요. 사이트엔 안 올립니다.)
+
+순서:
+1) github.com → New repository → 이름 예: pacific-sports-shop
+2) Add file → Upload files → 이 폴더의 파일 전부 드래그 → Commit
+3) Cloudflare → Workers & Pages → Create → Pages → Connect to Git → 이 레포 선택
+   - Build command: (비움)
+   - Build output directory: /
+4) 배포되면 xxxxx.pages.dev 주소로 열립니다. 첫 화면 = index.html

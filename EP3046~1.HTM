@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Men's Short Sleeve</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  img{display:block;max-width:100%}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo-img{height:40px;width:auto;display:block}
+  .fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
+
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item{position:relative}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:color .2s,background .2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .nav-item>a.active{color:var(--ink)}
+  .mega{position:absolute;top:100%;left:0;margin-top:6px;background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 30px 60px -30px rgba(28,28,26,.25);padding:28px 32px;display:none;grid-template-columns:repeat(2,minmax(150px,1fr));gap:32px;min-width:410px}
+  .mega::before{content:"";position:absolute;top:-10px;left:0;right:0;height:10px}
+  .nav-item:hover .mega{display:grid}
+  .mega h4{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:15px}
+  .mega a{display:block;padding:8px 10px;margin:0 -10px;font-size:15px;font-weight:450;color:var(--soft-ink);border-radius:9px;transition:background .15s,color .15s}
+  .mega a:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:background .2s,color .2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+  .h-icons .primary:hover{background:var(--accent);color:#fff}
+  .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+
+  /* breadcrumb + page head */
+  .pagehead{max-width:1240px;margin:0 auto;padding:44px 30px 8px}
+  .crumb{font-size:13px;color:var(--faint);margin-bottom:22px}
+  .crumb a:hover{color:var(--ink)}
+  .crumb span{margin:0 8px}
+  .pagehead h1{font-family:var(--display);font-weight:400;font-size:clamp(40px,6vw,72px);line-height:1;letter-spacing:-.015em;margin-bottom:14px}
+  .pagehead p{color:var(--soft-ink);font-size:17px;font-weight:350;max-width:60ch}
+
+  /* layout */
+  .layout{max-width:1240px;margin:0 auto;padding:34px 30px 90px;display:grid;grid-template-columns:240px 1fr;gap:48px;align-items:start}
+
+  /* filters sidebar */
+  .filters{position:sticky;top:104px}
+  .fgroup{border-bottom:1px solid var(--line);padding:20px 0}
+  .fgroup:first-child{padding-top:0}
+  .fgroup h4{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:15px}
+  .fopt{display:flex;align-items:center;gap:10px;padding:7px 0;font-size:15px;color:var(--soft-ink);cursor:pointer;transition:color .15s}
+  .fopt:hover{color:var(--ink)}
+  .fopt input{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+  .fopt .count{margin-left:auto;font-size:13px;color:var(--faint)}
+  .color-dots{display:flex;flex-wrap:wrap;gap:9px;margin-top:4px}
+  .cdot{width:26px;height:26px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:inset 0 0 0 1px rgba(0,0,0,.09);transition:transform .15s}
+  .cdot:hover{transform:scale(1.14)}
+  .cdot.active{border-color:var(--ink)}
+
+  /* toolbar */
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .toolbar .ct{font-size:14px;color:var(--soft-ink)}
+  .toolbar .ct b{color:var(--ink);font-weight:600}
+  .sortsel{font-family:var(--body);font-size:14px;color:var(--ink);border:1px solid var(--line-2);border-radius:999px;padding:9px 16px;background:var(--paper);cursor:pointer}
+
+  /* product grid */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 22px}
+  .card{cursor:pointer;animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+  /* 직원 Edit: 숨긴 스타일 흐리게 + 숨김 토글 배지 */
+  .card.style-hidden{opacity:.5}
+  .editmode .card .thumb{position:relative}
+  .hide-toggle{position:absolute;top:8px;left:8px;right:8px;background:rgba(28,28,26,.82);color:#fff;font-size:11px;font-weight:600;text-align:center;padding:6px 8px;border-radius:7px;cursor:pointer;z-index:5}
+  .card.style-hidden .hide-toggle{background:rgba(176,64,64,.9)}
+  .thumb{position:relative;aspect-ratio:3/3.6;border-radius:14px;overflow:hidden;background:var(--paper);border:1px solid var(--line);margin-bottom:14px}
+  .thumb .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:30px;color:#c8c8bd;background:linear-gradient(165deg,#f4f4ee,#e9e9e0);transition:transform .55s cubic-bezier(.2,.7,.3,1)}
+  .card:hover .thumb .ph{transform:scale(1.05)}
+  .badge{position:absolute;top:12px;left:12px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:500;letter-spacing:.04em;padding:5px 11px;border-radius:999px}
+  .badge.new{background:var(--accent)}
+  .quick{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(251,251,249,.95);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:11px;text-align:center;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
+  .card:hover .quick{opacity:1;transform:translateY(0)}
+  .swatches-mini{display:flex;gap:6px;margin-bottom:9px}
+  .sm{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .style-no{font-size:12px;color:var(--faint);font-weight:500;margin-bottom:3px}
+  .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
+  .pmeta{font-size:13px;color:var(--soft-ink);font-weight:350}
+  .pcolors{font-size:12px;color:var(--faint);margin-top:7px}
+
+  footer{background:var(--ink);color:#9c9c92;padding:70px 30px 32px;margin-top:0}
+  .f-in{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:44px}
+  footer h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg);margin-bottom:18px;font-weight:600}
+  footer a{display:block;padding:6px 0;font-size:14px;color:#9c9c92;font-weight:350;transition:color .2s}
+  footer a:hover{color:var(--bg)}
+  .fb .logo{color:var(--bg);margin-bottom:18px}.fb .logo i{color:var(--warm)}
+  .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
+  .f-bot{max-width:1240px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+
+  @media(max-width:1000px){
+    .layout{grid-template-columns:1fr;gap:24px}
+    .filters{position:static;display:grid;grid-template-columns:repeat(2,1fr);gap:0 30px;border:1px solid var(--line);border-radius:14px;padding:8px 20px}
+    .grid{grid-template-columns:repeat(2,1fr)}
+    nav.main{display:none}
+    .f-in{grid-template-columns:1fr 1fr}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">(CA) 803-447-0012</a><a href="#">(SC) 803-840-2405</a><a href="epacific-login.html?pane=reg">Register</a><a href="epacific-login.html">Login</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="epacific-timeless.html" class="logo"><img src="logo-pacific.png" alt="Pacific Sports" class="logo-img"></a>
+    <nav class="main">
+      <div class="nav-item">
+        <a class="active">Men's</a>
+        <div class="mega">
+          <div><h4>Categories</h4><a href="epacific-category.html?cat=Adult%20S%2FS">Short Sleeve</a><a href="epacific-category.html?cat=Adult%20L%2FS">Long Sleeve</a><a href="epacific-category.html?cat=Adult%20Hoodie%20L%2FS">Hoodies</a><a href="epacific-category.html?cat=Adult%20Tank%20Top">Tank Tops</a><a href="epacific-category.html?cat=Adult%20V-Neck%20S%2FS">V-Neck</a><a href="epacific-category.html?cat=Adult%20Raglan">Raglan</a><a href="epacific-category.html?cat=Adult%20Performance">Performance</a><a href="epacific-category.html">View All</a></div>
+          <div><h4>Featured</h4><a href="#">New Arrivals</a><a href="#">Best Sellers</a></div>
+        </div>
+      </div>
+      <div class="nav-item"><a>Kids &amp; Youth</a>
+        <div class="mega"><div><h4>Categories</h4><a href="epacific-category.html?cat=Kids%20S%2FS">Kids</a><a href="epacific-category.html?cat=Youth%20S%2FS">Youth</a><a href="epacific-category.html?cat=Juvy%20S%2FS">Juvy</a><a href="epacific-category.html?cat=Toddler%20S%2FS">Toddler</a></div><div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a><a href="epacific-category.html">Best Sellers</a></div></div>
+      </div>
+      <div class="nav-item"><a>Collections</a>
+        <div class="mega"><div><h4>Fabric</h4><a href="#">100% Cotton</a><a href="#">60/40 CVC Blend</a><a href="#">Tri-Blend</a><a href="#">Heather</a><a href="#">PFD &amp; Pigment Dye</a><a href="#">Performance Poly</a></div><div><h4>Featured</h4><a href="#">New Colors</a><a href="#">Best Sellers</a></div></div>
+      </div>
+      <div class="nav-item"><a href="epacific-shopbycolor.html">Shop by Color</a></div>
+      <div class="nav-item"><a href="#">Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button id="searchBtn">Search</button>
+      <div id="searchInline" style="display:none;position:relative;align-items:center">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;opacity:.55">🔍</span>
+        <input id="searchInput" type="text" placeholder="Style # or name…" autocomplete="off"
+          style="width:250px;border:1px solid var(--line-2);border-radius:999px;padding:9px 32px 9px 32px;font-family:var(--body);font-size:14px;outline:none;background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(28,28,26,.05)">
+        <button id="searchClose" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:17px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+        <div id="searchResults" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:380px;max-height:60vh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px -18px rgba(28,28,26,.4);padding:6px;z-index:300"></div>
+      </div>
+      <button class="primary">Cart <span class="cart-c">0</span></button>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="pagehead">
+  <div class="crumb"><a href="#">Home</a><span>/</span>Shop All</div>
+  <h1 class="rise">Shop All Products</h1>
+  <p class="rise">Premium blank apparel built to be printed — crews, tanks, long sleeves, and performance, across cotton, blends, heathers, tri-blends, and PFD. Wholesale pricing shown after login.</p>
+</div>
+
+<div class="layout">
+  <!-- FILTERS -->
+  <aside class="filters">
+    <div class="fgroup">
+      <h4>Category</h4>
+      <div id="catFilter"></div>
+    </div>
+    <div class="fgroup">
+      <h4>Fabric</h4>
+      <label class="fopt"><input type="checkbox"> 100% Cotton <span class="count">22</span></label>
+      <label class="fopt"><input type="checkbox"> 60/40 CVC Blend <span class="count">11</span></label>
+      <label class="fopt"><input type="checkbox"> Tri-Blend <span class="count">7</span></label>
+      <label class="fopt"><input type="checkbox"> Color / Snow Heather <span class="count">14</span></label>
+      <label class="fopt"><input type="checkbox"> PFD &amp; Pigment Dye <span class="count">6</span></label>
+      <label class="fopt"><input type="checkbox"> 100% Polyester <span class="count">8</span></label>
+      <label class="fopt"><input type="checkbox"> Special Blend <span class="count">5</span></label>
+    </div>
+    <div class="fgroup">
+      <h4>Style</h4>
+      <label class="fopt"><input type="checkbox"> Crew <span class="count">31</span></label>
+      <label class="fopt"><input type="checkbox"> Tank Top <span class="count">9</span></label>
+      <label class="fopt"><input type="checkbox"> Long Sleeve <span class="count">12</span></label>
+      <label class="fopt"><input type="checkbox"> Hooded Long Sleeve <span class="count">2</span></label>
+      <label class="fopt"><input type="checkbox"> Raglan <span class="count">1</span></label>
+      <label class="fopt"><input type="checkbox"> V-Neck <span class="count">4</span></label>
+    </div>
+    <div class="fgroup">
+      <h4>Yarn</h4>
+      <label class="fopt"><input type="checkbox"> 18/1 <span class="count">3</span></label>
+      <label class="fopt"><input type="checkbox"> 22/1 <span class="count">15</span></label>
+      <label class="fopt"><input type="checkbox"> 30/1 <span class="count">21</span></label>
+      <label class="fopt"><input type="checkbox"> 40/1 <span class="count">2</span></label>
+    </div>
+    <div class="fgroup">
+      <h4>Color</h4>
+      <div class="color-dots">
+        <span class="cdot active" style="background:#f1ece0"></span>
+        <span class="cdot" style="background:#2c2c2c"></span>
+        <span class="cdot" style="background:#6b7b5e"></span>
+        <span class="cdot" style="background:#8a9aa8"></span>
+        <span class="cdot" style="background:#b0383a"></span>
+        <span class="cdot" style="background:#33414f"></span>
+        <span class="cdot" style="background:#6e6e6e"></span>
+        <span class="cdot" style="background:#c9a87c"></span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- PRODUCTS -->
+  <div>
+    <div class="toolbar">
+      <div class="ct">Showing <b id="resultCount">…</b></div>
+      <select class="sortsel">
+        <option>Sort: Featured</option>
+        <option>Newest</option>
+        <option>Best Selling</option>
+        <option>Style Number</option>
+      </select>
+    </div>
+
+    <!-- 직원 바: 스타일 숨기기 관리 -->
+    <div id="catStaffBar" style="display:none;margin-bottom:18px;padding:11px 16px;background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;font-size:13.5px;color:var(--soft-ink);align-items:center;gap:14px">
+      <span id="catStaffInner">
+        <b>Staff</b> · Turn on edit to show/hide whole styles
+        <button id="catEditToggle" style="margin-left:12px;border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;cursor:pointer;font-size:13px">Edit styles</button>
+        <button id="catLogout" style="margin-left:6px;border:none;background:none;color:var(--faint);cursor:pointer;font-size:13px">Log out</button>
+      </span>
+      
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-in">
+    <div class="fb">
+      <div class="logo"><img src="logo-pacific-white.png" alt="Pacific Sports" class="logo-img"></div>
+      <p>Headquartered in Sumter, South Carolina. Founded 1992. Proprietary dyeing and finishing technology, delivering premium cotton blanks nationwide.</p>
+    </div>
+    <div><h4>Shop</h4><a href="#">Men's</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
+    <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
+    <div><h4>Account</h4><a href="epacific-login.html?pane=reg">Register (Reseller)</a><a href="epacific-login.html">Login</a><a href="#">How to Order</a><a href="#">Shipping</a></div>
+  </div>
+  <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
+</footer>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script src="pacific-data.js"></script>
+<script>
+  const colors=['#f1ece0','#2c2c2c','#6b7b5e','#8a9aa8','#b0383a','#33414f','#6e6e6e','#c9a87c','#9c5a3c'];
+  const grid=document.getElementById('grid');
+  let allStyles=[], activeCat='All', thumbs={};
+  let hiddenStyles=new Set();   // 숨긴 스타일 번호
+  let editOn=false, isStaff=false;
+  const _SBcfg=window.PACIFIC_CONFIG||{};
+
+  // 숨긴 스타일 목록 로드 (style_settings.is_hidden=true)
+  async function loadHiddenStyles(){
+    try{
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?is_hidden=eq.true&select=style_number',
+        {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
+      if(!r.ok) return;
+      const d=await r.json();
+      hiddenStyles=new Set((d||[]).map(x=>String(x.style_number)));
+    }catch(e){}
+  }
+  // 스타일 숨김 저장
+  async function saveStyleHidden(styleNo, hidden){
+    const tk=(()=>{try{return (JSON.parse(sessionStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:String(styleNo),is_hidden:hidden,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
+
+  function renderGrid(){
+    let list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat);
+    // 손님(또는 Edit 꺼짐)에겐 숨긴 스타일 제외. 직원 Edit 모드면 전부 표시(숨긴 건 흐리게)
+    if(!(isStaff && editOn)) list = list.filter(s=>!hiddenStyles.has(String(s.no)));
+    grid.innerHTML='';
+    if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:var(--faint)">No styles in this category.</div>'; return; }
+    list.forEach((p,idx)=>{
+      const dots=colors.slice(0,5).map(c=>`<span class="sm" style="background:${c}"></span>`).join('');
+      const hidden=hiddenStyles.has(String(p.no));
+      const card=document.createElement('div');
+      card.className='card'+(hidden?' style-hidden':'');
+      card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
+      const editBadge = (isStaff && editOn)
+        ? `<div class="hide-toggle" data-no="${p.no}">${hidden?'Hidden — click to show':'Showing — click to hide'}</div>`
+        : '';
+      card.innerHTML=`
+        <div class="thumb">
+          ${thumbs[p.no] ? `<img src="${thumbs[p.no]}" alt="Style ${p.no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${p.no}</div>`}
+          <div class="quick">View &amp; order →</div>
+          ${editBadge}
+        </div>
+        <div class="style-no">Style #${p.no}</div>
+        <div class="pname">${p.desc}</div>
+        <div class="pmeta">${p.cat} · ${p.sr}</div>
+        <div class="swatches-mini">${dots}</div>
+        <div class="pcolors">View colors &amp; stock</div>
+      `;
+      // Edit 모드: 숨김 토글 클릭은 이동 막고 토글. 그 외엔 제품으로 이동
+      if(isStaff && editOn){
+        const tg=card.querySelector('.hide-toggle');
+        if(tg) tg.addEventListener('click',async(e)=>{
+          e.stopPropagation();
+          const no=String(p.no); const willHide=!hiddenStyles.has(no);
+          if(willHide) hiddenStyles.add(no); else hiddenStyles.delete(no);
+          renderGrid();
+          const ok=await saveStyleHidden(no, willHide);
+          if(!ok){ alert('Could not save.'); }
+        });
+        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      }else{
+        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+      }
+      grid.appendChild(card);
+    });
+    const cnt=document.getElementById('resultCount');
+    if(cnt) cnt.textContent=list.length+' styles';
+  }
+
+  // 사이드 카테고리 필터를 IMS 카테고리로 동적 생성
+  function buildCategoryFilter(){
+    // 논리적 순서: 반팔 → 긴팔 → 후디 → 탱크 → V넥 → 라글란 → 퍼포먼스 → 유스/키즈
+    const ORDER=['Adult S/S','Adult L/S','Adult Hoodie L/S','Adult Tank Top','Adult V-Neck S/S','Adult Raglan','Adult Performance',
+                 'Youth S/S','Youth L/S','Kids S/S','Kids L/S','Juvy S/S','Juvy L/S','Toddler S/S','Toddler L/S'];
+    const found=[...new Set(allStyles.map(s=>s.cat))];
+    const sorted=[...ORDER.filter(c=>found.includes(c)), ...found.filter(c=>!ORDER.includes(c))];
+    const cats=['All',...sorted];
+    const box=document.getElementById('catFilter');
+    if(!box) return;
+    box.innerHTML=cats.map(c=>
+      `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${c}</label>`
+    ).join('');
+    box.querySelectorAll('input[name=cat]').forEach(r=>r.addEventListener('change',()=>{
+      activeCat=r.value; renderGrid();
+    }));
+  }
+
+  (async function initCategory(){
+    try{
+      allStyles = await PacificData.getStyles();
+      thumbs = await PacificData.getStyleThumbs();   // 사진 있으면 카드에 표시
+      await loadHiddenStyles();                       // 숨긴 스타일 로드
+      try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }
+      setupStaffBar();
+      const q=new URLSearchParams(location.search).get('cat');
+      if(q) activeCat=q;
+      buildCategoryFilter();
+      renderGrid();
+    }catch(e){
+      console.error(e);
+      grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:#b04">Could not load the style list.</div>';
+    }
+  })();
+
+  // 직원 바: 로그인 상태면 Edit 토글 노출
+  function setupStaffBar(){
+    const bar=document.getElementById('catStaffBar');
+    if(!bar) return;
+    if(isStaff){
+      bar.style.display='flex';
+      const inner=document.getElementById('catStaffInner');
+      const login=document.getElementById('catLoginBtn');
+      if(inner) inner.style.display='';
+      if(login) login.style.display='none';
+      const et=document.getElementById('catEditToggle');
+      if(et) et.addEventListener('click',()=>{
+        editOn=!editOn;
+        et.textContent=editOn?'Done editing':'Edit styles';
+        et.classList.toggle('on',editOn);
+        document.body.classList.toggle('editmode',editOn);
+        renderGrid();
+      });
+      const lo=document.getElementById('catLogout');
+      if(lo) lo.addEventListener('click',()=>{ if(window.PacificAuth)PacificAuth.logout(); location.reload(); });
+    }else{
+      bar.style.display='none';  // 손님에겐 직원 바 안 보임 (직원도 헤더 Login으로 로그인)
+    }
+  }
+</script>
+
+
+
+
+
+<script>
+(function(){
+  function boot(){
+  /* ===== 사이트 검색 (헤더 줄에서 입력칸 확장) ===== */
+  (function(){
+    const btn=document.getElementById('searchBtn');
+    const box=document.getElementById('searchInline');
+    const inp=document.getElementById('searchInput');
+    const res=document.getElementById('searchResults');
+    if(!btn||!box||!inp) return;
+    let allStyles=[];
+    async function ensureStyles(){
+      if(allStyles.length) return;
+      try{ allStyles = await PacificData.getStyles(); }catch(e){ allStyles=[]; }
+    }
+    function openSearch(){
+      btn.style.display='none'; box.style.display='inline-flex';
+      ensureStyles(); setTimeout(()=>inp.focus(),30);
+    }
+    function closeSearch(){
+      box.style.display='none'; btn.style.display='';
+      inp.value=''; res.style.display='none'; res.innerHTML='';
+    }
+    function render(q){
+      q=q.trim().toLowerCase();
+      if(!q){ res.style.display='none'; return; }
+      const list=allStyles.filter(s=>
+        String(s.no).toLowerCase().includes(q) ||
+        String(s.desc||'').toLowerCase().includes(q) ||
+        String(s.cat||'').toLowerCase().includes(q));
+      res.style.display='block';
+      if(!list.length){ res.innerHTML='<div style="padding:14px;color:var(--faint);font-size:13.5px">No styles found.</div>'; return; }
+      res.innerHTML = list.slice(0,30).map(s=>
+        `<a href="epacific-product.html?style=${encodeURIComponent(s.no)}" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;text-decoration:none;color:var(--ink)" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='none'">`+
+        `<b style="min-width:50px;font-size:13.5px">#${s.no}</b>`+
+        `<span style="font-size:13px;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.desc||''}</span></a>`
+      ).join('');
+    }
+    btn.addEventListener('click',openSearch);
+    document.getElementById('searchClose').addEventListener('click',closeSearch);
+    inp.addEventListener('input',()=>render(inp.value));
+    // Enter → 정확히 일치하는 스타일, 없으면 맨 위 결과로 바로 이동
+    inp.addEventListener('keydown',e=>{
+      if(e.key!=='Enter') return;
+      const q=inp.value.trim().toLowerCase(); if(!q) return;
+      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정확 일치
+      if(!target){
+        const list=allStyles.filter(s=>
+          String(s.no).toLowerCase().includes(q) ||
+          String(s.desc||'').toLowerCase().includes(q) ||
+          String(s.cat||'').toLowerCase().includes(q));
+        target=list[0];
+      }
+      if(target) location.href='epacific-product.html?style='+encodeURIComponent(target.no);
+    });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+    // 바깥 클릭하면 결과만 닫기
+    document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
+  })();
+  }
+  if(window.PacificData && document.getElementById("searchBtn")) boot();
+  else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
+})();
+</script>
+<script src="pacific-nav.js"></script>
+</body>
+</html>

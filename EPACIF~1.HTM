@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Order History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  a{color:inherit;text-decoration:none}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+  .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+
+  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
+  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  .utility-in .left{display:flex;gap:20px}
+  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
+  .logo-img{height:40px;width:auto;display:block}
+  .fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
+
+  .logo i{font-style:italic;color:var(--accent)}
+  nav.main{display:flex;gap:2px;flex:1}
+  .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
+  .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
+  .h-icons{display:flex;align-items:center;gap:10px}
+  .h-icons button{background:none;border:none;cursor:pointer;font-size:14px;font-family:var(--body);font-weight:450;color:var(--soft-ink);padding:9px 12px;border-radius:9px;display:flex;align-items:center;gap:7px;transition:.2s}
+  .h-icons button:hover{background:var(--accent-soft);color:var(--ink)}
+  .h-icons .primary{background:var(--ink);color:var(--bg)}
+  .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+
+  .crumb{max-width:1080px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
+
+  .page{max-width:1080px;margin:0 auto;padding:18px 30px 90px}
+  .phead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px;margin-bottom:30px}
+  .page h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5vw,58px);line-height:1}
+  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-top:6px}
+  .search-orders input{font-family:var(--body);font-size:14px;padding:11px 15px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);width:240px}
+  .search-orders input:focus{outline:none;border-color:var(--accent)}
+
+  /* order row */
+  .order{background:var(--paper);border:1px solid var(--line);border-radius:16px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+  .order:hover{box-shadow:0 16px 40px -28px rgba(28,28,26,.3)}
+  .o-head{display:flex;align-items:center;gap:22px;padding:20px 24px;cursor:pointer}
+  .o-head .o-id{font-family:var(--display);font-size:21px;min-width:120px}
+  .o-meta{flex:1;display:flex;flex-direction:column;gap:3px}
+  .o-meta .date{font-size:14px;color:var(--ink)}
+  .o-meta .small{font-size:13px;color:var(--faint)}
+  .o-status{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;white-space:nowrap}
+  .st-shipped{background:var(--accent-soft);color:var(--accent)}
+  .st-processing{background:#f3ecd9;color:#8a6a2a}
+  .st-transit{background:#e7eef3;color:#2f5b7a}
+  .o-total{font-family:var(--display);font-size:22px;min-width:100px;text-align:right}
+  .o-arrow{color:var(--faint);transition:transform .25s;font-size:13px}
+  .order.open .o-arrow{transform:rotate(180deg)}
+
+  .o-body{display:none;border-top:1px solid var(--line);padding:8px 24px 20px}
+  .order.open .o-body{display:block;animation:rise .4s both}
+  .line{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .line:last-of-type{border-bottom:none}
+  .line .dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .line .lc{font-weight:500;font-size:14px;min-width:84px}
+  .line .wh{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .wh-SC{background:#e7eef3;color:#2f5b7a}.wh-CA{background:#f1ece0;color:#8a6a3a}
+  .line .sizes{flex:1;font-size:13px;color:var(--soft-ink);display:flex;flex-wrap:wrap;gap:3px 11px}
+  .line .sizes b{color:var(--ink);font-weight:600}
+  .line .lqty{font-family:var(--display);font-size:18px;min-width:48px;text-align:right}
+  .line .lamt{font-size:14px;font-weight:600;min-width:84px;text-align:right}
+  .o-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+  .btn-ghost{background:none;border:1.5px solid var(--line-2);color:var(--ink);font-family:var(--body);font-size:14px;font-weight:500;padding:11px 20px;border-radius:10px;cursor:pointer;transition:.2s}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+  .btn-solid{background:var(--ink);color:var(--bg);border:none;font-family:var(--body);font-size:14px;font-weight:500;padding:11px 22px;border-radius:10px;cursor:pointer;transition:transform .2s,background .25s}
+  .btn-solid:hover{transform:translateY(-2px);background:var(--accent)}
+  .btn-ghost.sm,.btn-solid.sm{padding:8px 14px;font-size:13px}
+  /* 재주문 편집 그리드 */
+  .o-edit{display:none}
+  .o-edit.show{display:block;animation:rise .4s both;border-top:1px solid var(--line);margin-top:4px;padding-top:16px}
+  .edit-head{font-size:13px;color:var(--soft-ink);margin-bottom:12px}
+  .etable-wrap{overflow-x:auto;border:1px solid var(--line-2);border-radius:12px}
+  .etable{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+  .etable th{background:var(--bg);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--faint);font-weight:600;padding:10px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  .etable th.ecol{text-align:left;padding-left:16px}
+  .etable td{padding:8px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  .etable tr.grp-start td{border-top:2px solid var(--line-2)}
+  .etable tbody tr:first-child td{border-top:none}
+  .etable tbody tr:last-child td{border-bottom:none}
+  .etable td.ec{text-align:left;padding-left:16px;font-weight:500;white-space:nowrap}
+  .edot{display:inline-block;width:16px;height:16px;border-radius:50%;vertical-align:-3px;margin-right:8px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .stybadge{display:inline-block;font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:5px;padding:2px 6px;margin-right:8px;vertical-align:1px}
+  .cw{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .etable input{width:46px;text-align:center;font-family:var(--body);font-size:14px;padding:7px 3px;border:1.5px solid var(--line-2);border-radius:8px;background:var(--paper)}
+  .etable input:focus{outline:none;border-color:var(--accent)}
+  .etable input:disabled{background:#f4f3f0;color:#bbb}
+  .stk{font-size:9px;color:var(--faint)}.stk.o{color:#b06a3b;font-weight:600}
+  td.is-out .stk{color:#b06a3b}
+  .ert{font-family:var(--display);font-size:16px}
+  .xrow{background:none;border:none;color:var(--faint);cursor:pointer;font-size:13px;padding:4px;border-radius:5px}
+  .xrow:hover{color:#b04a3b;background:#faf0ee}
+  .wh{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .add-color{position:relative;margin-top:14px}
+  .add-pop{display:none;gap:8px;margin-top:10px}
+  .add-pop.show{display:flex;flex-wrap:wrap;animation:rise .3s both}
+  .add-pop select{font-family:var(--body);font-size:14px;padding:9px 12px;border:1.5px solid var(--line-2);border-radius:9px;background:var(--paper)}
+  .edit-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .ef-sum{font-size:14px;color:var(--soft-ink)}.ef-sum b{font-family:var(--display);font-size:18px;color:var(--ink)}
+  .edit-foot>div:last-child{display:flex;gap:10px}
+
+  .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:15px 26px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:.4s;z-index:200;box-shadow:0 20px 50px -15px rgba(0,0,0,.5)}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+
+  footer{border-top:1px solid var(--line);padding:30px;text-align:center;font-size:12px;color:var(--faint);margin-top:40px}
+
+  @media(max-width:780px){
+    nav.main{display:none}
+    .o-head{flex-wrap:wrap;gap:10px}
+    .o-head .o-id{min-width:auto}
+    .o-total{min-width:auto}
+    .line{flex-wrap:wrap}.line .sizes{order:5;width:100%;padding-left:34px}
+  }
+</style>
+</head>
+<body>
+
+
+<div class="utility">
+  <div class="utility-in">
+    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
+    <div><a href="#">My Account</a><a href="#">Logout</a></div>
+  </div>
+</div>
+
+<header>
+  <div class="header-in">
+    <a href="epacific-timeless.html" class="logo"><img src="logo-pacific.png" alt="Pacific Sports" class="logo-img"></a>
+    <nav class="main">
+      <div class="nav-item"><a>Men's</a></div>
+      <div class="nav-item"><a>Youth & Kids</a></div>
+      <div class="nav-item"><a>Collections</a></div>
+      <div class="nav-item"><a href="#">Shop by Color</a></div>
+      <div class="nav-item"><a href="#">Information</a></div>
+    </nav>
+    <div class="h-icons">
+      <button id="searchBtn">Search</button>
+      <div id="searchInline" style="display:none;position:relative;align-items:center">
+        <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;opacity:.55">🔍</span>
+        <input id="searchInput" type="text" placeholder="Style # or name…" autocomplete="off"
+          style="width:250px;border:1px solid var(--line-2);border-radius:999px;padding:9px 32px 9px 32px;font-family:var(--body);font-size:14px;outline:none;background:var(--paper);color:var(--ink);box-shadow:0 1px 3px rgba(28,28,26,.05)">
+        <button id="searchClose" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:17px;cursor:pointer;color:var(--faint);line-height:1">×</button>
+        <div id="searchResults" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:380px;max-height:60vh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px -18px rgba(28,28,26,.4);padding:6px;z-index:300"></div>
+      </div>
+      <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
+    </div>
+  </div>
+</header>
+
+
+
+<div class="crumb"><a href="#">Home</a><span>/</span><a href="#">My Account</a><span>/</span>Order History</div>
+
+<div class="page">
+  <div class="phead rise">
+    <div>
+      <h1>Order History</h1>
+      <div class="sub">Reorder past orders in one click, or review what you've bought.</div>
+    </div>
+    <div class="search-orders"><input type="text" id="orderSearch" placeholder="🔍  Search by order # or style…"></div>
+  </div>
+
+  <div id="orders"></div>
+</div>
+
+<div class="toast" id="toast">✓ Added to cart</div>
+
+<footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
+
+<script>
+  function teeDot(hex){ return hex; }
+  const CASE={XS:72,S:72,M:72,L:72,XL:72,'2XL':72,'3XL':48};
+  const PRICE={XS:3.75,S:3.75,M:3.75,L:3.75,XL:3.75,'2XL':4.35,'3XL':4.95};
+  const sizeOrder=['XS','S','M','L','XL','2XL','3XL'];
+  const money=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // ── 예시 주문 내역 (실제로는 IMS/주문DB에서 불러올 자리) ──
+  const orders=[
+    {id:'PS-10428', date:'May 18, 2026', status:'shipped', statusLabel:'Shipped',
+     lines:[
+       {style:'1368',color:'Navy',hex:'#27314f',wh:'SC',sizes:{S:24,M:48,L:48,XL:24}},
+       {style:'1368',color:'Sand',hex:'#d8c4a0',wh:'SC',sizes:{M:36,L:36,XL:12}},
+       {style:'1315',color:'Black',hex:'#232323',wh:'CA',sizes:{M:24,L:48,XL:24}}
+     ]},
+    {id:'PS-10391', date:'Apr 30, 2026', status:'shipped', statusLabel:'Shipped',
+     lines:[
+       {style:'1368',color:'White',hex:'#f7f7f4',wh:'SC',sizes:{S:72,M:144,L:144,XL:72,'2XL':36}}
+     ]},
+    {id:'PS-10355', date:'Apr 12, 2026', status:'transit', statusLabel:'In transit',
+     lines:[
+       {style:'1368',color:'Olive',hex:'#6b6a3f',wh:'CA',sizes:{M:24,L:24}},
+       {style:'1368',color:'Cardinal',hex:'#8e2535',wh:'CA',sizes:{L:48,XL:48,'2XL':24}}
+     ]},
+    {id:'PS-10402', date:'May 2, 2026', status:'processing', statusLabel:'Processing',
+     lines:[
+       {style:'1315',color:'Charcoal Htr',hex:'#595959',wh:'SC',sizes:{S:36,M:72,L:72,XL:36,'3XL':24}}
+     ]}
+  ];
+
+  const ordersEl=document.getElementById('orders');
+  let cartCount=0;
+
+  // ── 색상 팔레트 (새 색상 추가용) + 재고 (실제론 IMS에서) ──
+  const PALETTE=[
+    ['Natural','#ede6d6'],['White','#f7f7f4'],['Black','#232323'],['Navy','#27314f'],
+    ['Sand','#d8c4a0'],['Olive','#6b6a3f'],['Cardinal','#8e2535'],['Charcoal Htr','#595959'],
+    ['Bermuda','#5bbcb6'],['Clover','#3f7d4f'],['Wine','#5a2733'],['Tan','#c9a87c'],
+    ['Royal Htr','#3a4a8c'],['Turquoise','#3aa8b0'],['Smoke','#8a9aa0'],['Rust','#a85636']
+  ];
+  // 스타일 목록 (새 스타일 추가용)
+  const STYLES=[
+    ['1368','30/1 60:40 Short Sleeve Crew'],
+    ['1315','30/1 100% Cotton Crew'],
+    ['1410','40/1 Crew'],
+    ['1210','22/1 Crew'],
+    ['1311','30/1 V-neck'],
+    ['1314','30/1 Tank Top'],
+    ['1322','30/1 Long Sleeve']
+  ];
+  function styleName(no){ const s=STYLES.find(x=>x[0]===no); return s?s[1]:''; }
+
+  function seedStock(seed){let x=0;for(const ch of seed)x=(x*31+ch.charCodeAt(0))%9973;return m=>{x=(x*1103515245+12345)%2147483648;return Math.floor((x/2147483648)*m);};}
+  function stockFor(color,wh){
+    const rnd=seedStock(color+wh);const tiers=[0,72,144,216,288,500,1000,1500,2500];
+    const out={};sizeOrder.forEach(s=>{const r=rnd(10);out[s]=r===0?0:tiers[rnd(tiers.length)];});return out;
+  }
+  function fmtStock(n){if(n===0)return'out';if(n>=1000)return(n/1000).toFixed(n%1000?1:0).replace('.0','')+'k';return String(n);}
+
+  const sizesStr=s=>sizeOrder.filter(z=>s[z]).map(z=>`${z} <b>${s[z]}</b>`).join('  ');
+  const lineQty=s=>Object.values(s).reduce((a,b)=>a+b,0);
+  const lineAmt=s=>{let t=0;for(const z in s)t+=s[z]*PRICE[z];return t;};
+  const orderQty=o=>o.lines.reduce((a,l)=>a+lineQty(l.sizes),0);
+  const orderAmt=o=>o.lines.reduce((a,l)=>a+lineAmt(l.sizes),0);
+
+  function render(list){
+    ordersEl.innerHTML='';
+    if(list.length===0){ ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">No orders found.</div>'; return; }
+    list.forEach((o,oi)=>{
+      const div=document.createElement('div');
+      div.className='order rise';
+      const linesHtml=o.lines.map(l=>`
+        <div class="line">
+          <span class="dot" style="background:${l.hex}"></span>
+          <span class="lc">#${l.style} ${l.color}</span>
+          <span class="wh wh-${l.wh}">${l.wh}</span>
+          <span class="sizes">${sizesStr(l.sizes)}</span>
+          <span class="lqty">${lineQty(l.sizes)}</span>
+          <span class="lamt">${money(lineAmt(l.sizes))}</span>
+        </div>`).join('');
+      div.innerHTML=`
+        <div class="o-head" onclick="this.parentElement.classList.toggle('open')">
+          <div class="o-id">${o.id}</div>
+          <div class="o-meta">
+            <span class="date">${o.date}</span>
+            <span class="small">${o.lines.length} style${o.lines.length>1?'s':''} · ${orderQty(o)} pcs</span>
+          </div>
+          <span class="o-status st-${o.status}">${o.statusLabel}</span>
+          <div class="o-total">${money(orderAmt(o))}</div>
+          <span class="o-arrow">▾</span>
+        </div>
+        <div class="o-body">
+          <div class="o-view">
+            ${linesHtml}
+            <div class="o-actions">
+              <button class="btn-ghost" onclick="viewInvoice('${o.id}')">View invoice</button>
+              <button class="btn-solid" onclick="startReorder(${oi},this)">↻ Edit &amp; reorder</button>
+            </div>
+          </div>
+          <div class="o-edit" id="edit-${oi}"></div>
+        </div>`;
+      ordersEl.appendChild(div);
+    });
+  }
+
+  // ── 재주문 편집 그리드 ──
+  // editState[oi] = [{color,hex,wh,sizes:{...}}, ...]  (편집 중인 줄들)
+  const editState={};
+
+  function startReorder(oi,btn){
+    const o=currentList[oi];
+    // 지난 주문의 각 (스타일+색상)을 SC / CA 두 줄로 펼친다.
+    // 지난 수량은 원래 받았던 창고 줄에 채우고, 반대쪽 창고 줄은 비워둔다(재고는 보임).
+    const seen=new Set(); const rows=[];
+    o.lines.forEach(l=>{
+      const sty=l.style||'1368';
+      const key=sty+'|'+l.color;
+      if(seen.has(key)) return; // 같은 스타일+색은 한 번만 펼침
+      seen.add(key);
+      // 이 스타일+색의 원래 주문들(창고별 수량) 모으기
+      const byWh={};
+      o.lines.filter(x=>(x.style||'1368')===sty && x.color===l.color)
+             .forEach(x=>{ byWh[x.wh]=x.sizes; });
+      ['SC','CA'].forEach(wh=>{
+        rows.push({style:sty,color:l.color,hex:l.hex,wh,sizes:{...(byWh[wh]||{})}});
+      });
+    });
+    editState[oi]=rows;
+    document.querySelector(`#edit-${oi}`).closest('.order').querySelector('.o-view').style.display='none';
+    renderEdit(oi,o);
+  }
+
+  function colorHex(name){ const p=PALETTE.find(x=>x[0]===name); return p?p[1]:'#999'; }
+
+  function renderEdit(oi,o){
+    const box=document.getElementById('edit-'+oi);
+    // 보기 좋게 스타일 순으로 정렬
+    const whRank={SC:0,'CA':1};
+    editState[oi].sort((a,b)=> (a.style+a.color).localeCompare(b.style+b.color) || (whRank[a.wh]-whRank[b.wh]) );
+    const rows=editState[oi];
+    const rowsHtml=rows.map((ln,ri)=>{
+      const st=stockFor(ln.color,ln.wh);
+      // 같은 스타일+색의 첫 줄인지 (색상명 표시 / 구분선용)
+      const isFirst = ri===0 || rows[ri-1].style!==ln.style || rows[ri-1].color!==ln.color;
+      const cells=sizeOrder.map(s=>{
+        const avail=st[s], out=avail===0, val=ln.sizes[s]||'';
+        return `<td class="${out?'is-out':''}"><div class="cw">
+          <input type="number" min="0" inputmode="numeric" placeholder="0" value="${val}" ${out?'disabled':''}
+            data-oi="${oi}" data-ri="${ri}" data-sz="${s}" oninput="editInput(this)">
+          <span class="stk ${out?'o':''}">${out?'out':fmtStock(avail)}</span>
+        </div></td>`;
+      }).join('');
+      const colorCell = isFirst
+        ? `<span class="stybadge">#${ln.style}</span><span class="edot" style="background:${ln.hex}"></span>${ln.color}`
+        : '';
+      return `<tr class="${isFirst?'grp-start':''}">
+        <td class="ec">${colorCell}</td>
+        <td><span class="wh wh-${ln.wh}">${ln.wh}</span></td>
+        ${cells}
+        <td class="ert"><span data-rt="${ri}">${lineQty(ln.sizes)}</span></td>
+        <td><button class="xrow" onclick="removeRow(${oi},${ri})" title="Remove">✕</button></td>
+      </tr>`;
+    }).join('');
+
+    box.innerHTML=`
+      <div class="edit-head">Each color shows <b>SC</b> and <b>CA</b> stock — order from either or split across both. Your last order is pre-filled; empty cells were not in it.</div>
+      <div class="etable-wrap">
+        <table class="etable">
+          <thead><tr><th class="ecol">Color</th><th>WH</th>
+            ${sizeOrder.map(s=>`<th>${s}</th>`).join('')}
+            <th>Pcs</th><th></th></tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+      <div class="add-color">
+        <button class="btn-ghost sm" onclick="toggleAddColor(${oi})">+ Add a style / color</button>
+        <div class="add-pop" id="addpop-${oi}">
+          <select id="addsty-${oi}" title="Style">${STYLES.map(s=>`<option value="${s[0]}">#${s[0]} — ${s[1]}</option>`).join('')}</select>
+          <select id="addsel-${oi}" title="Color">${PALETTE.map(p=>`<option value="${p[0]}">${p[0]}</option>`).join('')}</select>
+          <select id="addwh-${oi}" title="Warehouse"><option value="SC">SC — Sumter</option><option value="CA">CA — Eastvale</option></select>
+          <button class="btn-solid sm" onclick="addColor(${oi})">Add row</button>
+        </div>
+      </div>
+      <div class="edit-foot">
+        <div class="ef-sum">Total: <b id="esum-${oi}">0</b> pcs &nbsp;·&nbsp; <span id="ewh-${oi}"></span></div>
+        <div>
+          <button class="btn-ghost" onclick="cancelEdit(${oi})">Cancel</button>
+          <button class="btn-solid" onclick="addEditToCart(${oi})">Add to cart →</button>
+        </div>
+      </div>`;
+    box.classList.add('show');
+    updateEditTotals(oi);
+  }
+
+  function editInput(inp){
+    const oi=+inp.dataset.oi, ri=+inp.dataset.ri, sz=inp.dataset.sz;
+    let q=parseInt(inp.value)||0;
+    const ln=editState[oi][ri];
+    const avail=stockFor(ln.color,ln.wh)[sz];
+    if(q>avail){ q=avail; inp.value=avail; }
+    if(q>0) ln.sizes[sz]=q; else delete ln.sizes[sz];
+    // 줄 합계 갱신
+    const rt=document.querySelector(`#edit-${oi} [data-rt="${ri}"]`);
+    if(rt) rt.textContent=lineQty(ln.sizes);
+    updateEditTotals(oi);
+  }
+
+  function removeRow(oi,ri){
+    editState[oi].splice(ri,1);
+    renderEdit(oi,currentList[oi]);
+  }
+  function toggleAddColor(oi){ document.getElementById('addpop-'+oi).classList.toggle('show'); }
+  function addColor(oi){
+    const sty=document.getElementById('addsty-'+oi).value;
+    const name=document.getElementById('addsel-'+oi).value;
+    const wh=document.getElementById('addwh-'+oi).value;
+    // 같은 스타일+색+창고 이미 있으면 무시
+    if(editState[oi].some(l=>l.style===sty&&l.color===name&&l.wh===wh)){ showToast(`#${sty} ${name} (${wh}) is already in this order`); return; }
+    editState[oi].push({style:sty,color:name,hex:colorHex(name),wh,sizes:{}});
+    renderEdit(oi,currentList[oi]);
+  }
+
+  function updateEditTotals(oi){
+    let total=0,sc=0,ca=0;
+    editState[oi].forEach(ln=>{ for(const s in ln.sizes){ const q=ln.sizes[s]; total+=q; if(ln.wh==='SC')sc+=q;else ca+=q; } });
+    const sEl=document.getElementById('esum-'+oi); if(sEl)sEl.textContent=total;
+    const wEl=document.getElementById('ewh-'+oi); if(wEl)wEl.innerHTML=`SC <b>${sc}</b> · CA <b>${ca}</b>`;
+  }
+
+  function cancelEdit(oi){
+    const box=document.getElementById('edit-'+oi);
+    box.classList.remove('show'); box.innerHTML='';
+    box.closest('.order').querySelector('.o-view').style.display='';
+  }
+
+  function addEditToCart(oi){
+    const items=[];
+    editState[oi].forEach(ln=>{ for(const sz in ln.sizes){ const q=ln.sizes[sz]; if(q>0) items.push({style:ln.style,styleName:styleName(ln.style),color:ln.color,wh:ln.wh,size:sz,qty:q}); } });
+    if(!items.length){ showToast('Enter at least one quantity'); return; }
+    const t=items.reduce((s,i)=>s+i.qty,0);
+    if(window.PacificCart) window.PacificCart.add(items);
+    showToast(`\u2713 Added to cart \u00b7 ${t} pcs`);
+    cancelEdit(oi);
+    setTimeout(()=>{ location.href='epacific-cart.html'; },700);
+  }
+
+  function viewInvoice(id){ location.href='epacific-invoice.html?id='+encodeURIComponent(id); }
+
+  let toastT;
+  function showToast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
+  }
+
+  // 검색
+  let currentList=orders;
+  document.getElementById('orderSearch').addEventListener('input',e=>{
+    const q=e.target.value.trim().toLowerCase();
+    currentList=orders.filter(o=>
+      o.id.toLowerCase().includes(q) ||
+      o.lines.some(l=>l.style.includes(q)||l.color.toLowerCase().includes(q))
+    );
+    render(currentList);
+  });
+
+  render(orders);
+</script>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-data.js"></script>
+
+
+
+
+<script>
+(function(){
+  function boot(){
+  /* ===== 사이트 검색 (헤더 줄에서 입력칸 확장) ===== */
+  (function(){
+    const btn=document.getElementById('searchBtn');
+    const box=document.getElementById('searchInline');
+    const inp=document.getElementById('searchInput');
+    const res=document.getElementById('searchResults');
+    if(!btn||!box||!inp) return;
+    let allStyles=[];
+    async function ensureStyles(){
+      if(allStyles.length) return;
+      try{ allStyles = await PacificData.getStyles(); }catch(e){ allStyles=[]; }
+    }
+    function openSearch(){
+      btn.style.display='none'; box.style.display='inline-flex';
+      ensureStyles(); setTimeout(()=>inp.focus(),30);
+    }
+    function closeSearch(){
+      box.style.display='none'; btn.style.display='';
+      inp.value=''; res.style.display='none'; res.innerHTML='';
+    }
+    function render(q){
+      q=q.trim().toLowerCase();
+      if(!q){ res.style.display='none'; return; }
+      const list=allStyles.filter(s=>
+        String(s.no).toLowerCase().includes(q) ||
+        String(s.desc||'').toLowerCase().includes(q) ||
+        String(s.cat||'').toLowerCase().includes(q));
+      res.style.display='block';
+      if(!list.length){ res.innerHTML='<div style="padding:14px;color:var(--faint);font-size:13.5px">No styles found.</div>'; return; }
+      res.innerHTML = list.slice(0,30).map(s=>
+        `<a href="epacific-product.html?style=${encodeURIComponent(s.no)}" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;text-decoration:none;color:var(--ink)" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='none'">`+
+        `<b style="min-width:50px;font-size:13.5px">#${s.no}</b>`+
+        `<span style="font-size:13px;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.desc||''}</span></a>`
+      ).join('');
+    }
+    btn.addEventListener('click',openSearch);
+    document.getElementById('searchClose').addEventListener('click',closeSearch);
+    inp.addEventListener('input',()=>render(inp.value));
+    // Enter → 정확히 일치하는 스타일, 없으면 맨 위 결과로 바로 이동
+    inp.addEventListener('keydown',e=>{
+      if(e.key!=='Enter') return;
+      const q=inp.value.trim().toLowerCase(); if(!q) return;
+      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정확 일치
+      if(!target){
+        const list=allStyles.filter(s=>
+          String(s.no).toLowerCase().includes(q) ||
+          String(s.desc||'').toLowerCase().includes(q) ||
+          String(s.cat||'').toLowerCase().includes(q));
+        target=list[0];
+      }
+      if(target) location.href='epacific-product.html?style='+encodeURIComponent(target.no);
+    });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+    // 바깥 클릭하면 결과만 닫기
+    document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
+  })();
+  }
+  if(window.PacificData && document.getElementById("searchBtn")) boot();
+  else document.addEventListener("DOMContentLoaded",()=>setTimeout(boot,200));
+})();
+</script>
+<script src="pacific-nav.js"></script>
+</body>
+</html>

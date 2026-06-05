@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pacific Sports — Set Password</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f;--ok:#3d5a40;
+    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--body);color:var(--ink);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+  .box{width:100%;max-width:400px;padding:30px}
+  .logo-img{height:42px;margin:0 auto 26px;display:block}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:34px 30px;box-shadow:0 30px 60px -40px rgba(28,28,26,.3)}
+  h1{font-family:var(--display);font-weight:400;font-size:26px;text-align:center;margin-bottom:6px}
+  .sub{text-align:center;font-size:13.5px;color:var(--faint);margin-bottom:24px;line-height:1.5}
+  label{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:7px}
+  input{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1px solid var(--line-2);border-radius:10px;background:var(--bg);margin-bottom:16px}
+  input:focus{outline:none;border-color:var(--accent);background:var(--paper)}
+  button{width:100%;font-family:var(--body);font-size:15px;font-weight:500;padding:13px;border:none;border-radius:10px;background:var(--ink);color:var(--bg);cursor:pointer;transition:.2s}
+  button:hover{background:var(--accent)}
+  button:disabled{opacity:.6;cursor:default}
+  .msg{border-radius:10px;padding:11px 14px;font-size:13.5px;margin-bottom:16px;display:none;line-height:1.5}
+  .msg.show{display:block}
+  .msg.err{background:#f8ecea;color:var(--err);border:1px solid #ecd6d3}
+  .msg.ok{background:var(--accent-soft);color:var(--ok);border:1px solid #dce4da}
+  .foot{text-align:center;font-size:12.5px;color:var(--faint);margin-top:18px}
+  .foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="box">
+  <img src="logo-pacific.png" alt="Pacific Sports" class="logo-img">
+  <div class="card">
+    <h1>Set Password</h1>
+    <div class="sub">Choose a new password. You'll use it to log in from now on.</div>
+    <div class="msg" id="msg"></div>
+    <form id="form">
+      <label>New password (6+ characters)</label>
+      <input type="password" id="pw1" autocomplete="new-password" minlength="6" required>
+      <label>Confirm new password</label>
+      <input type="password" id="pw2" autocomplete="new-password" minlength="6" required>
+      <button type="submit" id="btn">Save password</button>
+    </form>
+    <div class="foot"><a href="epacific-timeless.html">← Back to store</a></div>
+  </div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script>
+  const CFG=window.PACIFIC_CONFIG||{}, SBURL=CFG.SUPABASE_URL, KEY=CFG.SUPABASE_ANON_KEY;
+  const $=id=>document.getElementById(id);
+  function msg(t,kind){ const m=$('msg'); m.textContent=t; m.className='msg show '+kind; }
+
+  // Supabase 재설정 링크는 URL 해시(#)에 토큰을 넣어줌:
+  //   #access_token=...&refresh_token=...&type=recovery
+  // (또는 에러일 때 #error=...&error_description=...)
+  function parseHash(){
+    const h = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
+    const p = new URLSearchParams(h);
+    return {
+      access_token: p.get('access_token'),
+      refresh_token: p.get('refresh_token'),
+      type: p.get('type'),
+      error: p.get('error_description') || p.get('error')
+    };
+  }
+  const tok = parseHash();
+  if(tok.error){
+    msg('There was a problem with the link: '+tok.error+' — please request a new reset email.','err');
+  } else if(!tok.access_token){
+    msg('Open this page from the link in your password reset email. It won\'t work if opened directly.','err');
+  }
+
+  $('form').addEventListener('submit', async e=>{
+    e.preventDefault();
+    const pw1=$('pw1').value, pw2=$('pw2').value;
+    if(pw1!==pw2){ msg('The two passwords don\'t match. Please check again.','err'); return; }
+    if(pw1.length<6){ msg('Password must be at least 6 characters.','err'); return; }
+    if(!tok.access_token){ msg('No reset link found. Please use the link from your email.','err'); return; }
+    const btn=$('btn'); btn.disabled=true; btn.textContent='Saving…';
+    try{
+      // access_token(긴 JWT)으로 본인 인증된 상태에서 비밀번호 변경
+      const r=await fetch(SBURL+'/auth/v1/user',{
+        method:'PUT',
+        headers:{ apikey:KEY, Authorization:'Bearer '+tok.access_token, 'Content-Type':'application/json' },
+        body:JSON.stringify({ password:pw1 })
+      });
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data.msg||data.error_description||data.error||('Error '+r.status));
+      msg('✓ Password updated! You can now log in with it.','ok');
+      $('form').reset(); btn.style.display='none';
+      setTimeout(()=>{ location.href='epacific-login.html'; }, 2500);
+    }catch(err){
+      msg('Failed: '+err.message,'err');
+      btn.disabled=false; btn.textContent='Save password';
+    }
+  });
+</script>
+</body>
+</html>

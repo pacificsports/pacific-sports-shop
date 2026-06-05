@@ -340,7 +340,8 @@
 
     <div class="login-note" id="loginNote">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
 
-    <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력 -->
+    <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력. 권한 없으면 통째로 숨김 -->
+    <div id="orderSection" style="display:none">
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
     <div class="color-search">
       <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
@@ -369,6 +370,7 @@
       <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
       <button class="addbtn" id="addBtn" disabled>Add to Order</button>
     </div>
+    </div><!-- /orderSection -->
   </div>
 </div>
 
@@ -1111,11 +1113,17 @@
           }else{ lockReason='login'; }
         }
       }catch(e){ canOrder=false; lockReason='login'; }
-      // 안내문 갱신
+      // 안내문 갱신 + 주문 섹션 표시/숨김
       (function(){
         const note=document.getElementById('loginNote');
+        const sec=document.getElementById('orderSection');
+        if(canOrder){
+          if(sec) sec.style.display='';
+          if(note) note.style.display='none';
+          return;
+        }
+        if(sec) sec.style.display='none';   // 권한 없으면 주문/재고 영역 통째로 숨김
         if(!note) return;
-        if(canOrder){ note.style.display='none'; return; }
         note.innerHTML = lockReason==='pending'
           ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
           : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';

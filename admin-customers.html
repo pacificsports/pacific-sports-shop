@@ -55,7 +55,7 @@
   const CERT_AI_WORKER='https://cert-check.hjbae.workers.dev';
   // 이메일 발송 Worker 주소
   const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
-  let view='pending', rows=[];
+  let view='pending', rows=[], customers=[];
 
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
 
@@ -74,6 +74,12 @@
       {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
     if(!r.ok){ document.getElementById('msg').textContent='Could not load applications ('+r.status+'). Make sure you are logged in as staff.'; return; }
     rows=await r.json();
+    // IMS 거래처 목록 (가격 연결용 드롭다운)
+    try{
+      const cr=await fetch(URL_+'/rest/v1/customers?select=id,name,customer_no&order=name&limit=5000',
+        {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
+      if(cr.ok) customers=await cr.json();
+    }catch(e){ customers=[]; }
     render();
   }
 
@@ -99,10 +105,12 @@
           ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
         ${aiBadge(r.ai_check)}
+        ${linkRow(r)}
       </div>`).join('');
     list.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act)));
     list.querySelectorAll('button[data-doc]').forEach(b=>b.addEventListener('click',()=>viewDoc(b.dataset.doc)));
     list.querySelectorAll('button[data-ai]').forEach(b=>b.addEventListener('click',()=>aiCheck(b.dataset.ai,b)));
+    list.querySelectorAll('select[data-link]').forEach(sel=>sel.addEventListener('change',()=>linkCustomer(sel.dataset.link,sel.value,sel)));
   }
 
   // AI 검토 결과 배지
@@ -157,6 +165,30 @@
     }
   }
 
+  // ── IMS 거래처 연결 (거래처별 가격의 연결고리: customer_applications.customer_id) ──
+  function linkRow(r){
+    if(!customers.length) return '';
+    const opts=['<option value="">— IMS 거래처 연결 안 됨 (기본가 적용) —</option>']
+      .concat(customers.map(c=>`<option value="${c.id}" ${c.id===r.customer_id?'selected':''}>${esc(c.name)}${c.customer_no?(' ('+esc(c.customer_no)+')'):''}</option>`));
+    return `<div style="flex-basis:100%;margin-top:10px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:12.5px;color:var(--faint);white-space:nowrap">IMS customer:</span>
+      <select data-link="${r.id}" style="flex:1;max-width:420px;padding:7px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff;font-size:13px;color:var(--soft-ink)">${opts.join('')}</select>
+      <span class="linkmsg" style="font-size:12.5px;color:var(--accent)"></span>
+    </div>`;
+  }
+  async function linkCustomer(appId,customerId,sel){
+    const s=session(); if(!s){ alert('Session expired.'); return; }
+    sel.disabled=true;
+    const r=await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+appId,
+      {method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+       body:JSON.stringify({customer_id: customerId||null})});
+    sel.disabled=false;
+    const msg=sel.parentElement.querySelector('.linkmsg');
+    if(!r.ok){ msg.style.color='#a8463f'; msg.textContent='Save failed ('+r.status+')'; return; }
+    const row=rows.find(x=>x.id===appId); if(row) row.customer_id=customerId||null;
+    msg.style.color='var(--accent)'; msg.textContent='Saved ✓'; setTimeout(()=>{msg.textContent='';},2000);
+  }
+
   // 비공개 서류 → 1시간짜리 서명 링크 만들어 새 탭으로
   async function viewDoc(path){
     const s=session(); if(!s){ alert('Session expired.'); return; }
@@ -197,4 +229,5 @@
   load();
 </script>
 </body>
+<!-- v2026-06-06 price-system -->
 </html>

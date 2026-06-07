@@ -392,6 +392,7 @@
 
 <script src="pacific-config.js"></script>
 <script src="pacific-admin-auth.js"></script>
+<script src="pacific-nav.js"></script>
 <script src="pacific-data.js"></script>
 <style>
   /* 직원 로그인 / 사진 수정 UI */
@@ -405,6 +406,8 @@
   /* 색상 셀 위 사진 편집 오버레이 (수정모드일 때만) */
   .cimg{position:relative}
   .editmode .cimg .editov{display:flex}
+  /* 사이즈 헤더 아래 가격 */
+  th.szh .szprice{display:block;font-size:10.5px;font-weight:600;color:var(--accent);letter-spacing:0;text-transform:none;margin-top:2px}
   /* 숨긴 사이즈 열: 손님에겐 완전히 숨김 */
   .size-hidden{display:none}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
@@ -482,6 +485,23 @@
     return {t:n.toLocaleString('en-US'),cls:''};
   }
 
+  // ── 가격 (거래처별 가격 → 없으면 기본가) ─────────────────────
+  // priceInfo = {base, p2xl, p3xl, p4xl, p5xl, source:'customer'|'base'} | null
+  let priceInfo=null;
+  function priceForSize(s){
+    if(!priceInfo || priceInfo.base==null) return null;
+    const b=Number(priceInfo.base);
+    const up=String(s||'').toUpperCase();
+    // 큰 사이즈는 해당 가격, 비어 있으면 "있는 것 중 가장 가까운 아래 단계"로
+    let v=b;
+    if(up==='2XL') v = priceInfo.p2xl ?? b;
+    else if(up==='3XL') v = priceInfo.p3xl ?? priceInfo.p2xl ?? b;
+    else if(up==='4XL') v = priceInfo.p4xl ?? priceInfo.p3xl ?? priceInfo.p2xl ?? b;
+    else if(up==='5XL') v = priceInfo.p5xl ?? priceInfo.p4xl ?? priceInfo.p3xl ?? priceInfo.p2xl ?? b;
+    return v==null ? null : Number(v);
+  }
+  function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
   // 한 창고(SC 또는 CA)의 한 줄을 만든다
   // 주문 권한: 직원 또는 승인된 거래처만 재고/수량 입력 가능
   let canOrder=false, lockReason='login';   // 'login' | 'pending' | null
@@ -550,6 +570,9 @@
       th.className='szh szcol'+(isHidden?' size-hidden':'');
       th.dataset.size=s;
       th.textContent=s;
+      // 사이즈별 가격 표시 (로그인+승인 시에만)
+      const pv = canOrder ? priceForSize(s) : null;
+      if(pv!=null){ const sp=document.createElement('span'); sp.className='szprice'; sp.textContent=fmtMoney(pv); th.appendChild(sp); }
       th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
@@ -599,7 +622,7 @@
   }
 
   function recalc(){
-    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0, money=0;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       let rt=0;
       tr.querySelectorAll('input').forEach((inp)=>{
@@ -609,6 +632,8 @@
         rt+=q;
         const sname=td?td.getAttribute('data-size'):null;
         if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
+        const pv=priceForSize(sname);
+        if(pv!=null) money+=q*pv;
       });
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
@@ -628,6 +653,13 @@
       if(caPcs>0) whline.push('CA '+caPcs);
       if(whline.length) parts.push(`<span class="cl">By WH</span> ${whline.join(' · ')}`);
       caseConvEl.innerHTML=parts.join('<br>');
+    }
+    // SUBTOTAL 금액
+    const stEl=document.getElementById('subtotal');
+    if(stEl){
+      if(!canOrder) stEl.textContent='— login';
+      else if(!priceInfo) stEl.textContent='—';
+      else stEl.textContent=fmtMoney(money);
     }
     addBtn.disabled=total===0;
   }
@@ -1035,7 +1067,8 @@
         const q=parseInt(i.value)||0; if(q<=0) return;
         const td=i.closest('td'); if(td&&td.classList.contains('size-hidden')) return;
         const size=td?td.getAttribute('data-size'):'';
-        items.push({style:currentStyle, styleName:(product&&product.name)||currentStyle, color:tr.dataset.color, wh:tr.dataset.wh, size, qty:q});
+        const up=priceForSize(size);
+        items.push({style:currentStyle, styleName:(product&&product.name)||currentStyle, color:tr.dataset.color, wh:tr.dataset.wh, size, qty:q, unit_price:(up!=null?up:null)});
         colorSet.add(tr.dataset.color);
         if(tr.dataset.wh==='SC') scPcs+=q; else caPcs+=q;
         total+=q;
@@ -1046,7 +1079,7 @@
     const cart=cartGet();
     items.forEach(n=>{
       const ex=cart.find(x=>x.style===n.style&&x.color===n.color&&x.wh===n.wh&&x.size===n.size);
-      if(ex) ex.qty+=n.qty; else cart.push(n);
+      if(ex){ ex.qty+=n.qty; if(n.unit_price!=null) ex.unit_price=n.unit_price; } else cart.push(n);
     });
     cartSet(cart); refreshCartBadge();
     const colorCount=colorSet.size;
@@ -1093,6 +1126,34 @@
   }
   async function saveHiddenSizes(style,hidden){ return saveSettings(style,{hidden_sizes:hidden}); }
 
+  // ── 가격 로드: ① 내 거래처 전용가(customer_prices) → ② 웹사이트 기본가(style_prices) ──
+  async function loadPrices(style){
+    priceInfo=null;
+    try{
+      const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+      if(!sess||!sess.token) return;
+      const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token};
+      if(window._pacCustomerId){
+        const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_prices?customer_id=eq.'+window._pacCustomerId
+          +'&style_number=eq.'+encodeURIComponent(style)+'&select=base_price,price_2xl,price_3xl,price_4xl,price_5xl,included',{headers:H});
+        if(r.ok){
+          const rows=await r.json(); const row=rows&&rows[0];
+          if(row && row.included!==false && row.base_price!=null){
+            priceInfo={base:+row.base_price, p2xl:row.price_2xl, p3xl:row.price_3xl, p4xl:row.price_4xl, p5xl:row.price_5xl, source:'customer'};
+            return;
+          }
+        }
+      }
+      const r2=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_prices?style_number=eq.'+encodeURIComponent(style)
+        +'&select=base_price,price_2xl,price_3xl,price_4xl,price_5xl',{headers:H});
+      if(r2.ok){
+        const rows=await r2.json(); const row=rows&&rows[0];
+        if(row && row.base_price!=null)
+          priceInfo={base:+row.base_price, p2xl:row.price_2xl, p3xl:row.price_3xl, p4xl:row.price_4xl, p5xl:row.price_5xl, source:'base'};
+      }
+    }catch(e){ priceInfo=null; }
+  }
+
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
@@ -1124,11 +1185,11 @@
         else{
           const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
           if(sess && sess.token && sess.userId){
-            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
+            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status,customer_id',
               {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
             if(ar.ok){
               const rows=await ar.json();
-              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; }
+              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; window._pacCustomerId=rows[0].customer_id||null; }
               else if(rows && rows[0]){ lockReason='pending'; }
               else { lockReason='login'; }
             }
@@ -1150,6 +1211,8 @@
           ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
           : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
       })();
+      // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
+      if(canOrder) await loadPrices(STYLE);
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;
@@ -1462,4 +1525,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
+<!-- v2026-06-06 price-system -->
 </html>

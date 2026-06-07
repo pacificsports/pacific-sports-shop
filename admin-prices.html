@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacific Sports — Price Management</title>
+<style>
+  :root{--paper:#fdfdfb;--ink:#1c1c1a;--soft-ink:#4c4a44;--faint:#8b8880;--line:#e7e4dc;--line-2:#d6d2c6;--accent:#3d5a40;--accent-soft:#eef1ec}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Avenir Next','Segoe UI',system-ui,sans-serif;background:#f6f5f1;color:var(--ink);padding:30px 16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  h1{font-size:24px;margin-bottom:4px}
+  .sub{color:var(--faint);font-size:14px;margin-bottom:22px}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .top a{color:var(--accent);font-size:13.5px;text-decoration:none}
+  .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .tabs button{border:1px solid var(--line-2);background:var(--paper);padding:8px 18px;border-radius:999px;cursor:pointer;font-size:13.5px;color:var(--soft-ink)}
+  .tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  .tabs select{padding:8px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);font-size:13.5px;color:var(--soft-ink);max-width:340px}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:6px 0;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper)}
+  td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  td input{width:74px;padding:7px 8px;border:1px solid var(--line-2);border-radius:7px;font-size:13.5px;text-align:right}
+  td input:focus{outline:none;border-color:var(--accent)}
+  td input.dirty{border-color:#c89b3f;background:#fdf8ec}
+  td input.custom{background:var(--accent-soft);border-color:var(--accent)}
+  .stno{font-weight:700}
+  .stdesc{color:var(--faint);font-size:12px}
+  .savebtn{border:none;background:var(--accent);color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:600}
+  .savebtn:disabled{opacity:.35;cursor:default}
+  .clearbtn{border:none;background:#f1efe9;color:var(--soft-ink);padding:7px 11px;border-radius:8px;cursor:pointer;font-size:12.5px}
+  .ok{color:var(--accent);font-size:12.5px;font-weight:600}
+  .err{color:#a8463f;font-size:12.5px;font-weight:600}
+  #msg{padding:30px;text-align:center;color:var(--faint)}
+  .legend{font-size:12.5px;color:var(--faint);margin:10px 2px 14px}
+  .legend b{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Price Management</h1>
+    <a href="epacific-timeless.html">← Back to site</a>
+  </div>
+  <div class="sub">웹사이트 기본가와 거래처별 가격을 관리합니다. 거래처별 가격이 있으면 그 거래처에게는 그 가격이, 없으면 기본가가 보입니다.</div>
+
+  <div class="tabs">
+    <button id="tabBase" class="on">기본가 (Website)</button>
+    <button id="tabCust">거래처별 (Customer)</button>
+    <select id="custSel" style="display:none"><option value="">— 거래처 선택 —</option></select>
+  </div>
+  <div class="legend" id="legend" style="display:none">초록 칸 = 이 거래처 전용가 · 빈 칸/회색 = 기본가 적용 · 4XL/5XL이 비어 있으면 그 아래 단계 가격이 적용됩니다</div>
+
+  <div class="panel" style="display:none" id="panel">
+    <table>
+      <thead><tr>
+        <th style="min-width:230px">Style</th>
+        <th>Base (XS–XL)</th><th>2XL</th><th>3XL</th><th>4XL</th><th>5XL</th>
+        <th style="width:130px"></th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div id="msg">Loading…</div>
+</div>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script>
+  const _C=window.PACIFIC_CONFIG||{};
+  const URL_=_C.SUPABASE_URL, KEY_=_C.SUPABASE_ANON_KEY;
+  const COLS=['base_price','price_2xl','price_3xl','price_4xl','price_5xl'];
+  let view='base';                 // 'base' | 'cust'
+  let styles=[];                   // [{style_number, description}]
+  let basePrices={};               // style_number → row
+  let custPrices={};               // style_number → row (선택된 거래처)
+  let customers=[], custId='';
+
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  function esc(t){ return String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function H(){ const s=session(); return {apikey:KEY_,Authorization:'Bearer '+(s?s.token:KEY_),'Content-Type':'application/json'}; }
+
+  async function load(){
+    const s=session();
+    const msg=document.getElementById('msg');
+    if(!s||!s.token){
+      msg.innerHTML='Please <a href="epacific-login.html?next='+encodeURIComponent('admin-prices.html')+'">log in as staff</a> first.';
+      return;
+    }
+    try{
+      const st=await PacificAuth.currentStaff();
+      if(!st){ msg.textContent='This page is for Pacific Sports staff only.'; return; }
+    }catch(e){ msg.textContent='Could not verify staff access.'; return; }
+    const [sr,pr,cr]=await Promise.all([
+      fetch(URL_+'/rest/v1/styles?select=style_number,description&order=style_number',{headers:H()}),
+      fetch(URL_+'/rest/v1/style_prices?select=*',{headers:H()}),
+      fetch(URL_+'/rest/v1/customers?select=id,name,customer_no&order=name&limit=5000',{headers:H()})
+    ]);
+    if(!sr.ok){ msg.textContent='Could not load styles ('+sr.status+').'; return; }
+    styles=await sr.json();
+    basePrices={};
+    if(pr.ok) (await pr.json()).forEach(r=>{ basePrices[r.style_number]=r; });
+    if(cr.ok){
+      customers=await cr.json();
+      const sel=document.getElementById('custSel');
+      sel.innerHTML='<option value="">— 거래처 선택 —</option>'+customers.map(c=>'<option value="'+c.id+'">'+esc(c.name)+(c.customer_no?(' ('+esc(c.customer_no)+')'):'')+'</option>').join('');
+    }
+    render();
+  }
+
+  async function loadCustPrices(){
+    custPrices={};
+    if(!custId) return;
+    const r=await fetch(URL_+'/rest/v1/customer_prices?customer_id=eq.'+custId+'&select=*',{headers:H()});
+    if(r.ok) (await r.json()).forEach(p=>{ custPrices[p.style_number]=p; });
+  }
+
+  function fmt(v){ return v==null?'':Number(v).toFixed(2); }
+
+  function render(){
+    const panel=document.getElementById('panel'), msg=document.getElementById('msg');
+    const legend=document.getElementById('legend');
+    document.getElementById('custSel').style.display = view==='cust' ? '' : 'none';
+    legend.style.display = view==='cust' ? '' : 'none';
+    if(view==='cust' && !custId){ panel.style.display='none'; msg.style.display='block'; msg.textContent='위에서 거래처를 선택하세요.'; return; }
+    msg.style.display='none'; panel.style.display='';
+    const body=document.getElementById('rows');
+    body.innerHTML=styles.map(st=>{
+      const no=st.style_number;
+      const base=basePrices[no]||{};
+      const cp=custPrices[no]||{};
+      const src = view==='base' ? base : cp;
+      const cells=COLS.map(c=>{
+        const v=src[c];
+        const ph = view==='cust' ? (base[c]!=null?Number(base[c]).toFixed(2):'') : '';
+        const cls = (view==='cust' && v!=null) ? 'custom' : '';
+        return '<td><input type="number" step="0.01" min="0" data-no="'+esc(no)+'" data-col="'+c+'" class="'+cls+'" value="'+fmt(v)+'" placeholder="'+ph+'"></td>';
+      }).join('');
+      const clearBtn = view==='cust' && custPrices[no] ? '<button class="clearbtn" data-clear="'+esc(no)+'" title="전용가 삭제 → 기본가로">↺ 기본가</button>' : '';
+      return '<tr data-row="'+esc(no)+'">'+
+        '<td><span class="stno">'+esc(no)+'</span> <span class="stdesc">'+esc((st.description||'').slice(0,46))+'</span></td>'+
+        cells+
+        '<td style="white-space:nowrap"><button class="savebtn" data-save="'+esc(no)+'" disabled>Save</button> '+clearBtn+' <span class="st"></span></td>'+
+      '</tr>';
+    }).join('');
+    body.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input',()=>{
+        inp.classList.add('dirty');
+        const btn=body.querySelector('button[data-save="'+inp.dataset.no+'"]');
+        if(btn) btn.disabled=false;
+      });
+    });
+    body.querySelectorAll('button[data-save]').forEach(b=>b.addEventListener('click',()=>saveRow(b.dataset.save,b)));
+    body.querySelectorAll('button[data-clear]').forEach(b=>b.addEventListener('click',()=>clearRow(b.dataset.clear,b)));
+  }
+
+  function rowValues(no){
+    const out={};
+    document.querySelectorAll('input[data-no="'+no+'"]').forEach(inp=>{
+      const v=inp.value.trim();
+      out[inp.dataset.col]= v==='' ? null : Math.round(parseFloat(v)*100)/100;
+    });
+    return out;
+  }
+  function setSt(no,txt,ok){
+    const tr=document.querySelector('tr[data-row="'+no+'"]');
+    if(!tr) return; const el=tr.querySelector('.st');
+    el.className='st '+(ok?'ok':'err'); el.textContent=txt;
+    if(ok) setTimeout(()=>{ el.textContent=''; },2500);
+  }
+
+  async function saveRow(no,btn){
+    const vals=rowValues(no);
+    btn.disabled=true;
+    try{
+      if(view==='base'){
+        // style_prices upsert (style_number PK)
+        const r=await fetch(URL_+'/rest/v1/style_prices?on_conflict=style_number',{
+          method:'POST',
+          headers:Object.assign(H(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),
+          body:JSON.stringify(Object.assign({style_number:no},vals))});
+        if(!r.ok) throw new Error(await r.text());
+        basePrices[no]=Object.assign({style_number:no},vals);
+      }else{
+        if(vals.base_price==null){ setSt(no,'Base 가격이 필요해요',false); btn.disabled=false; return; }
+        const ex=custPrices[no];
+        if(ex && ex.id!=null){
+          const r=await fetch(URL_+'/rest/v1/customer_prices?id=eq.'+ex.id,{
+            method:'PATCH',headers:Object.assign(H(),{'Prefer':'return=representation'}),body:JSON.stringify(vals)});
+          if(!r.ok) throw new Error(await r.text());
+          custPrices[no]=Object.assign({},ex,vals);
+        }else{
+          const r=await fetch(URL_+'/rest/v1/customer_prices',{
+            method:'POST',headers:Object.assign(H(),{'Prefer':'return=representation'}),
+            body:JSON.stringify(Object.assign({customer_id:custId,style_number:no},vals))});
+          if(!r.ok) throw new Error(await r.text());
+          const d=await r.json(); custPrices[no]=(d&&d[0])||Object.assign({customer_id:custId,style_number:no},vals);
+        }
+      }
+      document.querySelectorAll('input[data-no="'+no+'"]').forEach(i=>{i.classList.remove('dirty'); if(view==='cust'&&i.value!=='')i.classList.add('custom');});
+      setSt(no,'Saved ✓',true);
+      if(view==='cust') render(); // ↺ 버튼 갱신
+    }catch(e){
+      setSt(no,'실패: '+String(e.message||e).slice(0,60),false);
+      btn.disabled=false;
+    }
+  }
+
+  // 거래처 전용가 삭제 → 기본가로 되돌림
+  async function clearRow(no,btn){
+    const ex=custPrices[no]; if(!ex||ex.id==null) return;
+    if(!confirm(no+' 의 이 거래처 전용가를 삭제하고 기본가를 적용할까요?')) return;
+    const r=await fetch(URL_+'/rest/v1/customer_prices?id=eq.'+ex.id,{method:'DELETE',headers:H()});
+    if(!r.ok){ setSt(no,'삭제 실패 ('+r.status+')',false); return; }
+    delete custPrices[no];
+    render();
+  }
+
+  document.getElementById('tabBase').addEventListener('click',()=>{ view='base'; tab(); render(); });
+  document.getElementById('tabCust').addEventListener('click',()=>{ view='cust'; tab(); render(); });
+  document.getElementById('custSel').addEventListener('change',async e=>{
+    custId=e.target.value;
+    document.getElementById('msg').style.display='block';
+    document.getElementById('msg').textContent='Loading…';
+    await loadCustPrices(); render();
+  });
+  function tab(){
+    document.getElementById('tabBase').classList.toggle('on',view==='base');
+    document.getElementById('tabCust').classList.toggle('on',view==='cust');
+  }
+  load();
+</script>
+</body>
+</html>

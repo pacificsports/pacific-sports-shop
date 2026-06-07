@@ -103,7 +103,34 @@
     }
   }
 
-  function boot() { wireCartButtons(); wireLinks(); applyAuthState(); refreshBadge(); }
+  // ── 로그인 자동연장: 만료 10분 전부터 refresh_token으로 토큰 갱신 ──
+  //    (epacific-login.html이 {token, refresh, expires_at, ...} 형태로 저장해 둠)
+  var _refreshing = false;
+  function refreshSession() {
+    var s = getSession();
+    if (!s || !s.token || !s.refresh || _refreshing) return;
+    var cfg = window.PACIFIC_CONFIG || {};
+    if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return;
+    var exp = s.expires_at || 0;
+    if (exp - Date.now() > 10 * 60 * 1000) return;   // 10분 이상 남았으면 그대로
+    _refreshing = true;
+    fetch(cfg.SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { apikey: cfg.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: s.refresh })
+    }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      _refreshing = false;
+      if (!d || !d.access_token) return;             // 갱신 실패 → 다음 기회에
+      var cur = getSession() || s;
+      cur.token = d.access_token;
+      cur.refresh = d.refresh_token || cur.refresh;
+      cur.expires_at = Date.now() + ((d.expires_in || 3600) * 1000);
+      try { localStorage.setItem('pacific_user', JSON.stringify(cur)); } catch (e) {}
+    }).catch(function () { _refreshing = false; });
+  }
+
+  function boot() { wireCartButtons(); wireLinks(); applyAuthState(); refreshBadge(); refreshSession(); setInterval(refreshSession, 5 * 60 * 1000); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+/* v2026-06-06 price-system */

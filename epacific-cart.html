@@ -48,7 +48,7 @@
   <div id="orderArea">
     <div class="panel">
       <table>
-        <thead><tr><th>Style</th><th>Color</th><th>WH</th><th>Size</th><th>Qty</th><th></th></tr></thead>
+        <thead><tr><th>Style</th><th>Color</th><th>WH</th><th>Size</th><th>Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Amount</th><th></th></tr></thead>
         <tbody id="cartRows"></tbody>
       </table>
       <div class="empty" id="emptyMsg" style="display:none">Your order is empty. <a href="epacific-category.html">Browse styles →</a></div>
@@ -57,6 +57,11 @@
     <div class="panel totals">
       <span>Total pieces</span>
       <b id="totalPcs">0</b>
+    </div>
+
+    <div class="panel totals" id="amountPanel" style="display:none">
+      <span>Total amount <small style="color:var(--faint)">(before shipping/tax)</small></span>
+      <b id="totalAmt">$0.00</b>
     </div>
 
     <div class="panel">
@@ -86,6 +91,13 @@
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
   function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
   function esc(t){ return String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  // 카트 금액 합계: unit_price 가 있는 항목만 합산 (없는 옛 항목은 '—' 표시)
+  function cartAmount(cart){
+    let amt=0, priced=0;
+    cart.forEach(i=>{ if(i.unit_price!=null){ amt+=(i.qty||0)*Number(i.unit_price); priced++; } });
+    return { amt, priced, all: priced===cart.length };
+  }
 
   function render(){
     const cart=cartGet();
@@ -94,6 +106,16 @@
     const total=cart.reduce((s,i)=>s+(i.qty||0),0);
     document.getElementById('totalPcs').textContent=total;
     document.getElementById('submitBtn').disabled = total===0;
+    // 금액 패널
+    const ap=document.getElementById('amountPanel');
+    const am=cartAmount(cart);
+    if(ap){
+      if(am.priced>0){
+        ap.style.display='flex';
+        document.getElementById('totalAmt').textContent = fmtMoney(am.amt) + (am.all?'':' *');
+        document.getElementById('totalAmt').title = am.all?'' :'Some items were added before pricing was enabled — re-add them to include their amount.';
+      } else ap.style.display='none';
+    }
     if(!cart.length){ body.innerHTML=''; empty.style.display='block'; return; }
     empty.style.display='none';
     body.innerHTML=cart.map((i,idx)=>`
@@ -103,6 +125,8 @@
         <td><span class="whb ${i.wh}">${i.wh}</span></td>
         <td>${esc(i.size)}</td>
         <td><input type="number" min="0" value="${i.qty}" data-idx="${idx}"></td>
+        <td style="text-align:right;white-space:nowrap">${i.unit_price!=null?fmtMoney(i.unit_price):'—'}</td>
+        <td style="text-align:right;white-space:nowrap;font-weight:600">${i.unit_price!=null?fmtMoney((i.qty||0)*i.unit_price):'—'}</td>
         <td><button class="rm" data-rm="${idx}">Remove</button></td>
       </tr>`).join('');
     body.querySelectorAll('input[data-idx]').forEach(inp=>inp.addEventListener('change',()=>{
@@ -161,6 +185,7 @@
           order_number:ono, user_id:s.userId, email:s.email,
           company_name:cust.company_name||null, contact_name:cust.contact_name||null, phone:cust.phone||null,
           items:cart, total_pcs:total,
+          total_amount:(()=>{ const a=cartAmount(cart); return a.priced>0 ? Math.round(a.amt*100)/100 : null; })(),
           notes:document.getElementById('orderNotes').value.trim()||null,
           status:'new'
         })
@@ -192,4 +217,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
+<!-- v2026-06-06 price-system -->
 </html>

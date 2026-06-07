@@ -408,6 +408,8 @@
   .editmode .cimg .editov{display:flex}
   /* 사이즈 헤더 아래 가격 */
   th.szh .szprice{display:block;font-size:10.5px;font-weight:600;color:var(--accent);letter-spacing:0;text-transform:none;margin-top:2px}
+  .cellwrap .saleprice{display:block;font-size:9.5px;font-weight:700;color:#c0392b;white-space:nowrap}
+  td.on-sale{background:#fdf3f1}
   /* 숨긴 사이즈 열: 손님에겐 완전히 숨김 */
   .size-hidden{display:none}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
@@ -502,13 +504,39 @@
   }
   function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+  // ── 세일가 (sale_prices: 스타일 전체 / 색상 / 사이즈 단위, $ 또는 %) ──
+  let salePrices=[];
+  function saleFor(rawColor,size){
+    if(!salePrices.length) return null;
+    const c=String(rawColor||'').toUpperCase(), s=String(size||'').toUpperCase();
+    let best=null,bestScore=-1;
+    salePrices.forEach(p=>{
+      const pc=p.color?String(p.color).toUpperCase():null;
+      const ps=p.size?String(p.size).toUpperCase():null;
+      if(pc&&pc!==c) return;            // 색상 지정인데 다른 색이면 제외
+      if(ps&&ps!==s) return;            // 사이즈 지정인데 다른 사이즈면 제외
+      const score=(pc?2:0)+(ps?1:0);    // 구체적인 것 우선 (색+사이즈 > 색 > 사이즈 > 전체)
+      if(score>bestScore){ bestScore=score; best=p; }
+    });
+    return best;
+  }
+  // 최종 단가: 세일 있으면 세일가($ 또는 %할인), 없으면 일반가
+  function unitPriceFor(rawColor,size){
+    const base=priceForSize(size);
+    const row=saleFor(rawColor,size);
+    if(!row) return base;
+    if(row.sale_price!=null) return Number(row.sale_price);
+    if(row.percent_off!=null && base!=null) return Math.round(base*(100-Number(row.percent_off)))/100;
+    return base;
+  }
+
   // 한 창고(SC 또는 CA)의 한 줄을 만든다
   // 주문 권한: 직원 또는 승인된 거래처만 재고/수량 입력 가능
   let canOrder=false, lockReason='login';   // 'login' | 'pending' | null
 
   function buildWHRow(c,wh,isFirst,hidden){
     const tr=document.createElement('tr');
-    tr.dataset.color=c.name; tr.dataset.wh=wh;
+    tr.dataset.color=c.name; tr.dataset.wh=wh; tr.dataset.rawcolor=(c._raw||c.raw||c.name);
     tr.className='wh-row wh-'+wh+(isFirst?' color-start':'')+(hidden?' color-hidden':'');
     if(isFirst) tr.id='color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
     // 재고는 여러 키로 안전하게 찾음 (이름 변경돼도 동작)
@@ -538,9 +566,12 @@
       const stockHtml = out
         ? `<span class="stock out">Out of<br>stock</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
-      return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}"><div class="cellwrap">`+
+      // 세일 중인 칸이면 빨간 세일가 표시
+      const _eff = (!out && saleFor(raw,s)!=null) ? unitPriceFor(raw,s) : null;
+      const saleHtml = _eff!=null ? `<span class="saleprice">SALE ${fmtMoney(_eff)}</span>` : '';
+      return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}${saleHtml?' on-sale':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
-        stockHtml+`</div></td>`;
+        stockHtml+saleHtml+`</div></td>`;
     }).join('');
     tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
     rowsBody.appendChild(tr);
@@ -632,7 +663,7 @@
         rt+=q;
         const sname=td?td.getAttribute('data-size'):null;
         if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
-        const pv=priceForSize(sname);
+        const pv=unitPriceFor(tr.dataset.rawcolor,sname);
         if(pv!=null) money+=q*pv;
       });
       tr.querySelector('.rowtotal').textContent=rt;
@@ -1067,7 +1098,7 @@
         const q=parseInt(i.value)||0; if(q<=0) return;
         const td=i.closest('td'); if(td&&td.classList.contains('size-hidden')) return;
         const size=td?td.getAttribute('data-size'):'';
-        const up=priceForSize(size);
+        const up=unitPriceFor(tr.dataset.rawcolor,size);
         items.push({style:currentStyle, styleName:(product&&product.name)||currentStyle, color:tr.dataset.color, wh:tr.dataset.wh, size, qty:q, unit_price:(up!=null?up:null)});
         colorSet.add(tr.dataset.color);
         if(tr.dataset.wh==='SC') scPcs+=q; else caPcs+=q;
@@ -1153,6 +1184,17 @@
       }
     }catch(e){ priceInfo=null; }
   }
+  async function loadSales(style){
+    salePrices=[];
+    try{
+      const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+      if(!sess||!sess.token) return;
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/sale_prices?style_number=eq.'+encodeURIComponent(style)
+        +'&active=is.true&select=color,size,sale_price,percent_off',
+        {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
+      if(r.ok) salePrices=await r.json();
+    }catch(e){ salePrices=[]; }
+  }
 
   async function init(){
     try{
@@ -1212,7 +1254,7 @@
           : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
       })();
       // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
-      if(canOrder) await loadPrices(STYLE);
+      if(canOrder){ await loadPrices(STYLE); await loadSales(STYLE); }
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;
@@ -1525,5 +1567,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-06 price-system -->
+<!-- v2026-06-07 price-system+sale -->
 </html>

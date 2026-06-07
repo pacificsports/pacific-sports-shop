@@ -48,6 +48,7 @@
   <div class="tabs">
     <button id="tabBase" class="on">기본가 (Website)</button>
     <button id="tabCust">거래처별 (Customer)</button>
+    <button id="tabSale">세일 (Sale)</button>
     <select id="custSel" style="display:none"><option value="">— 거래처 선택 —</option></select>
   </div>
   <div class="legend" id="legend" style="display:none">초록 칸 = 이 거래처 전용가 · 빈 칸/회색 = 기본가 적용 · 4XL/5XL이 비어 있으면 그 아래 단계 가격이 적용됩니다</div>
@@ -60,6 +61,25 @@
         <th style="width:130px"></th>
       </tr></thead>
       <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="panel" style="display:none;padding:14px 16px" id="salePanel">
+    <div style="font-size:12.5px;color:var(--faint);margin-bottom:10px">색상/사이즈를 "모든 ~"으로 두면 그 스타일 전체에 적용됩니다. 구체적인 세일(색상+사이즈)이 전체 세일보다 우선해요.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
+      <select id="saleStyle" style="padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff"><option value="">스타일 선택</option></select>
+      <select id="saleColor" style="padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff"><option value="">모든 색상</option></select>
+      <select id="saleSize" style="padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff"><option value="">모든 사이즈</option></select>
+      <select id="saleMode" style="padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff">
+        <option value="price">세일가 ($)</option>
+        <option value="pct">% 할인</option>
+      </select>
+      <input id="salePrice" type="number" step="0.01" min="0" placeholder="$ 또는 %" style="width:100px;padding:8px;border:1px solid var(--line-2);border-radius:8px;text-align:right">
+      <button class="savebtn" id="saleAdd">+ 세일 추가</button>
+      <span id="saleMsg" class="err"></span>
+    </div>
+    <table>
+      <thead><tr><th>Style</th><th>Color</th><th>Size</th><th style="text-align:right">Sale</th><th style="width:90px"></th></tr></thead>
+      <tbody id="saleRows"></tbody>
     </table>
   </div>
   <div id="msg">Loading…</div>
@@ -121,8 +141,11 @@
   function render(){
     const panel=document.getElementById('panel'), msg=document.getElementById('msg');
     const legend=document.getElementById('legend');
+    const salePanel=document.getElementById('salePanel');
     document.getElementById('custSel').style.display = view==='cust' ? '' : 'none';
     legend.style.display = view==='cust' ? '' : 'none';
+    if(view==='sale'){ panel.style.display='none'; msg.style.display='none'; salePanel.style.display=''; renderSale(); return; }
+    salePanel.style.display='none';
     if(view==='cust' && !custId){ panel.style.display='none'; msg.style.display='block'; msg.textContent='위에서 거래처를 선택하세요.'; return; }
     msg.style.display='none'; panel.style.display='';
     const body=document.getElementById('rows');
@@ -217,6 +240,70 @@
     render();
   }
 
+  // ───── 세일 (sale_prices) ─────
+  let sales=[];
+  const SALE_SIZES=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+  async function loadSalesAll(){
+    const r=await fetch(URL_+'/rest/v1/sale_prices?select=*&order=style_number',{headers:H()});
+    sales = r.ok ? await r.json() : [];
+  }
+  function fillSaleSelects(){
+    document.getElementById('saleStyle').innerHTML='<option value="">스타일 선택</option>'
+      +styles.map(s=>'<option value="'+esc(s.style_number)+'">'+esc(s.style_number)+'</option>').join('');
+    document.getElementById('saleSize').innerHTML='<option value="">모든 사이즈</option>'
+      +SALE_SIZES.map(s=>'<option>'+s+'</option>').join('');
+  }
+  async function fillSaleColors(style){
+    const sel=document.getElementById('saleColor');
+    sel.innerHTML='<option value="">모든 색상</option>';
+    if(!style) return;
+    const r=await fetch(URL_+'/rest/v1/inventory?style_number=eq.'+encodeURIComponent(style)+'&select=color&limit=5000',{headers:H()});
+    if(!r.ok) return;
+    const cols=[...new Set((await r.json()).map(x=>x.color).filter(Boolean))].sort();
+    sel.innerHTML='<option value="">모든 색상</option>'+cols.map(c=>'<option>'+esc(c)+'</option>').join('');
+  }
+  function renderSale(){
+    const body=document.getElementById('saleRows');
+    if(!sales.length){ body.innerHTML='<tr><td colspan="5" style="color:var(--faint);padding:16px">등록된 세일이 없습니다. 위에서 추가하세요.</td></tr>'; return; }
+    body.innerHTML=sales.map(s=>'<tr>'+
+      '<td><span class="stno">'+esc(s.style_number)+'</span></td>'+
+      '<td>'+(s.color?esc(s.color):'<span class="stdesc">모든 색상</span>')+'</td>'+
+      '<td>'+(s.size?esc(s.size):'<span class="stdesc">모든 사이즈</span>')+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:#c0392b">'+(s.sale_price!=null?('$'+Number(s.sale_price).toFixed(2)):(Number(s.percent_off)+'% OFF'))+'</td>'+
+      '<td style="text-align:right"><button class="clearbtn" data-saledel="'+s.id+'">삭제</button></td>'+
+    '</tr>').join('');
+    body.querySelectorAll('button[data-saledel]').forEach(b=>b.addEventListener('click',async()=>{
+      if(!confirm('이 세일을 삭제할까요? (정상가로 돌아갑니다)')) return;
+      const r=await fetch(URL_+'/rest/v1/sale_prices?id=eq.'+b.dataset.saledel,{method:'DELETE',headers:H()});
+      if(r.ok){ sales=sales.filter(x=>String(x.id)!==String(b.dataset.saledel)); renderSale(); }
+      else alert('삭제 실패 ('+r.status+')');
+    }));
+  }
+  document.getElementById('saleStyle').addEventListener('change',e=>fillSaleColors(e.target.value));
+  document.getElementById('saleAdd').addEventListener('click',async()=>{
+    const st=document.getElementById('saleStyle').value;
+    const cl=document.getElementById('saleColor').value||null;
+    const sz=document.getElementById('saleSize').value||null;
+    const mode=document.getElementById('saleMode').value;
+    const v=parseFloat(document.getElementById('salePrice').value);
+    const m=document.getElementById('saleMsg');
+    if(!st){ m.textContent='스타일을 선택하세요'; return; }
+    if(!(v>0)){ m.textContent=(mode==='pct'?'할인율(%)을':'세일가($)를')+' 입력하세요'; return; }
+    if(mode==='pct'&&v>=100){ m.textContent='할인율은 100% 미만이어야 해요'; return; }
+    m.textContent='';
+    const body={style_number:st,color:cl,size:sz};
+    if(mode==='pct') body.percent_off=Math.round(v*100)/100; else body.sale_price=Math.round(v*100)/100;
+    const r=await fetch(URL_+'/rest/v1/sale_prices',{method:'POST',headers:Object.assign(H(),{'Prefer':'return=representation'}),body:JSON.stringify(body)});
+    if(!r.ok){ m.textContent='저장 실패 ('+r.status+') — sale_prices 테이블 SQL을 먼저 실행했는지 확인'; return; }
+    const d=await r.json(); sales.push(d[0]);
+    document.getElementById('salePrice').value='';
+    renderSale();
+  });
+  document.getElementById('tabSale').addEventListener('click',async()=>{
+    view='sale'; tab();
+    await loadSalesAll(); fillSaleSelects(); render();
+  });
+
   document.getElementById('tabBase').addEventListener('click',()=>{ view='base'; tab(); render(); });
   document.getElementById('tabCust').addEventListener('click',()=>{ view='cust'; tab(); render(); });
   document.getElementById('custSel').addEventListener('change',async e=>{
@@ -228,8 +315,10 @@
   function tab(){
     document.getElementById('tabBase').classList.toggle('on',view==='base');
     document.getElementById('tabCust').classList.toggle('on',view==='cust');
+    document.getElementById('tabSale').classList.toggle('on',view==='sale');
   }
   load();
 </script>
 </body>
+<!-- v2026-06-07 price-system+sale -->
 </html>

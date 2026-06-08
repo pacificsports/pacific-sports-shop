@@ -213,8 +213,7 @@
   .stickybar.show{transform:translateY(0)}
   .stickybar .in{position:relative;height:66px;margin:0;padding:0}
   .stickybar .sblk{position:absolute;top:50%;transform:translateY(-50%)}
-  .stickybar .sblk.colc{text-align:center;transform:translate(-50%,-50%)}
-  .stickybar #sSubBlk{text-align:center}
+  .stickybar .sblk.colc{text-align:right}
   .stickybar .sblk small{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:2px}
   .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
   .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600;line-height:1.35}
@@ -770,30 +769,30 @@
     }
   }
 
-  // 하단바를 주문 표 칼럼(PIECES/AMOUNT)에 맞춰 정렬
+  // 하단바 정렬: 버튼은 오른쪽 끝, 합계는 버튼 왼쪽에 모으고, Case는 표 왼쪽에
   function alignStickyBar(){
     const bar=document.getElementById('stickyBar'); if(!bar||!bar.classList.contains('show')) return;
     const colorTh=document.getElementById('thColor');
-    const piecesTh=document.getElementById('thPieces');
-    const amountTh=colorTh&&colorTh.parentElement.querySelector('th.amtcol');
     const inEl=bar.querySelector('.in');
     const cBlk=document.getElementById('sCaseBlk'), pBlk=document.getElementById('sPiecesBlk'),
           sBlk=document.getElementById('sSubBlk'), btn=document.getElementById('sAddBtn');
-    if(!colorTh||!piecesTh||!amountTh||!inEl) return;
-    // 좁은 화면이거나 칼럼이 너무 왼쪽이면 단순모드
+    if(!colorTh||!inEl||!btn) return;
     if(window.innerWidth<860){ bar.classList.add('simple'); return; }
     bar.classList.remove('simple');
     const base=inEl.getBoundingClientRect().left;
-    const pr=piecesTh.getBoundingClientRect();
-    const ar=amountTh.getBoundingClientRect();
-    const cr=colorTh.getBoundingClientRect();
-    // Total Pieces → PIECES 칸 중앙, Subtotal → AMOUNT 칸 중앙
-    pBlk.style.left=(pr.left - base + pr.width/2)+'px';
-    sBlk.style.left=(ar.left - base + ar.width/2)+'px';
-    // Case Breakdown → Color 칸 시작점
-    cBlk.style.left=(cr.left - base + 4)+'px';
-    // 버튼 → 화면 오른쪽 끝
+    const inW=inEl.getBoundingClientRect().width;
+    // 버튼: 오른쪽 끝
     btn.style.left=''; btn.style.right='24px';
+    const btnW=btn.getBoundingClientRect().width;
+    const btnLeft = inW - 24 - btnW;     // 버튼 왼쪽 가장자리(컨테이너 기준)
+    // Subtotal: 버튼 왼쪽에서 살짝 띄워 오른쪽정렬
+    sBlk.style.left=''; sBlk.style.right=(24 + btnW + 28)+'px'; sBlk.style.transform='translateY(-50%)';
+    // 측정 후 Total Pieces를 Subtotal 왼쪽에
+    const sw=sBlk.getBoundingClientRect().width;
+    pBlk.style.left=''; pBlk.style.right=(24 + btnW + 28 + sw + 34)+'px'; pBlk.style.transform='translateY(-50%)';
+    // Case Breakdown → Color 칸 시작점 (왼쪽)
+    const cr=colorTh.getBoundingClientRect();
+    cBlk.style.left=(cr.left - base + 4)+'px'; cBlk.style.right='';
   }
   window.addEventListener('resize', alignStickyBar);
   window.addEventListener('scroll', alignStickyBar, {passive:true});
@@ -1699,5 +1698,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 sticky-colaligned -->
+<!-- v2026-06-08 sticky-nooverlap -->
 </html>

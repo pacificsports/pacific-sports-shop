@@ -17,10 +17,19 @@
   table{width:100%;border-collapse:collapse;font-size:14px}
   th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
   td{padding:10px;border-bottom:1px solid var(--line)}
-  td input[type=number]{width:70px;padding:7px;border:1px solid var(--line-2);border-radius:7px;font-size:14px;text-align:center}
+  td input[type=number]{width:54px;padding:6px 4px;border:1px solid var(--line-2);border-radius:7px;font-size:13.5px;text-align:center}
   .rm{border:none;background:none;color:#a8463f;cursor:pointer;font-size:13px}
   .whb{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px}
   .whb.SC{background:#e7eef5;color:#33414f}.whb.CA{background:#fdf3e2;color:#9a6b1f}
+  /* 그리드형 카트 */
+  .cart-scroll{overflow-x:auto}
+  table.grid{min-width:660px}
+  table.grid th.sz, table.grid td.sz{text-align:center;padding:8px 6px;min-width:56px}
+  table.grid th.r, table.grid td.r{text-align:right;white-space:nowrap}
+  table.grid td.colcell{min-width:150px}
+  .cn{font-weight:600}
+  .stylesub{font-size:11.5px;color:var(--faint)}
+  .lineamt{font-weight:700;color:var(--accent)}
   .totals{display:flex;justify-content:space-between;align-items:center;font-size:15px}
   .totals b{font-size:22px}
   textarea{width:100%;min-height:80px;border:1px solid var(--line-2);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;resize:vertical}
@@ -47,10 +56,12 @@
 
   <div id="orderArea">
     <div class="panel">
-      <table>
-        <thead><tr><th>Style</th><th>Color</th><th>WH</th><th>Size</th><th>Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Amount</th><th></th></tr></thead>
-        <tbody id="cartRows"></tbody>
-      </table>
+      <div class="cart-scroll">
+        <table class="grid">
+          <thead id="cartHead"></thead>
+          <tbody id="cartRows"></tbody>
+        </table>
+      </div>
       <div class="empty" id="emptyMsg" style="display:none">Your order is empty. <a href="epacific-category.html">Browse styles →</a></div>
     </div>
 
@@ -117,26 +128,57 @@
         document.getElementById('totalAmt').title = am.all?'' :'Some items were added before pricing was enabled — re-add them to include their amount.';
       } else ap.style.display='none';
     }
-    if(!cart.length){ body.innerHTML=''; empty.style.display='block'; return; }
+    if(!cart.length){ body.innerHTML=''; document.getElementById('cartHead').innerHTML=''; empty.style.display='block'; return; }
     empty.style.display='none';
-    body.innerHTML=cart.map((i,idx)=>`
-      <tr>
-        <td><b>${esc(i.style)}</b><div style="font-size:12px;color:var(--faint)">${esc((i.styleName||'').replace(/^\d+\s*/,'')).slice(0,42)}</div></td>
-        <td>${esc(i.color)}</td>
-        <td><span class="whb ${i.wh}">${i.wh}</span></td>
-        <td>${esc(i.size)}</td>
-        <td><input type="number" min="0" value="${i.qty}" data-idx="${idx}"></td>
-        <td style="text-align:right;white-space:nowrap">${i.unit_price!=null?fmtMoney(i.unit_price):'—'}</td>
-        <td style="text-align:right;white-space:nowrap;font-weight:600">${i.unit_price!=null?fmtMoney((i.qty||0)*i.unit_price):'—'}</td>
-        <td><button class="rm" data-rm="${idx}">Remove</button></td>
-      </tr>`).join('');
+
+    // ── 색상+창고별로 묶고, 사이즈는 칼럼으로 ──
+    const SIZE_ORDER=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+    const groups={}; // key: style|color|wh
+    const sizeSet=new Set();
+    cart.forEach((i,idx)=>{
+      const k=i.style+'|'+i.color+'|'+i.wh;
+      if(!groups[k]) groups[k]={style:i.style,styleName:i.styleName,color:i.color,wh:i.wh,sizes:{}};
+      groups[k].sizes[i.size]={qty:i.qty||0, unit:i.unit_price, idx};
+      sizeSet.add(i.size);
+    });
+    const cols=SIZE_ORDER.filter(s=>sizeSet.has(s));
+    // 헤더
+    document.getElementById('cartHead').innerHTML=
+      '<tr><th class="colcell">Style / Color</th><th>WH</th>'
+      + cols.map(s=>'<th class="sz">'+s+'</th>').join('')
+      + '<th class="sz">Pcs</th><th class="r">Amount</th><th></th></tr>';
+    // 본문
+    body.innerHTML=Object.values(groups).map(g=>{
+      let pcs=0, amt=0, priced=true;
+      const cells=cols.map(s=>{
+        const cell=g.sizes[s];
+        if(!cell) return '<td class="sz" style="color:var(--line-2)">·</td>';
+        pcs+=cell.qty;
+        if(cell.unit!=null) amt+=cell.qty*cell.unit; else priced=false;
+        return '<td class="sz"><input type="number" min="0" value="'+cell.qty+'" data-idx="'+cell.idx+'"></td>';
+      }).join('');
+      const styleSub=esc((g.styleName||'').replace(/^\d+\s*/,'')).slice(0,38);
+      return '<tr>'
+        + '<td class="colcell"><span class="cn">'+esc(g.color)+'</span> <span style="color:var(--faint)">#'+esc(g.style)+'</span><div class="stylesub">'+styleSub+'</div></td>'
+        + '<td><span class="whb '+g.wh+'">'+g.wh+'</span></td>'
+        + cells
+        + '<td class="sz"><b>'+pcs+'</b></td>'
+        + '<td class="r lineamt">'+(priced?fmtMoney(amt):'—')+'</td>'
+        + '<td><button class="rm" data-rmgroup="'+esc(g.style+'|'+g.color+'|'+g.wh)+'">Remove</button></td>'
+        + '</tr>';
+    }).join('');
+
+    // 사이즈 칸 수정 → 해당 cart 항목 qty 변경 (0이면 삭제)
     body.querySelectorAll('input[data-idx]').forEach(inp=>inp.addEventListener('change',()=>{
-      const c=cartGet(); const q=parseInt(inp.value)||0;
-      if(q<=0) c.splice(parseInt(inp.dataset.idx),1); else c[parseInt(inp.dataset.idx)].qty=q;
+      const c=cartGet(); const q=parseInt(inp.value)||0; const idx=parseInt(inp.dataset.idx);
+      if(q<=0) c.splice(idx,1); else c[idx].qty=q;
       cartSet(c); render();
     }));
-    body.querySelectorAll('button[data-rm]').forEach(b=>b.addEventListener('click',()=>{
-      const c=cartGet(); c.splice(parseInt(b.dataset.rm),1); cartSet(c); render();
+    // 그룹 전체 삭제
+    body.querySelectorAll('button[data-rmgroup]').forEach(b=>b.addEventListener('click',()=>{
+      const [st,co,wh]=b.dataset.rmgroup.split('|');
+      const c=cartGet().filter(i=>!(i.style===st && i.color===co && i.wh===wh));
+      cartSet(c); render();
     }));
   }
 
@@ -183,40 +225,4 @@
         method:'POST',
         headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify({
-          order_number:ono, user_id:s.userId, email:s.email,
-          company_name:cust.company_name||null, contact_name:cust.contact_name||null, phone:cust.phone||null,
-          items:cart, total_pcs:total,
-          total_amount:(()=>{ const a=cartAmount(cart); return a.priced>0 ? Math.round(a.amt*100)/100 : null; })(),
-          notes:document.getElementById('orderNotes').value.trim()||null,
-          status:'new'
-        })
-      });
-      if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,140)); }
-      // 확인 이메일 (거래처 + 사장님 알림) — 실패해도 주문은 유지
-      if(EMAIL_WORKER){
-        fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({type:'order',to:s.email,data:{
-            order_number:ono,total_pcs:total,items:cart,
-            notes:document.getElementById('orderNotes').value.trim()||null,
-            company_name:cust.company_name||null,contact_name:cust.contact_name||null,phone:cust.phone||null
-          }})}).catch(()=>{});
-      }
-      cartSet([]);
-      document.getElementById('orderArea').style.display='none';
-      document.getElementById('okBox').style.display='block';
-      document.getElementById('okNo').textContent='Order '+ono;
-    }catch(e){
-      const m=document.getElementById('msg');
-      m.style.display='block'; m.style.background='#f8ecea'; m.style.color='#a8463f'; m.style.border='1px solid #ecd6d3';
-      m.textContent='Could not submit: '+e.message;
-      btn.disabled=false; btn.textContent='Submit order →';
-    }
-  }
-
-  document.getElementById('submitBtn').addEventListener('click',submitOrder);
-  init();
-</script>
-<script src="pacific-nav.js"></script>
-</body>
-<!-- v2026-06-07 checkout-btn -->
-</html>
+          order_number:ono, user

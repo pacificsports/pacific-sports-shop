@@ -211,24 +211,26 @@
     background:rgba(253,253,251,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--ink);
     box-shadow:0 -10px 30px -16px rgba(0,0,0,.35)}
   .stickybar.show{transform:translateY(0)}
-  .stickybar .in{max-width:1180px;margin:0 auto;padding:12px 30px;display:flex;align-items:center;justify-content:center;gap:24px;position:relative}
-  .stickybar .sgroup{display:flex;align-items:center;gap:26px}
-  .stickybar .sdiv{width:1px;height:34px;background:var(--line-2)}
+  .stickybar .in{position:relative;height:66px;margin:0;padding:0}
+  .stickybar .sblk{position:absolute;top:50%;transform:translateY(-50%)}
+  .stickybar .sblk.colc{text-align:center;transform:translate(-50%,-50%)}
+  .stickybar #sSubBlk{text-align:center}
   .stickybar .sblk small{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:2px}
-  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:27px;line-height:1}
+  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
   .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600;line-height:1.35}
   .stickybar .scases .cl{color:var(--faint);font-weight:500;font-size:11px;margin-right:4px}
-  .stickybar .addbtn{position:absolute;right:30px;top:50%;transform:translateY(-50%);padding:16px 40px;font-size:15px;white-space:nowrap;display:inline-flex;align-items:baseline;gap:9px}
+  .stickybar .addbtn{position:absolute;top:50%;transform:translateY(-50%);padding:14px 26px;font-size:14.5px;white-space:nowrap;display:inline-flex;align-items:baseline;gap:8px}
   .stickybar .addbtn:hover{transform:translateY(-50%) translateY(-2px)}
-  .stickybar .sbtnamt{font-weight:700;font-size:16px}
-  @media(max-width:700px){
-    .stickybar .in{padding:9px 14px;gap:12px;justify-content:space-between}
-    .stickybar .addbtn{position:static;transform:none}
-    .stickybar .sgroup{gap:14px}
-    .stickybar .sblk.cases, .stickybar .sdiv{display:none}
+  .stickybar .sbtnamt{font-weight:700;font-size:15px}
+  /* 좁은 화면: 칼럼정렬 포기, 단순 양끝 배치 */
+  .stickybar.simple .in{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;height:auto}
+  .stickybar.simple .sblk{position:static;transform:none}
+  .stickybar.simple #sCaseBlk{display:none}
+  .stickybar.simple .addbtn{position:static;transform:none}
+  @media(max-width:760px){
     .stickybar .sblk b{font-size:20px}
-    .stickybar .addbtn{padding:13px 20px;font-size:13.5px}
   }
+
 
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:16px 28px;border-radius:999px;font-weight:500;font-size:14px;z-index:300;transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 48px -20px rgba(28,28,26,.5)}
   .toast.show{transform:translateX(-50%) translateY(0)}
@@ -416,13 +418,9 @@
 
 <div class="stickybar" id="stickyBar">
   <div class="in">
-    <div class="sgroup">
-      <div class="sblk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
-      <div class="sdiv"></div>
-      <div class="sblk cases"><small>Case Breakdown</small><div class="scases" id="sCaseConv">—</div></div>
-      <div class="sdiv"></div>
-      <div class="sblk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
-    </div>
+    <div class="sblk cases" id="sCaseBlk"><small>Case Breakdown</small><div class="scases" id="sCaseConv">—</div></div>
+    <div class="sblk colc" id="sPiecesBlk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
+    <div class="sblk colc" id="sSubBlk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
     <button class="addbtn" id="sAddBtn" disabled>Add to Order <span class="sbtnamt" id="sBtnAmt"></span></button>
   </div>
 </div>
@@ -768,8 +766,38 @@
       const sb=document.getElementById('sAddBtn'); if(sb) sb.disabled=total===0;
       const sba=document.getElementById('sBtnAmt'); if(sba) sba.textContent=(canOrder && priceInfo && total>0) ? ('· '+fmtMoney(money)) : '';
       bar.classList.toggle('show', canOrder && total>0);
+      alignStickyBar();
     }
   }
+
+  // 하단바를 주문 표 칼럼(PIECES/AMOUNT)에 맞춰 정렬
+  function alignStickyBar(){
+    const bar=document.getElementById('stickyBar'); if(!bar||!bar.classList.contains('show')) return;
+    const colorTh=document.getElementById('thColor');
+    const piecesTh=document.getElementById('thPieces');
+    const amountTh=colorTh&&colorTh.parentElement.querySelector('th.amtcol');
+    const inEl=bar.querySelector('.in');
+    const cBlk=document.getElementById('sCaseBlk'), pBlk=document.getElementById('sPiecesBlk'),
+          sBlk=document.getElementById('sSubBlk'), btn=document.getElementById('sAddBtn');
+    if(!colorTh||!piecesTh||!amountTh||!inEl) return;
+    // 좁은 화면이거나 칼럼이 너무 왼쪽이면 단순모드
+    if(window.innerWidth<860){ bar.classList.add('simple'); return; }
+    bar.classList.remove('simple');
+    const base=inEl.getBoundingClientRect().left;
+    const pr=piecesTh.getBoundingClientRect();
+    const ar=amountTh.getBoundingClientRect();
+    const cr=colorTh.getBoundingClientRect();
+    // Total Pieces → PIECES 칸 중앙, Subtotal → AMOUNT 칸 중앙
+    pBlk.style.left=(pr.left - base + pr.width/2)+'px';
+    sBlk.style.left=(ar.left - base + ar.width/2)+'px';
+    // Case Breakdown → Color 칸 시작점
+    cBlk.style.left=(cr.left - base + 4)+'px';
+    // 버튼 → 화면 오른쪽 끝
+    btn.style.left=''; btn.style.right='24px';
+  }
+  window.addEventListener('resize', alignStickyBar);
+  window.addEventListener('scroll', alignStickyBar, {passive:true});
+  (function(){ const sc=document.querySelector('.otable-scroll'); if(sc) sc.addEventListener('scroll', alignStickyBar, {passive:true}); })();
 
   // ── 사이즈 가이드 토글 ──
   const sgToggle=document.getElementById('sgToggle');
@@ -1671,5 +1699,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 sticky-centered -->
+<!-- v2026-06-08 sticky-colaligned -->
 </html>

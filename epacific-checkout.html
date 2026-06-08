@@ -87,7 +87,7 @@
     </div>
 
     <!-- 카드 -->
-    <div class="panel" id="payPanel" style="display:none">
+    <div class="panel" id="payPanel">
       <h2>Payment</h2>
       <label>Card number *</label><input type="text" id="cardNum" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••">
       <div class="grid3">
@@ -332,12 +332,44 @@
       note.innerHTML='Your cart is empty. <a href="epacific-category.html" style="color:var(--accent);font-weight:700">Browse styles →</a>';
       document.getElementById('rateBtn').disabled=true;
     }
-    // 거래처 정보 미리 채우기
+    // ── 자동채우기 (웹사이트 자체 데이터 — IMS 없이도 동작) ──
     const cust=customer()||{};
-    if(s&&s.email&&!document.getElementById('fEmail').value) document.getElementById('fEmail').value=s.email;
-    if(cust.contact_name&&!document.getElementById('fName').value) document.getElementById('fName').value=cust.contact_name;
-    if(cust.company_name&&!document.getElementById('fCompany').value) document.getElementById('fCompany').value=cust.company_name;
-    if(cust.phone&&!document.getElementById('fPhone').value) document.getElementById('fPhone').value=cust.phone;
+    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v) el.value=v; };
+    // 1) 연락처: 로그인 이메일 + 가입 신청서 정보
+    setIf('fEmail', s.email);
+    setIf('fName', cust.contact_name);
+    setIf('fCompany', cust.company_name);
+    setIf('fPhone', cust.phone);
+    // 2) 배송 주소: 이 계정의 가장 최근 주문 ship_to 에서 (한 번 주문하면 다음부터 자동)
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/web_orders?user_id=eq.'+s.userId
+        +'&ship_to=not.is.null&select=ship_to&order=created_at.desc&limit=1',
+        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      if(r.ok){ const rows=await r.json(); const st=rows&&rows[0]&&rows[0].ship_to;
+        if(st){
+          setIf('fName', st.name); setIf('fCompany', st.company);
+          setIf('fAddr1', st.addr1); setIf('fAddr2', st.addr2);
+          setIf('fCity', st.city); setIf('fZip', st.zip); setIf('fPhone', st.phone);
+          if(st.state){ const ss=document.getElementById('fState'); if(ss&&!ss.value) ss.value=st.state; }
+          if(st.residential){ const rc=document.getElementById('fResidential'); if(rc) rc.checked=true; }
+        }
+      }
+    }catch(e){}
+    // 3) (보너스) IMS 거래처가 연결돼 있으면 그 주소도 시도 — 없어도 무방
+    try{
+      if(cust.customer_id){
+        const cr=await fetch(_C.SUPABASE_URL+'/rest/v1/customers?id=eq.'+cust.customer_id+'&select=name,ship_address,phone',
+          {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        if(cr.ok){ const c=(await cr.json())[0];
+          if(c){ setIf('fCompany', c.name); setIf('fPhone', c.phone);
+            // ship_address 는 여러 줄 텍스트일 수 있어 1번째 줄만 addr1로
+            if(c.ship_address && !document.getElementById('fAddr1').value){
+              document.getElementById('fAddr1').value=String(c.ship_address).split('\n')[0].trim();
+            }
+          }
+        }
+      }
+    }catch(e){}
   }
   init();
 </script>
@@ -353,5 +385,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 checkout-shopify -->
+<!-- v2026-06-08 checkout-shopify-autofill -->
 </html>

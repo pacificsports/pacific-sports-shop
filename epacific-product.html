@@ -415,11 +415,13 @@
   .size-hidden{display:none}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
   .editmode .size-hidden{display:table-cell;opacity:.35}
-  /* 수정모드: 사이즈 헤더에 켜기/끄기 표시 */
-  .editmode th.szh{cursor:pointer;position:relative;background:var(--accent-soft);border-radius:8px 8px 0 0}
-  .editmode th.szh::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
+  /* 수정모드: 사이즈 헤더 = 가격 입력칸 + 표시/숨김 체크박스 */
+  .editmode th.szh{position:relative;background:var(--accent-soft);border-radius:8px 8px 0 0}
   .editmode th.szh.size-hidden{background:#f0efe9}
-  .editmode th.szh.size-hidden::after{content:'+ add';color:var(--faint);font-size:9px}
+  th.szh input.szpin{display:block;width:58px;margin:3px auto 0;padding:3px 4px;border:1px solid var(--line-2);border-radius:6px;font-size:11.5px;text-align:center;background:#fff;font-family:var(--body)}
+  th.szh input.szpin:focus{outline:none;border-color:var(--accent)}
+  th.szh input.szpin.saved{background:#e8f3e9;border-color:var(--accent)}
+  th.szh input.szchk{display:block;margin:4px auto 0;cursor:pointer;width:14px;height:14px;accent-color:var(--accent)}
   /* 숨긴 색상: 손님엔 안 보임, Edit 모드에선 흐리게 */
   .sw-hidden{display:none}
   .editmode .sw-hidden{display:inline-block;opacity:.32;outline:1.5px dashed var(--faint);outline-offset:1px}
@@ -602,16 +604,30 @@
       th.className='szh szcol'+(isHidden?' size-hidden':'');
       th.dataset.size=s;
       th.textContent=s;
-      // 사이즈별 가격 표시 (로그인+승인 시에만 · 직원은 가격 없어도 '$ —' 표시)
       const pv = canOrder ? priceForSize(s) : null;
-      if(pv!=null || window._pacIsStaff){
+      if(editOn && window._pacIsStaff){
+        // ── Edit 모드: 가격 입력칸 (치고 Enter/클릭아웃 = 저장) ──
+        const pin=document.createElement('input');
+        pin.type='number'; pin.step='0.01'; pin.min='0'; pin.className='szpin';
+        pin.value = pv!=null ? Number(pv).toFixed(2) : '';
+        pin.placeholder='$';
+        pin.title = PRICE_COL[String(s).toUpperCase()] ? (s+' 사이즈 가격') : '기본가 — XS~XL 등 일반 사이즈 공통';
+        pin.addEventListener('click',e=>e.stopPropagation());
+        pin.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); pin.blur(); } });
+        pin.addEventListener('change',()=>saveInlinePrice(s,pin));
+        th.appendChild(pin);
+        // ── 표시/숨김 체크박스 (해제 = 손님에게 숨김) ──
+        const chk=document.createElement('input');
+        chk.type='checkbox'; chk.className='szchk'; chk.checked=!isHidden;
+        chk.title='체크 해제 = 손님에게 이 사이즈 숨김';
+        chk.addEventListener('click',e=>e.stopPropagation());
+        chk.addEventListener('change',()=>toggleSize(s));
+        th.appendChild(chk);
+      }else if(pv!=null || window._pacIsStaff){
         const sp=document.createElement('span'); sp.className='szprice';
         sp.textContent = pv!=null ? fmtMoney(pv) : '$ —';
-        if(window._pacIsStaff) sp.title='Edit 모드에서 클릭하면 가격 수정';
-        sp.addEventListener('click',(e)=>{ if(editOn){ e.stopPropagation(); editPrice(s); } });
         th.appendChild(sp);
       }
-      th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
     const note=document.getElementById('caseNote');
@@ -1203,28 +1219,29 @@
     }catch(e){ salePrices=[]; }
   }
 
-  // ── (직원) Edit 모드에서 사이즈 헤더의 가격 클릭 → 기본가 바로 수정 ──
+  // ── (직원) Edit 모드: 헤더 가격 입력칸에서 바로 저장 ──
   const PRICE_COL={ '2XL':'price_2xl','3XL':'price_3xl','4XL':'price_4xl','5XL':'price_5xl' };
-  async function editPrice(size){
+  async function saveInlinePrice(size,inp){
     const up=String(size).toUpperCase();
     const col=PRICE_COL[up]||'base_price';
-    const cur=priceForSize(size);
-    const label = col==='base_price'
-      ? currentStyle+' 기본가 — XS~XL 등 일반 사이즈 전체에 적용 (USD)'
-      : currentStyle+' '+up+' 가격 (USD)';
-    const v=prompt(label, cur!=null?Number(cur).toFixed(2):'');
-    if(v===null) return;
-    const num=parseFloat(v);
-    if(!(num>0)){ alert('가격을 숫자로 입력하세요 (예: 3.75)'); return; }
+    const raw=inp.value.trim();
+    let val=null;                                     // 빈 칸 = 가격 지움 (아래 단계로 fallback)
+    if(raw!==''){
+      const num=parseFloat(raw);
+      if(!(num>0)){ alert('가격을 숫자로 입력하세요 (예: 3.75)'); inp.focus(); return; }
+      val=Math.round(num*100)/100;
+    }
     const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
     if(!tk){ alert('Session expired. Please log in again.'); return; }
-    const body={style_number:currentStyle}; body[col]=Math.round(num*100)/100;
+    const body={style_number:currentStyle}; body[col]=val;
     const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_prices?on_conflict=style_number',
       {method:'POST',headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
        body:JSON.stringify(body)});
     if(!r.ok){ alert('저장 실패 ('+r.status+') — 직원 계정인지 확인하세요'); return; }
     await loadPrices(currentStyle);
-    renderSizeHeaders(); buildAllRows(); recalc();
+    renderSizeHeaders(); buildAllRows(); recalc();    // 기본가면 XS~XL 칸 전체 갱신
+    const nth=document.querySelector('th.szh[data-size="'+size+'"] input.szpin');
+    if(nth){ nth.classList.add('saved'); setTimeout(()=>nth.classList.remove('saved'),1200); }
   }
 
   async function init(){
@@ -1385,6 +1402,7 @@
     if(_renderSwatchesFn) _renderSwatchesFn();
     renderSpecChips();
     applyDescription();
+    renderSizeHeaders();     // 가격 입력칸/체크박스 ↔ 일반 표시 전환
     buildAllRows();
     recalc();
   });
@@ -1598,5 +1616,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-07 price-system+sale+inline-edit -->
+<!-- v2026-06-07 price-system+sale+inline-edit2 -->
 </html>

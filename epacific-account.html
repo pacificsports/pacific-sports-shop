@@ -227,9 +227,11 @@
         {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       acAddrs = r.ok ? await r.json() : [];
     }catch(e){ acAddrs=[]; }
-    renderAddresses();
+    window.__acAddrs=acAddrs;
+    renderAddresses(acAddrs);
   }
-  function renderAddresses(){
+  function renderAddresses(list){
+    if(list) acAddrs=list;
     const el=document.getElementById('acAddrList'); if(!el) return;
     if(!acAddrs.length){ el.innerHTML='<div class="cdesc" style="padding:8px 0">No saved addresses yet. Add one below — it will appear at checkout.</div>'; return; }
     el.innerHTML=acAddrs.map(a=>{
@@ -411,6 +413,6 @@
 })();
 </script>
 <script src="pacific-nav.js"></script>
-<!-- v2026-06-08 account-live2 -->
+<!-- v2026-06-08 account-live3 -->
 </body>
 </html>

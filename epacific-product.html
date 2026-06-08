@@ -358,7 +358,7 @@
               <th class="colcol" id="thColor">Color</th>
               <th class="whcol">WH</th>
               <!-- 사이즈 헤더는 JS가 채움 -->
-              <th>Pieces</th>
+              <th id="thPieces">Pieces</th>
               <th class="amtcol">Amount</th>
             </tr>
           </thead>
@@ -600,7 +600,7 @@
     if(!thColor) return;
     const headRow=thColor.parentElement;
     headRow.querySelectorAll('th.szh').forEach(th=>th.remove());
-    const piecesTh=headRow.querySelector('th:last-child'); // Pieces
+    const piecesTh=document.getElementById('thPieces') || headRow.querySelector('th:last-child'); // Pieces 앞에 사이즈 삽입
     allSizes.forEach(s=>{
       const th=document.createElement('th');
       const isHidden=hiddenSizes.includes(s);
@@ -1626,5 +1626,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 row-amounts -->
+<!-- v2026-06-08 row-amounts-fix -->
 </html>

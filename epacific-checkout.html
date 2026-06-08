@@ -37,6 +37,8 @@
   .lock-note{background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:14px;color:var(--soft-ink);margin-bottom:16px;grid-column:1/-1}
   .secure{font-size:12px;color:var(--faint);text-align:center;margin-top:10px}
   .splitnote{font-size:12.5px;color:var(--faint);margin-top:6px}
+  .subhead{font-size:14px;font-weight:700;margin:22px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+  .chk{font-size:14px;color:var(--soft-ink);display:flex;align-items:center;cursor:pointer}
 </style>
 </head>
 <body>
@@ -50,9 +52,15 @@
   <div class="lock-note" id="lockNote" style="display:none"></div>
 
   <div>
+    <!-- 연락처 -->
+    <div class="panel">
+      <h2>Contact</h2>
+      <label>Email *</label><input type="email" id="fEmail" autocomplete="email" placeholder="you@company.com">
+    </div>
+
     <!-- 배송지 -->
     <div class="panel">
-      <h2>1 · Shipping address</h2>
+      <h2>Shipping address</h2>
       <div class="grid2">
         <div><label>Full name *</label><input type="text" id="fName" autocomplete="name"></div>
         <div><label>Company</label><input type="text" id="fCompany" autocomplete="organization"></div>
@@ -73,21 +81,34 @@
 
     <!-- 배송 방법 -->
     <div class="panel" id="ratePanel" style="display:none">
-      <h2>2 · Shipping method</h2>
+      <h2>Shipping method</h2>
       <div id="rateList"></div>
       <div class="splitnote" id="splitNote" style="display:none">📦 This order ships from both SC and CA warehouses — rates shown are the combined total of both shipments.</div>
     </div>
 
     <!-- 카드 -->
     <div class="panel" id="payPanel" style="display:none">
-      <h2>3 · Payment</h2>
+      <h2>Payment</h2>
       <label>Card number *</label><input type="text" id="cardNum" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••">
       <div class="grid3">
         <div><label>Exp. month (MM) *</label><input type="text" id="cardMo" inputmode="numeric" autocomplete="cc-exp-month" placeholder="MM" maxlength="2"></div>
         <div><label>Exp. year (YYYY) *</label><input type="text" id="cardYr" inputmode="numeric" autocomplete="cc-exp-year" placeholder="YYYY" maxlength="4"></div>
         <div><label>CVV *</label><input type="text" id="cardCvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4"></div>
       </div>
-      <label>Order notes (optional)</label><input type="text" id="orderNotes" placeholder="PO number, special instructions…">
+      <h3 class="subhead">Billing address</h3>
+      <label class="chk"><input type="checkbox" id="bSame" checked style="width:auto;margin-right:7px">Same as shipping address</label>
+      <div id="billingFields" style="display:none;margin-top:8px">
+        <label>Full name *</label><input type="text" id="bName" autocomplete="cc-name">
+        <label>Address line 1 *</label><input type="text" id="bAddr1">
+        <label>Address line 2</label><input type="text" id="bAddr2" placeholder="Suite, unit, etc. (optional)">
+        <div class="grid3">
+          <div><label>City *</label><input type="text" id="bCity"></div>
+          <div><label>State *</label><select id="bState"></select></div>
+          <div><label>ZIP *</label><input type="text" id="bZip" inputmode="numeric"></div>
+        </div>
+      </div>
+
+      <label style="margin-top:14px">Order notes (optional)</label><input type="text" id="orderNotes" placeholder="PO number, special instructions…">
       <div style="margin-top:18px"><button class="btn" id="payBtn" disabled>Pay — $0.00</button></div>
       <div class="secure">🔒 Card details are sent directly to Authorize.net — they never touch our servers.</div>
       <div id="msg"></div>
@@ -130,7 +151,16 @@
 
   // 미국 주
   const STATES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split(' ');
-  document.getElementById('fState').innerHTML='<option value="">—</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  const stateOpts='<option value="">—</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  document.getElementById('fState').innerHTML=stateOpts;
+  document.getElementById('bState').innerHTML=stateOpts;
+  (function(){ const cb=document.getElementById('bSame'), bf=document.getElementById('billingFields');
+    cb.addEventListener('change',()=>{ bf.style.display=cb.checked?'none':''; }); })();
+  function billToObj(){
+    if(document.getElementById('bSame').checked){ const st=shipToObj(); const nm=(st.name||'').split(' '); return {firstName:nm[0]||'',lastName:nm.slice(1).join(' ')||'-',company:st.company,addr1:st.addr1,city:st.city,state:st.state,zip:st.zip}; }
+    const nm=document.getElementById('bName').value.trim().split(' ');
+    return {firstName:nm[0]||'',lastName:nm.slice(1).join(' ')||'-',company:'',addr1:document.getElementById('bAddr1').value.trim(),city:document.getElementById('bCity').value.trim(),state:document.getElementById('bState').value,zip:document.getElementById('bZip').value.trim()};
+  }
 
   let goods=0, pcs=0, scLbs=0, caLbs=0, shipCost=null, shipMethod=null, allPriced=true;
 
@@ -234,8 +264,8 @@
     const names=st.name.split(' ');
     try{
       const r=await fetch(WORKER+'/pay',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({opaqueData, amount:total, invoice:ono, email:s.email,
-          billTo:{firstName:names[0]||'',lastName:names.slice(1).join(' ')||'-',company:st.company,addr1:st.addr1,city:st.city,state:st.state,zip:st.zip}})});
+        body:JSON.stringify({opaqueData, amount:total, invoice:ono, email:(document.getElementById('fEmail').value.trim()||s.email),
+          billTo:billToObj()})});
       const d2=await r.json();
       if(!r.ok||!d2.ok) throw new Error(d2.error||('결제 실패 ('+r.status+')'));
       // 결제 성공 → 주문 저장 (저장 실패해도 결제는 이미 됨 → 화면에 안내)
@@ -304,6 +334,7 @@
     }
     // 거래처 정보 미리 채우기
     const cust=customer()||{};
+    if(s&&s.email&&!document.getElementById('fEmail').value) document.getElementById('fEmail').value=s.email;
     if(cust.contact_name&&!document.getElementById('fName').value) document.getElementById('fName').value=cust.contact_name;
     if(cust.company_name&&!document.getElementById('fCompany').value) document.getElementById('fCompany').value=cust.company_name;
     if(cust.phone&&!document.getElementById('fPhone').value) document.getElementById('fPhone').value=cust.phone;
@@ -322,5 +353,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-07 checkout -->
+<!-- v2026-06-08 checkout-shopify -->
 </html>

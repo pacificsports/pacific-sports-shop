@@ -279,6 +279,7 @@
   <span class="sp">
     <button class="toggle" id="editToggle">Edit</button>
     <button id="bulkBtn" style="display:none">Bulk upload photos</button>
+    <button onclick="location.href='admin-prices.html'">Prices</button>
     <button onclick="location.href='admin-customers.html'">Customers</button>
     <button id="staffLogout">Log out</button>
   </span>
@@ -601,9 +602,15 @@
       th.className='szh szcol'+(isHidden?' size-hidden':'');
       th.dataset.size=s;
       th.textContent=s;
-      // 사이즈별 가격 표시 (로그인+승인 시에만)
+      // 사이즈별 가격 표시 (로그인+승인 시에만 · 직원은 가격 없어도 '$ —' 표시)
       const pv = canOrder ? priceForSize(s) : null;
-      if(pv!=null){ const sp=document.createElement('span'); sp.className='szprice'; sp.textContent=fmtMoney(pv); th.appendChild(sp); }
+      if(pv!=null || window._pacIsStaff){
+        const sp=document.createElement('span'); sp.className='szprice';
+        sp.textContent = pv!=null ? fmtMoney(pv) : '$ —';
+        if(window._pacIsStaff) sp.title='Edit 모드에서 클릭하면 가격 수정';
+        sp.addEventListener('click',(e)=>{ if(editOn){ e.stopPropagation(); editPrice(s); } });
+        th.appendChild(sp);
+      }
       th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
@@ -1196,6 +1203,30 @@
     }catch(e){ salePrices=[]; }
   }
 
+  // ── (직원) Edit 모드에서 사이즈 헤더의 가격 클릭 → 기본가 바로 수정 ──
+  const PRICE_COL={ '2XL':'price_2xl','3XL':'price_3xl','4XL':'price_4xl','5XL':'price_5xl' };
+  async function editPrice(size){
+    const up=String(size).toUpperCase();
+    const col=PRICE_COL[up]||'base_price';
+    const cur=priceForSize(size);
+    const label = col==='base_price'
+      ? currentStyle+' 기본가 — XS~XL 등 일반 사이즈 전체에 적용 (USD)'
+      : currentStyle+' '+up+' 가격 (USD)';
+    const v=prompt(label, cur!=null?Number(cur).toFixed(2):'');
+    if(v===null) return;
+    const num=parseFloat(v);
+    if(!(num>0)){ alert('가격을 숫자로 입력하세요 (예: 3.75)'); return; }
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return; }
+    const body={style_number:currentStyle}; body[col]=Math.round(num*100)/100;
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_prices?on_conflict=style_number',
+      {method:'POST',headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+       body:JSON.stringify(body)});
+    if(!r.ok){ alert('저장 실패 ('+r.status+') — 직원 계정인지 확인하세요'); return; }
+    await loadPrices(currentStyle);
+    renderSizeHeaders(); buildAllRows(); recalc();
+  }
+
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
@@ -1223,7 +1254,7 @@
       // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
       try{
         const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
-        if(st){ canOrder=true; lockReason=null; }
+        if(st){ canOrder=true; lockReason=null; window._pacIsStaff=true; }
         else{
           const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
           if(sess && sess.token && sess.userId){
@@ -1567,5 +1598,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-07 price-system+sale -->
+<!-- v2026-06-07 price-system+sale+inline-edit -->
 </html>

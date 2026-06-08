@@ -211,17 +211,21 @@
     background:rgba(253,253,251,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--ink);
     box-shadow:0 -10px 30px -16px rgba(0,0,0,.35)}
   .stickybar.show{transform:translateY(0)}
-  .stickybar .in{max-width:1180px;margin:0 auto;padding:13px 30px;display:flex;align-items:center;gap:24px}
-  .stickybar .sblk small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:500}
-  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1.05}
-  .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600}
-  .stickybar .sp{margin-left:auto}
-  .stickybar .addbtn{padding:15px 34px;font-size:15px}
-  @media(max-width:640px){
-    .stickybar .in{padding:10px 16px;gap:14px}
-    .stickybar .sblk.cases{display:none}
-    .stickybar .sblk b{font-size:21px}
-    .stickybar .addbtn{padding:13px 22px;font-size:14px}
+  .stickybar .in{max-width:1180px;margin:0 auto;padding:12px 30px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+  .stickybar .sgroup{display:flex;align-items:center;gap:26px}
+  .stickybar .sdiv{width:1px;height:34px;background:var(--line-2)}
+  .stickybar .sblk small{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:2px}
+  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:27px;line-height:1}
+  .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600;line-height:1.35}
+  .stickybar .scases .cl{color:var(--faint);font-weight:500;font-size:11px;margin-right:4px}
+  .stickybar .addbtn{padding:16px 40px;font-size:15px;white-space:nowrap;display:inline-flex;align-items:baseline;gap:9px}
+  .stickybar .sbtnamt{font-weight:700;font-size:16px}
+  @media(max-width:700px){
+    .stickybar .in{padding:9px 14px;gap:12px}
+    .stickybar .sgroup{gap:14px}
+    .stickybar .sblk.cases, .stickybar .sdiv{display:none}
+    .stickybar .sblk b{font-size:20px}
+    .stickybar .addbtn{padding:13px 20px;font-size:13.5px}
   }
 
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:16px 28px;border-radius:999px;font-weight:500;font-size:14px;z-index:300;transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 48px -20px rgba(28,28,26,.5)}
@@ -389,7 +393,7 @@
       <div class="blk"><small>Total Pieces</small><b id="totalUnits">0</b></div>
       <div class="blk"><small>Case Breakdown</small><div id="caseConv">0</div></div>
       <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
-      <button class="addbtn" id="addBtn" disabled>Add to Order</button>
+      <button class="addbtn" id="addBtn" disabled style="display:none">Add to Order</button>
     </div>
     </div><!-- /orderSection -->
   </div>
@@ -410,10 +414,14 @@
 
 <div class="stickybar" id="stickyBar">
   <div class="in">
-    <div class="sblk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
-    <div class="sblk cases"><small>Cases</small><div class="scases" id="sCaseConv">—</div></div>
-    <div class="sblk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
-    <div class="sp"><button class="addbtn" id="sAddBtn" disabled>Add to Order</button></div>
+    <div class="sgroup">
+      <div class="sblk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
+      <div class="sdiv"></div>
+      <div class="sblk cases"><small>Case Breakdown</small><div class="scases" id="sCaseConv">—</div></div>
+      <div class="sdiv"></div>
+      <div class="sblk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
+    </div>
+    <button class="addbtn" id="sAddBtn" disabled>Add to Order <span class="sbtnamt" id="sBtnAmt"></span></button>
   </div>
 </div>
 
@@ -756,6 +764,7 @@
       const ss=document.getElementById('sSubtotal'); if(ss) ss.textContent=subText;
       const sc=document.getElementById('sCaseConv'); if(sc) sc.innerHTML = total===0 ? '—' : (caseConvEl.innerHTML.replace(/<br>/g,' · '));
       const sb=document.getElementById('sAddBtn'); if(sb) sb.disabled=total===0;
+      const sba=document.getElementById('sBtnAmt'); if(sba) sba.textContent=(canOrder && priceInfo && total>0) ? ('· '+fmtMoney(money)) : '';
       bar.classList.toggle('show', canOrder && total>0);
     }
   }
@@ -1643,22 +1652,4 @@
     inp.addEventListener('keydown',e=>{
       if(e.key!=='Enter') return;
       const q=inp.value.trim().toLowerCase(); if(!q) return;
-      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정확 일치
-      if(!target){
-        const list=allStyles.filter(s=>
-          String(s.no).toLowerCase().includes(q) ||
-          String(s.desc||'').toLowerCase().includes(q) ||
-          String(s.cat||'').toLowerCase().includes(q));
-        target=list[0];
-      }
-      if(target) location.href='epacific-product.html?style='+encodeURIComponent(target.no);
-    });
-    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
-    // 바깥 클릭하면 결과만 닫기
-    document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
-  })();
-</script>
-<script src="pacific-nav.js"></script>
-</body>
-<!-- v2026-06-08 sticky-orderbar -->
-</html>
+      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정

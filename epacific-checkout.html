@@ -61,6 +61,10 @@
     <!-- 배송지 -->
     <div class="panel">
       <h2>Shipping address</h2>
+      <div id="savedAddrWrap" style="display:none;margin-bottom:14px">
+        <label>Ship to a saved address</label>
+        <select id="savedAddr"></select>
+      </div>
       <div class="grid2">
         <div><label>Full name *</label><input type="text" id="fName" autocomplete="name"></div>
         <div><label>Company</label><input type="text" id="fCompany" autocomplete="organization"></div>
@@ -291,6 +295,7 @@
             notes:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
             company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
       }
+      saveAddressIfNew(st);
       cartSet([]);
       document.getElementById('checkoutArea').style.display='none';
       const ok=document.getElementById('okBox'); ok.style.display='block';
@@ -303,6 +308,56 @@
   }
 
   // ── 진입: 로그인+승인 확인 ──
+  // ── 저장된 배송지 주소록 ──
+  let savedAddrList=[];
+  function fillAddr(a){
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v||''); };
+    set('fName',a.name); set('fCompany',a.company); set('fAddr1',a.addr1); set('fAddr2',a.addr2);
+    set('fCity',a.city); set('fZip',a.zip); set('fPhone',a.phone);
+    const ss=document.getElementById('fState'); if(ss) ss.value=a.state||'';
+    const rc=document.getElementById('fResidential'); if(rc) rc.checked=!!a.residential;
+    // 주소 바꾸면 기존 배송요율 무효화
+    shipCost=null; shipMethod=null;
+    document.getElementById('ratePanel').style.display='none';
+    summary();
+  }
+  function clearAddr(){ ['fName','fCompany','fAddr1','fAddr2','fCity','fZip','fPhone'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); const ss=document.getElementById('fState'); if(ss) ss.value=''; const rc=document.getElementById('fResidential'); if(rc) rc.checked=false; }
+  async function loadSavedAddresses(){
+    const s=session(); if(!s||!s.token) return;
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc&limit=50',
+        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      if(!r.ok) return;
+      savedAddrList=await r.json();
+      const sel=document.getElementById('savedAddr'); const wrap=document.getElementById('savedAddrWrap');
+      if(!savedAddrList.length){ wrap.style.display='none'; return; }
+      wrap.style.display='';
+      sel.innerHTML=savedAddrList.map((a,i)=>{
+        const lbl=a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||''));
+        return '<option value="'+i+'">'+esc(lbl)+'</option>';
+      }).join('')+'<option value="new">+ Ship to a new address…</option>';
+      // 첫 주소 자동 선택해서 채움
+      fillAddr(savedAddrList[0]);
+      sel.value='0';
+      sel.addEventListener('change',()=>{ if(sel.value==='new') clearAddr(); else fillAddr(savedAddrList[parseInt(sel.value)]); });
+    }catch(e){}
+  }
+  // 주문 완료 후 새 주소면 주소록에 저장
+  async function saveAddressIfNew(st){
+    const s=session(); if(!s||!s.token) return;
+    const same=savedAddrList.some(a=>(a.addr1||'').trim().toLowerCase()===(st.addr1||'').trim().toLowerCase() && (a.zip||'')===(st.zip||''));
+    if(same) return;
+    const cust=customer()||{};
+    try{
+      await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses',{method:'POST',
+        headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({ customer_id:cust.customer_id||null,
+          label:(st.company||st.name||'')+' — '+(st.city||'')+', '+(st.state||''),
+          name:st.name, company:st.company, addr1:st.addr1, addr2:st.addr2,
+          city:st.city, state:st.state, zip:st.zip, phone:st.phone, residential:!!st.residential })});
+    }catch(e){}
+  }
+
   async function init(){
     summary();
     const s=session(); const note=document.getElementById('lockNote');
@@ -340,21 +395,8 @@
     setIf('fName', cust.contact_name);
     setIf('fCompany', cust.company_name);
     setIf('fPhone', cust.phone);
-    // 2) 배송 주소: 이 계정의 가장 최근 주문 ship_to 에서 (한 번 주문하면 다음부터 자동)
-    try{
-      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/web_orders?user_id=eq.'+s.userId
-        +'&ship_to=not.is.null&select=ship_to&order=created_at.desc&limit=1',
-        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
-      if(r.ok){ const rows=await r.json(); const st=rows&&rows[0]&&rows[0].ship_to;
-        if(st){
-          setIf('fName', st.name); setIf('fCompany', st.company);
-          setIf('fAddr1', st.addr1); setIf('fAddr2', st.addr2);
-          setIf('fCity', st.city); setIf('fZip', st.zip); setIf('fPhone', st.phone);
-          if(st.state){ const ss=document.getElementById('fState'); if(ss&&!ss.value) ss.value=st.state; }
-          if(st.residential){ const rc=document.getElementById('fResidential'); if(rc) rc.checked=true; }
-        }
-      }
-    }catch(e){}
+    // 2) 저장된 배송지 주소록 드롭다운 (거래처 공유, IMS 없이도 동작)
+    await loadSavedAddresses();
     // 3) (보너스) IMS 거래처가 연결돼 있으면 그 주소도 시도 — 없어도 무방
     try{
       if(cust.customer_id){
@@ -385,5 +427,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 checkout-shopify-autofill -->
+<!-- v2026-06-08 checkout-addressbook -->
 </html>

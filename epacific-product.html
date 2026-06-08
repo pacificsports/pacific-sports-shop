@@ -193,6 +193,8 @@
   .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
   .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
   .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
+  .rowamt{font-weight:600;font-size:13.5px;color:var(--accent);min-width:54px;display:inline-block;text-align:right}
+  th.amtcol, td.amtcol{text-align:right;padding-right:14px}
 
   .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
   .case-note::before{content:"📦"}
@@ -357,6 +359,7 @@
               <th class="whcol">WH</th>
               <!-- 사이즈 헤더는 JS가 채움 -->
               <th>Pieces</th>
+              <th class="amtcol">Amount</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -576,7 +579,7 @@
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
         stockHtml+saleHtml+`</div></td>`;
     }).join('');
-    tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
+    tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td><td class="amtcol"><span class="rowamt"></span></td>`;
     rowsBody.appendChild(tr);
     tr.querySelectorAll('input').forEach((inp)=>{
       const td=inp.closest('td'); const stIdx=parseInt(td.getAttribute('data-si'));
@@ -678,7 +681,7 @@
   function recalc(){
     let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0, money=0;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
-      let rt=0;
+      let rt=0, rowMoney=0, rowPriced=true;
       tr.querySelectorAll('input').forEach((inp)=>{
         const td=inp.closest('td');
         if(td && td.classList.contains('size-hidden')) return; // 숨긴 사이즈는 합계 제외
@@ -687,10 +690,17 @@
         const sname=td?td.getAttribute('data-size'):null;
         if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
         const pv=unitPriceFor(tr.dataset.rawcolor,sname);
-        if(pv!=null) money+=q*pv;
+        if(pv!=null){ money+=q*pv; rowMoney+=q*pv; } else if(q>0){ rowPriced=false; }
       });
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
+      // 줄 금액 (Pieces 옆)
+      const amtEl=tr.querySelector('.rowamt');
+      if(amtEl){
+        if(rt===0) amtEl.textContent='';
+        else if(canOrder && priceInfo && rowPriced) amtEl.textContent=fmtMoney(rowMoney);
+        else amtEl.textContent='—';
+      }
       if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
       total+=rt;
     });
@@ -1616,5 +1626,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-07 price-system+sale+inline-edit2 -->
+<!-- v2026-06-08 row-amounts -->
 </html>

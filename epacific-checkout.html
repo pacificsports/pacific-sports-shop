@@ -102,6 +102,10 @@
       <h3 class="subhead">Billing address</h3>
       <label class="chk"><input type="checkbox" id="bSame" checked style="width:auto;margin-right:7px">Same as shipping address</label>
       <div id="billingFields" style="display:none;margin-top:8px">
+        <div id="bSavedWrap" style="display:none;margin-bottom:12px">
+          <label>Use a saved address for billing</label>
+          <select id="bSaved"></select>
+        </div>
         <label>Full name *</label><input type="text" id="bName" autocomplete="cc-name">
         <label>Address line 1 *</label><input type="text" id="bAddr1">
         <label>Address line 2</label><input type="text" id="bAddr2" placeholder="Suite, unit, etc. (optional)">
@@ -326,7 +330,7 @@
     const s=session(); if(!s||!s.token) return;
     try{
       const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc&limit=50',
-        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       if(!r.ok) return;
       savedAddrList=await r.json();
       const sel=document.getElementById('savedAddr'); const wrap=document.getElementById('savedAddrWrap');
@@ -340,6 +344,20 @@
       fillAddr(savedAddrList[0]);
       sel.value='0';
       sel.addEventListener('change',()=>{ if(sel.value==='new') clearAddr(); else fillAddr(savedAddrList[parseInt(sel.value)]); });
+      // billing 용 저장주소 드롭다운도 채움
+      const bsel=document.getElementById('bSaved'), bwrap=document.getElementById('bSavedWrap');
+      if(bsel){
+        bwrap.style.display='';
+        bsel.innerHTML='<option value="">— Enter billing address below —</option>'+savedAddrList.map((a,i)=>{
+          const lbl=a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||''));
+          return '<option value="'+i+'">'+esc(lbl)+'</option>';
+        }).join('');
+        bsel.addEventListener('change',()=>{ if(bsel.value==='') return; const a=savedAddrList[parseInt(bsel.value)];
+          const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v||''); };
+          set('bName',a.name||a.company); set('bAddr1',a.addr1); set('bAddr2',a.addr2);
+          set('bCity',a.city); set('bZip',a.zip); const ss=document.getElementById('bState'); if(ss) ss.value=a.state||'';
+        });
+      }
     }catch(e){}
   }
   // 주문 완료 후 새 주소면 주소록에 저장
@@ -427,5 +445,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 checkout-addressbook -->
+<!-- v2026-06-08 checkout-addressbook2 -->
 </html>

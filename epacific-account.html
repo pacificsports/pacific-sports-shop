@@ -224,7 +224,7 @@
     const s=_sess(); if(!s||!s.token) return;
     try{
       const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc',
-        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       acAddrs = r.ok ? await r.json() : [];
     }catch(e){ acAddrs=[]; }
     renderAddresses();
@@ -411,6 +411,6 @@
 })();
 </script>
 <script src="pacific-nav.js"></script>
-<!-- v2026-06-08 account-live -->
+<!-- v2026-06-08 account-live2 -->
 </body>
 </html>

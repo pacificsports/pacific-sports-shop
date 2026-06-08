@@ -1652,4 +1652,22 @@
     inp.addEventListener('keydown',e=>{
       if(e.key!=='Enter') return;
       const q=inp.value.trim().toLowerCase(); if(!q) return;
-      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정
+      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정확 일치
+      if(!target){
+        const list=allStyles.filter(s=>
+          String(s.no).toLowerCase().includes(q) ||
+          String(s.desc||'').toLowerCase().includes(q) ||
+          String(s.cat||'').toLowerCase().includes(q));
+        target=list[0];
+      }
+      if(target) location.href='epacific-product.html?style='+encodeURIComponent(target.no);
+    });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
+    // 바깥 클릭하면 결과만 닫기
+    document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
+  })();
+</script>
+<script src="pacific-nav.js"></script>
+</body>
+<!-- v2026-06-08 row-amounts+sticky (restored) -->
+</html>

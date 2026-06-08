@@ -91,6 +91,15 @@
     .side{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:10px}
     .grid2{grid-template-columns:1fr}
   }
+  .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+  .addr-modal-bg{display:none;position:fixed;inset:0;background:rgba(28,28,26,.5);z-index:400;align-items:center;justify-content:center;padding:20px}
+  .addr-modal-bg.show{display:flex}
+  .addr-modal{background:var(--paper);border-radius:16px;padding:26px 28px;width:540px;max-width:100%;max-height:90vh;overflow:auto;box-shadow:0 40px 80px -40px rgba(0,0,0,.4)}
+  .addr-modal h3{font-family:var(--display,'Instrument Serif',serif);font-weight:400;font-size:24px;margin-bottom:16px}
+  .addr-modal select{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper)}
+  .addr-modal .rescheck{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--soft-ink);margin-top:10px;cursor:pointer}
+  .addr-modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+  .a-del{color:#a8463f;cursor:pointer;font-size:13px;margin-left:14px}
 </style>
 </head>
 <body>
@@ -143,37 +152,18 @@
       <h2>Business information</h2>
       <div class="grid2">
         <div class="field"><label>Business name</label><input type="text" id="acBiz" value="" disabled></div>
-        <div class="field"><label>Account #</label><input type="text" value="WS-2041" disabled><div class="lock">Assigned by Pacific Sports</div></div>
+        <div class="field" id="acAcctWrap" style="display:none"><label>Account #</label><input type="text" id="acAcct" value="" disabled><div class="lock">Assigned by Pacific Sports</div></div>
         <div class="field"><label>Contact name</label><input type="text" id="acContact" value="" disabled></div>
         <div class="field"><label>Phone</label><input type="tel" id="acPhone" value="" disabled></div>
-        <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" value="CA-RESALE-99381" disabled><div class="lock">Contact us to update your resale certificate</div></div>
+        <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" id="acResale" value="" disabled><div class="lock">Contact us to update your resale certificate</div></div>
       </div>
 
       <!-- ADDRESSES -->
       <div class="sec-divider"></div>
       <h2>Addresses</h2>
       <div class="cdesc">Where your orders ship. Orders default to your nearest warehouse.</div>
-      <div class="addr-card">
-        <div class="a-body">
-          <span class="a-tag tag-CA">DEFAULT · WEST</span><br>
-          <b>Westside Print Co.</b><br>
-          1420 Mission St, Unit 5<br>
-          Los Angeles, CA 90021<br>
-          (213) 555-0147
-        </div>
-        <span class="a-edit" onclick="acAddrInfo()">Edit</span>
-      </div>
-      <div class="addr-card">
-        <div class="a-body">
-          <span class="a-tag tag-SC">EAST</span><br>
-          <b>Westside Print Co. — East</b><br>
-          88 Industrial Blvd<br>
-          Charlotte, NC 28206<br>
-          (704) 555-0192
-        </div>
-        <span class="a-edit" onclick="acAddrInfo()">Edit</span>
-      </div>
-      <div style="margin-top:6px"><button class="btn-ghost" onclick="acAddrInfo()">+ Add address</button></div>
+      <div id="acAddrList"></div>
+      <div style="margin-top:6px"><button class="btn-ghost" onclick="addrEdit(null)">+ Add address</button></div>
 
       <!-- LOGIN -->
       <div class="sec-divider"></div>
@@ -191,6 +181,30 @@
   </div>
 </div>
 
+<div class="addr-modal-bg" id="addrModalBg">
+  <div class="addr-modal">
+    <h3 id="addrModalTitle">Add address</h3>
+    <div class="grid2">
+      <div class="field"><label>Label (e.g. Main store)</label><input type="text" id="maLabel"></div>
+      <div class="field"><label>Company</label><input type="text" id="maCompany"></div>
+    </div>
+    <div class="field full"><label>Full name</label><input type="text" id="maName"></div>
+    <div class="field full"><label>Address line 1 *</label><input type="text" id="maAddr1"></div>
+    <div class="field full"><label>Address line 2</label><input type="text" id="maAddr2" placeholder="Suite, unit, etc."></div>
+    <div class="grid3">
+      <div class="field"><label>City *</label><input type="text" id="maCity"></div>
+      <div class="field"><label>State *</label><select id="maState"></select></div>
+      <div class="field"><label>ZIP *</label><input type="text" id="maZip"></div>
+    </div>
+    <div class="field full"><label>Phone</label><input type="tel" id="maPhone"></div>
+    <label class="rescheck"><input type="checkbox" id="maResidential"> Residential address</label>
+    <div class="addr-modal-foot">
+      <button class="btn-ghost" type="button" onclick="addrClose()">Cancel</button>
+      <button class="btn" type="button" onclick="addrSave()">Save address</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast">✓ Saved</div>
 
 <footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
@@ -202,7 +216,76 @@
     if(msg) t.textContent=msg;
     t.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2200);
   }
-  function acAddrInfo(){ toast('To update addresses, contact Pacific Sports.'); }
+  // ── 주소록 (customer_addresses) ──
+  const US_STATES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split(' ');
+  let acAddrs=[], acEditId=null;
+  function escA(x){ return String(x==null?'':x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  async function loadAddresses(){
+    const s=_sess(); if(!s||!s.token) return;
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc',
+        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      acAddrs = r.ok ? await r.json() : [];
+    }catch(e){ acAddrs=[]; }
+    renderAddresses();
+  }
+  function renderAddresses(){
+    const el=document.getElementById('acAddrList'); if(!el) return;
+    if(!acAddrs.length){ el.innerHTML='<div class="cdesc" style="padding:8px 0">No saved addresses yet. Add one below — it will appear at checkout.</div>'; return; }
+    el.innerHTML=acAddrs.map(a=>{
+      const tag=a.label?escA(a.label):'Address';
+      const line=[a.addr1,a.addr2].filter(Boolean).map(escA).join('<br>');
+      return '<div class="addr-card"><div class="a-body">'
+        +'<span class="a-tag tag-CA">'+tag+'</span><br>'
+        +(a.company||a.name?('<b>'+escA(a.company||a.name)+'</b><br>'):'')
+        +(line?(line+'<br>'):'')
+        +escA(a.city)+', '+escA(a.state)+' '+escA(a.zip)+(a.phone?('<br>'+escA(a.phone)):'')
+        +'</div><div style="white-space:nowrap"><span class="a-edit" onclick="addrEdit(\''+a.id+'\')">Edit</span><span class="a-del" onclick="addrDel(\''+a.id+'\')">Delete</span></div></div>';
+    }).join('');
+  }
+  function addrEdit(id){
+    acEditId=id;
+    const a = id ? acAddrs.find(x=>x.id===id) : {};
+    const ss=document.getElementById('maState');
+    ss.innerHTML='<option value="">—</option>'+US_STATES.map(x=>'<option>'+x+'</option>').join('');
+    const set=(i,v)=>{ document.getElementById(i).value=(v||''); };
+    set('maLabel',a.label); set('maCompany',a.company); set('maName',a.name);
+    set('maAddr1',a.addr1); set('maAddr2',a.addr2); set('maCity',a.city);
+    ss.value=a.state||''; set('maZip',a.zip); set('maPhone',a.phone);
+    document.getElementById('maResidential').checked=!!a.residential;
+    document.getElementById('addrModalTitle').textContent=id?'Edit address':'Add address';
+    document.getElementById('addrModalBg').classList.add('show');
+  }
+  function addrClose(){ document.getElementById('addrModalBg').classList.remove('show'); }
+  async function addrSave(){
+    const s=_sess(); if(!s||!s.token) return;
+    const v=i=>document.getElementById(i).value.trim();
+    if(!v('maAddr1')||!v('maCity')||!v('maState')||!v('maZip')){ toast('Address, city, state, ZIP are required.'); return; }
+    const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
+    const body={ label:v('maLabel')||null, company:v('maCompany')||null, name:v('maName')||null,
+      addr1:v('maAddr1'), addr2:v('maAddr2')||null, city:v('maCity'), state:v('maState'),
+      zip:v('maZip'), phone:v('maPhone')||null, residential:document.getElementById('maResidential').checked,
+      customer_id:cust.customer_id||null };
+    try{
+      let r;
+      if(acEditId){
+        r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+acEditId,
+          {method:'PATCH',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+      }else{
+        r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses',
+          {method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
+      }
+      if(!r.ok){ toast('Could not save ('+r.status+').'); return; }
+      addrClose(); toast('\u2713 Address saved'); loadAddresses();
+    }catch(e){ toast('Could not save address.'); }
+  }
+  async function addrDel(id){
+    if(!confirm('Delete this address?')) return;
+    const s=_sess(); if(!s||!s.token) return;
+    const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+id,
+      {method:'DELETE',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+    if(r.ok){ toast('Address deleted'); loadAddresses(); } else toast('Could not delete.');
+  }
 
   const _C = window.PACIFIC_CONFIG || {};
   function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
@@ -213,14 +296,27 @@
     const em=document.getElementById('acEmail'); if(em) em.value=s.email||'';
     // 거래처 신청 정보로 회사/담당자/전화 채우기
     try{
-      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId+'&select=company_name,contact_name,phone',
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId+'&select=company_name,contact_name,phone,resale_tax_id',
         {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       if(r.ok){ const rows=await r.json(); const c=rows&&rows[0]; if(c){
         const b=document.getElementById('acBiz'); if(b) b.value=c.company_name||'';
         const ct=document.getElementById('acContact'); if(ct) ct.value=c.contact_name||'';
         const ph=document.getElementById('acPhone'); if(ph) ph.value=c.phone||'';
+        const rs=document.getElementById('acResale'); if(rs) rs.value=c.resale_tax_id||'';
       }}
     }catch(e){}
+    // IMS 거래처 번호 (연결돼 있을 때만)
+    try{
+      const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
+      if(cust.customer_id){
+        const cr=await fetch(_C.SUPABASE_URL+'/rest/v1/customers?id=eq.'+cust.customer_id+'&select=customer_no',
+          {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        if(cr.ok){ const c2=(await cr.json())[0]; if(c2&&c2.customer_no){
+          document.getElementById('acAcct').value=c2.customer_no; document.getElementById('acAcctWrap').style.display='';
+        }}
+      }
+    }catch(e){}
+    loadAddresses();
   }
 
   async function save(){
@@ -315,5 +411,6 @@
 })();
 </script>
 <script src="pacific-nav.js"></script>
+<!-- v2026-06-08 account-live -->
 </body>
 </html>

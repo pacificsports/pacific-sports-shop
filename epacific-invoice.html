@@ -89,7 +89,7 @@
 
 
 <div class="toolbar">
-  <a href="index.html">← Back to demo</a>
+  <a href="epacific-orders.html">← Back to orders</a>
   <div class="acts">
     <button class="btn-ghost" onclick="window.print()">🖨 Print</button>
     <button class="btn" onclick="window.print()">Download PDF</button>
@@ -109,8 +109,8 @@
     </div>
     <div class="inv-label">
       <div class="big">Invoice</div>
-      <div class="num">No. PS-10428</div>
-      <div class="status">Shipped</div>
+      <div class="num" id="invNo">No. —</div>
+      <div class="status" id="invStatus"></div>
     </div>
   </div>
 
@@ -118,15 +118,15 @@
   <div class="meta-row">
     <div class="blk">
       <h4>Billed to</h4>
-      <div><b>Westside Print Co.</b><br>Account WS-2041<br>Jordan Lee<br>jordan@westsideprint.com</div>
+      <div id="billTo">—</div>
     </div>
     <div class="blk">
       <h4>Ship to</h4>
-      <div>1420 Mission St, Unit 5<br>Los Angeles, CA 90021<br>(213) 555-0147</div>
+      <div id="shipTo">See order notes / account</div>
     </div>
     <div class="blk">
       <h4>Order details</h4>
-      <div>Order date: <b>May 18, 2026</b><br>Order #: <b>PS-10428</b><br>Terms: <b>Net 30</b></div>
+      <div id="orderMeta">—</div>
     </div>
   </div>
 
@@ -153,7 +153,7 @@
     <div class="row grand"><span class="lbl">Total</span><span class="val" id="tAmt">$0.00</span></div>
   </div>
 
-  <div class="split-note">📦 This order ships from both warehouses. SC and CA items are sent as separate shipments and may arrive on different days.</div>
+  <div class="split-note" id="splitNote" style="display:none">📦 This order ships from both warehouses. SC and CA items are sent as separate shipments and may arrive on different days.</div>
 
   <div class="foot-note">
     Thank you for your business.<br>
@@ -161,42 +161,82 @@
   </div>
 </div>
 
+<script src="pacific-config.js"></script>
 <script>
-  const PRICE={XS:3.75,S:3.75,M:3.75,L:3.75,XL:3.75,'2XL':4.35,'3XL':4.95};
-  const sizeOrder=['XS','S','M','L','XL','2XL','3XL'];
-  const money=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sizeOrder=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  const ONO=new URLSearchParams(location.search).get('order')||'';
 
-  // 주문 품목 (실제로는 주문DB/IMS에서)
-  const lines=[
-    {style:'1368',desc:'30/1 60:40 Short Sleeve Crew',color:'Navy',hex:'#27314f',wh:'SC',sizes:{S:24,M:48,L:48,XL:24}},
-    {style:'1368',desc:'30/1 60:40 Short Sleeve Crew',color:'Sand',hex:'#d8c4a0',wh:'SC',sizes:{M:36,L:36,XL:12}},
-    {style:'1315',desc:'30/1 100% Cotton Crew',color:'Black',hex:'#232323',wh:'CA',sizes:{M:24,L:48,XL:24}}
-  ];
+  function groupLines(items){
+    const map={}, out=[];
+    (items||[]).forEach(i=>{
+      const k=i.style+'|'+i.color+'|'+i.wh;
+      if(!map[k]){ map[k]={style:i.style,styleName:i.styleName||'',color:i.color,wh:i.wh||'SC',sizes:{},prices:{}}; out.push(map[k]); }
+      map[k].sizes[i.size]=(map[k].sizes[i.size]||0)+(i.qty||0);
+      if(i.unit_price!=null) map[k].prices[i.size]=Number(i.unit_price);
+    });
+    return out;
+  }
+  const lineQty=l=>Object.values(l.sizes).reduce((a,b)=>a+b,0);
+  function lineAmt(l){ let t=0; for(const z in l.sizes){ if(l.prices[z]==null) return null; t+=l.sizes[z]*l.prices[z]; } return t; }
+  function unitText(l){
+    const need=Object.keys(l.sizes), have=need.filter(z=>l.prices[z]!=null);
+    if(have.length<need.length) return '—';
+    const vals=[...new Set(have.map(z=>l.prices[z]))];
+    if(vals.length===1) return money(vals[0]);
+    return money(lineAmt(l)/lineQty(l));   // 사이즈별 가격이 섞이면 평균 단가
+  }
 
-  const qty=s=>Object.values(s).reduce((a,b)=>a+b,0);
-  const amt=s=>{let t=0;for(const z in s)t+=s[z]*PRICE[z];return t;};
-  // 평균 단가(표시용): 금액/수량
-  const unitAvg=s=>amt(s)/qty(s);
-  const szText=s=>sizeOrder.filter(z=>s[z]).map(z=>`${z}×${s[z]}`).join(', ');
-
-  let total=0,sc=0,ca=0,grand=0;
-  const rows=lines.map(l=>{
-    const q=qty(l.sizes),a=amt(l.sizes);
-    total+=q; grand+=a; if(l.wh==='SC')sc+=q;else ca+=q;
-    return `<tr>
-      <td><div class="it-style">#${l.style}</div><div class="it-sub">${l.desc}</div></td>
-      <td><div class="it-color"><span class="it-dot" style="background:${l.hex}"></span>${l.color}</div><div class="sz-detail">${szText(l.sizes)}</div></td>
-      <td><span class="wh-badge wh-${l.wh}">${l.wh}</span></td>
-      <td class="r">${q}</td>
-      <td class="r">${money(unitAvg(l.sizes))}</td>
-      <td class="r">${money(a)}</td>
-    </tr>`;
-  }).join('');
-  document.getElementById('itemRows').innerHTML=rows;
-  document.getElementById('tPcs').textContent=total;
-  document.getElementById('tSC').textContent=sc;
-  document.getElementById('tCA').textContent=ca;
-  document.getElementById('tAmt').textContent=money(grand);
+  async function load(){
+    const cfg=window.PACIFIC_CONFIG||{};
+    const body=document.getElementById('itemRows');
+    if(!ONO){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">No order specified. Open this page from Order History.</td></tr>'; return; }
+    const s=session();
+    if(!s||!s.token){ location.href='epacific-login.html?next='+encodeURIComponent('epacific-invoice.html?order='+ONO); return; }
+    const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?order_number=eq.'+encodeURIComponent(ONO)+'&select=*',
+      {headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+    const rows=r.ok?await r.json():[];
+    const o=rows[0];
+    if(!o){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">Order not found (or no access).</td></tr>'; return; }
+    document.getElementById('invNo').textContent='No. '+o.order_number;
+    document.getElementById('invStatus').textContent=(o.status||'').charAt(0).toUpperCase()+(o.status||'').slice(1);
+    document.getElementById('billTo').innerHTML=[
+      o.company_name?('<b>'+esc(o.company_name)+'</b>'):null,
+      o.contact_name?esc(o.contact_name):null,
+      o.email?esc(o.email):null,
+      o.phone?esc(o.phone):null
+    ].filter(Boolean).join('<br>')||'—';
+    document.getElementById('orderMeta').innerHTML=
+      'Order date: <b>'+(o.created_at||'').slice(0,10)+'</b><br>Order #: <b>'+esc(o.order_number)+'</b>'
+      +(o.carrier?('<br>Carrier: <b>'+esc(o.carrier)+'</b>'):'')
+      +(o.tracking_number?('<br>Tracking: <b>'+esc(o.tracking_number)+'</b>'):'');
+    const lines=groupLines(Array.isArray(o.items)?o.items:[]);
+    let total=0,sc=0,ca=0,grand=0,grandOk=true;
+    body.innerHTML=lines.map(l=>{
+      const q=lineQty(l), a=lineAmt(l);
+      total+=q; if(l.wh==='SC')sc+=q; else ca+=q;
+      if(a==null) grandOk=false; else grand+=a;
+      const szText=sizeOrder.filter(z=>l.sizes[z]).map(z=>z+'×'+l.sizes[z]).join(', ');
+      return `<tr>
+        <td><div class="it-style">#${esc(l.style)}</div><div class="it-sub">${esc(String(l.styleName||'').replace(/^\d+\s*/,''))}</div></td>
+        <td><div class="it-color"><span class="it-dot" style="background:#d6d2c6"></span>${esc(l.color)}</div><div class="sz-detail">${szText}</div></td>
+        <td><span class="wh-badge wh-${esc(l.wh)}">${esc(l.wh)}</span></td>
+        <td class="r">${q}</td>
+        <td class="r">${unitText(l)}</td>
+        <td class="r">${a!=null?money(a):'—'}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('tPcs').textContent=total;
+    document.getElementById('tSC').textContent=sc;
+    document.getElementById('tCA').textContent=ca;
+    const amt=o.total_amount!=null?Number(o.total_amount):(grandOk?grand:null);
+    document.getElementById('tAmt').textContent=amt!=null?money(amt):'—';
+    if(sc>0&&ca>0) document.getElementById('splitNote').style.display='';
+  }
+  load();
 </script>
 </body>
+<!-- v2026-06-07 real-invoice -->
 </html>

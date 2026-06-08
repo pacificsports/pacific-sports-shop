@@ -35,8 +35,8 @@
     items.forEach(function (it) {
       if (!it || !(parseInt(it.qty, 10) > 0)) return;
       var ex = c.filter(function (x) { return keyOf(x) === keyOf(it); })[0];
-      if (ex) ex.qty = (parseInt(ex.qty, 10) || 0) + (parseInt(it.qty, 10) || 0);
-      else c.push({ style: it.style, styleName: it.styleName || '', color: it.color, wh: it.wh || 'SC', size: it.size, qty: parseInt(it.qty, 10) });
+      if (ex) { ex.qty = (parseInt(ex.qty, 10) || 0) + (parseInt(it.qty, 10) || 0); if (it.unit_price != null) ex.unit_price = Number(it.unit_price); }
+      else c.push({ style: it.style, styleName: it.styleName || '', color: it.color, wh: it.wh || 'SC', size: it.size, qty: parseInt(it.qty, 10), unit_price: (it.unit_price != null ? Number(it.unit_price) : null) });
     });
     setCart(c);
     return total();

@@ -88,11 +88,15 @@
     render();
   }
 
+  function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function itemsTable(items){
     if(!Array.isArray(items)||!items.length) return '<div class="meta">No items.</div>';
-    return '<table><thead><tr><th>Style</th><th>Color</th><th>WH</th><th>Size</th><th style="text-align:right">Qty</th></tr></thead><tbody>'+
-      items.map(i=>`<tr><td><b>${esc(i.style)}</b></td><td>${esc(i.color)}</td><td><span class="whb ${esc(i.wh)}">${esc(i.wh)}</span></td><td>${esc(i.size)}</td><td style="text-align:right"><b>${i.qty||0}</b></td></tr>`).join('')+
-      '</tbody></table>';
+    const hasPrice=items.some(i=>i.unit_price!=null);
+    const head='<table><thead><tr><th>Style</th><th>Color</th><th>WH</th><th>Size</th><th style="text-align:right">Qty</th>'
+      +(hasPrice?'<th style="text-align:right">Unit</th><th style="text-align:right">Amount</th>':'')+'</tr></thead><tbody>';
+    return head+items.map(i=>`<tr><td><b>${esc(i.style)}</b></td><td>${esc(i.color)}</td><td><span class="whb ${esc(i.wh)}">${esc(i.wh)}</span></td><td>${esc(i.size)}</td><td style="text-align:right"><b>${i.qty||0}</b></td>`
+      +(hasPrice?`<td style="text-align:right">${i.unit_price!=null?fmtMoney(i.unit_price):'—'}</td><td style="text-align:right"><b>${i.unit_price!=null?fmtMoney((i.qty||0)*i.unit_price):'—'}</b></td>`:'')
+      +`</tr>`).join('')+'</tbody></table>';
   }
 
   function render(){
@@ -110,7 +114,7 @@
           <span class="ono">${esc(r.order_number)}</span>
           <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
           <span class="meta">${esc(r.company_name||'')} · ${esc(r.contact_name||'')} · ${esc(r.email||'')} ${r.phone?('· '+esc(r.phone)):''}</span>
-          <span class="meta" style="margin-left:auto">${(r.created_at||'').replace('T',' ').slice(0,16)} · <b>${r.total_pcs||0} pcs</b></span>
+          <span class="meta" style="margin-left:auto">${(r.created_at||'').replace('T',' ').slice(0,16)} · <b>${r.total_pcs||0} pcs</b>${r.total_amount!=null?(' · <b style="color:var(--accent)">'+fmtMoney(r.total_amount)+'</b>'):''}</span>
         </div>
         ${itemsTable(items)}
         ${r.notes?`<div class="notes">📝 ${esc(r.notes)}</div>`:''}
@@ -234,4 +238,5 @@
   load();
 </script>
 </body>
+<!-- v2026-06-07 amounts -->
 </html>

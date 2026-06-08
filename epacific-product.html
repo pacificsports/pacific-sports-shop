@@ -206,6 +206,23 @@
   .addbtn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:999px;cursor:pointer;padding:18px 36px;transition:transform .2s,background .25s}
   .addbtn:hover{transform:translateY(-2px);background:var(--accent)}
   .addbtn:disabled{opacity:.3;cursor:not-allowed;transform:none;background:var(--ink)}
+  /* 화면 하단 고정 주문바 (스크롤해도 따라옴) */
+  .stickybar{position:fixed;left:0;right:0;bottom:0;z-index:120;transform:translateY(110%);transition:transform .28s ease;
+    background:rgba(253,253,251,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--ink);
+    box-shadow:0 -10px 30px -16px rgba(0,0,0,.35)}
+  .stickybar.show{transform:translateY(0)}
+  .stickybar .in{max-width:1180px;margin:0 auto;padding:13px 30px;display:flex;align-items:center;gap:24px}
+  .stickybar .sblk small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1.05}
+  .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600}
+  .stickybar .sp{margin-left:auto}
+  .stickybar .addbtn{padding:15px 34px;font-size:15px}
+  @media(max-width:640px){
+    .stickybar .in{padding:10px 16px;gap:14px}
+    .stickybar .sblk.cases{display:none}
+    .stickybar .sblk b{font-size:21px}
+    .stickybar .addbtn{padding:13px 22px;font-size:14px}
+  }
 
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:16px 28px;border-radius:999px;font-weight:500;font-size:14px;z-index:300;transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 48px -20px rgba(28,28,26,.5)}
   .toast.show{transform:translateX(-50%) translateY(0)}
@@ -390,6 +407,15 @@
   </div>
   <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
 </footer>
+
+<div class="stickybar" id="stickyBar">
+  <div class="in">
+    <div class="sblk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
+    <div class="sblk cases"><small>Cases</small><div class="scases" id="sCaseConv">—</div></div>
+    <div class="sblk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
+    <div class="sp"><button class="addbtn" id="sAddBtn" disabled>Add to Order</button></div>
+  </div>
+</div>
 
 <div class="toast" id="toast">✓ Added to order</div>
 
@@ -719,13 +745,19 @@
       caseConvEl.innerHTML=parts.join('<br>');
     }
     // SUBTOTAL 금액
+    const subText = !canOrder ? '— login' : (!priceInfo ? '—' : fmtMoney(money));
     const stEl=document.getElementById('subtotal');
-    if(stEl){
-      if(!canOrder) stEl.textContent='— login';
-      else if(!priceInfo) stEl.textContent='—';
-      else stEl.textContent=fmtMoney(money);
-    }
+    if(stEl) stEl.textContent=subText;
     addBtn.disabled=total===0;
+    // ── 하단 고정 주문바 동기화 ──
+    const bar=document.getElementById('stickyBar');
+    if(bar){
+      const su=document.getElementById('sTotalUnits'); if(su) su.textContent=total;
+      const ss=document.getElementById('sSubtotal'); if(ss) ss.textContent=subText;
+      const sc=document.getElementById('sCaseConv'); if(sc) sc.innerHTML = total===0 ? '—' : (caseConvEl.innerHTML.replace(/<br>/g,' · '));
+      const sb=document.getElementById('sAddBtn'); if(sb) sb.disabled=total===0;
+      bar.classList.toggle('show', canOrder && total>0);
+    }
   }
 
   // ── 사이즈 가이드 토글 ──
@@ -1124,6 +1156,8 @@
   // 헤더 Cart 버튼 → 카트 페이지
   (function(){ const b=cc&&cc.closest('button'); if(b) b.addEventListener('click',()=>{ location.href='epacific-cart.html'; }); })();
 
+  // 하단 고정바의 Add 버튼 → 위쪽 Add to Order와 동일 동작
+  (function(){ const sb=document.getElementById('sAddBtn'); if(sb) sb.addEventListener('click',()=>{ if(!addBtn.disabled) addBtn.click(); }); })();
   addBtn.addEventListener('click',()=>{
     const items=[]; let total=0,scPcs=0,caPcs=0; const colorSet=new Set();
     rowsBody.querySelectorAll('tr').forEach(tr=>{
@@ -1626,5 +1660,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-08 row-amounts-fix -->
+<!-- v2026-06-08 sticky-orderbar -->
 </html>

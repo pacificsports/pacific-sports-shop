@@ -225,4 +225,39 @@
         method:'POST',
         headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify({
-          order_number:ono, user
+          order_number:ono, user_id:s.userId, email:s.email,
+          company_name:cust.company_name||null, contact_name:cust.contact_name||null, phone:cust.phone||null,
+          items:cart, total_pcs:total,
+          total_amount:(()=>{ const a=cartAmount(cart); return a.priced>0 ? Math.round(a.amt*100)/100 : null; })(),
+          notes:document.getElementById('orderNotes').value.trim()||null,
+          status:'new'
+        })
+      });
+      if(!r.ok){ const t=await r.text(); throw new Error(t.slice(0,140)); }
+      if(EMAIL_WORKER){
+        fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({type:'order',to:s.email,data:{
+            order_number:ono,total_pcs:total,items:cart,
+            notes:document.getElementById('orderNotes').value.trim()||null,
+            company_name:cust.company_name||null,contact_name:cust.contact_name||null,phone:cust.phone||null
+          }})}).catch(()=>{});
+      }
+      cartSet([]);
+      document.getElementById('orderArea').style.display='none';
+      document.getElementById('okBox').style.display='block';
+      document.getElementById('okNo').textContent='Order '+ono;
+    }catch(e){
+      const m=document.getElementById('msg');
+      m.style.display='block'; m.style.background='#f8ecea'; m.style.color='#a8463f'; m.style.border='1px solid #ecd6d3';
+      m.textContent='Could not submit: '+e.message;
+      btn.disabled=false; btn.textContent='Submit order →';
+    }
+  }
+
+  document.getElementById('submitBtn').addEventListener('click',submitOrder);
+  init();
+</script>
+<script src="pacific-nav.js"></script>
+</body>
+<!-- v2026-06-08 cart-grid -->
+</html>

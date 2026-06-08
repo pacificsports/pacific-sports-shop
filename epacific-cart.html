@@ -69,7 +69,8 @@
       <textarea id="orderNotes" placeholder="e.g. PO #12345 · Please ship by Friday"></textarea>
     </div>
 
-    <button class="btn" id="submitBtn">Submit order →</button>
+    <button class="btn" id="checkoutBtn" onclick="location.href='epacific-checkout.html'">Checkout — pay by card →</button>
+    <button class="btn" id="submitBtn" style="margin-top:10px;background:var(--paper);color:var(--soft-ink);border:1.5px solid var(--line-2)">Submit without payment (approved terms)</button>
     <div id="msg"></div>
   </div>
 
@@ -217,5 +218,5 @@
 </script>
 <script src="pacific-nav.js"></script>
 </body>
-<!-- v2026-06-06 price-system -->
+<!-- v2026-06-07 checkout-btn -->
 </html>

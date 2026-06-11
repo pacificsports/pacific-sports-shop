@@ -165,13 +165,13 @@ async function pay(body, env) {
         amount: String(Math.round(amount * 100) / 100),
         payment: { opaqueData: { dataDescriptor: opaqueData.dataDescriptor, dataValue: opaqueData.dataValue } },
         order: { invoiceNumber: (invoice || '').slice(0, 20), description: 'Pacific Sports web order' },
+        customer: email ? { email: String(email).slice(0, 255) } : undefined,
         billTo: billTo ? {
           firstName: (billTo.firstName || '').slice(0, 50), lastName: (billTo.lastName || '').slice(0, 50),
           company: (billTo.company || '').slice(0, 50),
           address: (billTo.addr1 || '').slice(0, 60), city: (billTo.city || '').slice(0, 40),
           state: (billTo.state || '').slice(0, 40), zip: (billTo.zip || '').slice(0, 20), country: 'US'
-        } : undefined,
-        customer: email ? { email: String(email).slice(0, 255) } : undefined
+        } : undefined
       }
     }
   };

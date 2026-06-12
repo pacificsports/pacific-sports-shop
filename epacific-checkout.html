@@ -148,7 +148,32 @@
 <script>
   const _C=window.PACIFIC_CONFIG||{};
   const WORKER=_C.CHECKOUT_WORKER||'';
-  const WEIGHT_PER_PC=_C.WEIGHT_PER_PC||0.5;    // 티셔츠 1장 포장 무게(lbs) — pacific-config에서 조정 가능
+  const WEIGHT_PER_PC=_C.WEIGHT_PER_PC||0.5;    // (구) 균일 추정 — 아래 품목별 무게로 대체, 폴백용
+  // ── 배송 무게: 품목(카테고리)별 × 사이즈별. 절대 적게 안 받도록 보수적 + 안전버퍼 ──
+  // 각 카테고리 무게는 그 그룹에서 무거운 스타일을 커버하도록 잡음(Adult M 기준, lbs).
+  const CAT_WEIGHT={
+    'Adult S/S':0.45,'Adult L/S':0.60,'Adult Tank Top':0.34,'Adult Performance':0.40,
+    'Adult Hoodie L/S':0.90,'Adult V-Neck S/S':0.42,'Adult Raglan':0.55,
+    'Youth S/S':0.30,'Youth L/S':0.40,'Kids S/S':0.26,'Kids L/S':0.34,
+    'Juvy S/S':0.24,'Juvy L/S':0.32,'Toddler S/S':0.20,'Toddler L/S':0.26 };
+  const SIZE_MULT={ XS:0.85,S:0.92,M:1.0,L:1.08,XL:1.16,'2XL':1.30,'3XL':1.45,'4XL':1.58,'5XL':1.72 };
+  const DEFAULT_W=0.60;        // 모르는 스타일은 안전하게 높게
+  const SHIP_BUFFER=1.10;      // 박스·포장·오차 안전 마진 (언더차지 방지). 너무 비싸면 낮추기
+  const STYLE_CAT={};          // {스타일번호: 카테고리} — init()에서 채움
+  function pieceWeight(style,size){
+    const cat=STYLE_CAT[String(style)];
+    const base=(cat&&CAT_WEIGHT[cat]!=null)?CAT_WEIGHT[cat]:DEFAULT_W;
+    const adult=cat&&/^Adult/.test(cat);          // 사이즈 배율은 어른 품목에만
+    const mult=adult?(SIZE_MULT[String(size||'').toUpperCase()]||1):1;
+    return base*mult;
+  }
+  async function loadStyleCats(){
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/styles?select=style_number,category',
+        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+_C.SUPABASE_ANON_KEY}});
+      if(r.ok){ const d=await r.json(); d.forEach(s=>{ STYLE_CAT[String(s.style_number)]=s.category; }); }
+    }catch(e){}
+  }
   const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }
   function cartSet(c){ try{localStorage.setItem('pacific_cart',JSON.stringify(c));}catch(e){} }
@@ -178,7 +203,7 @@
     const lines={};
     cart.forEach(i=>{
       pcs+=i.qty||0;
-      const w=(i.qty||0)*WEIGHT_PER_PC;
+      const w=(i.qty||0)*pieceWeight(i.style,i.size);
       if(i.wh==='CA') caLbs+=w; else scLbs+=w;
       if(i.unit_price!=null) goods+=(i.qty||0)*Number(i.unit_price); else allPriced=false;
       const k=i.style+'|'+i.color+'|'+i.wh;
@@ -222,7 +247,7 @@
     const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting UPS rates…';
     try{
       const r=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*10)/10, caLbs:Math.round(caLbs*10)/10})});
+        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||r.status);
       const list=document.getElementById('rateList');
@@ -377,6 +402,7 @@
   }
 
   async function init(){
+    await loadStyleCats();
     summary();
     const s=session(); const note=document.getElementById('lockNote');
     if(!s||!s.token){

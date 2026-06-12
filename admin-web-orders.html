@@ -121,8 +121,6 @@
         <div class="acts">
           ${hasSC?`<button class="pt" data-pt="SC" data-id="${r.id}">🖨 Pick ticket — SC</button>`:''}
           ${hasCA?`<button class="pt" data-pt="CA" data-id="${r.id}">🖨 Pick ticket — CA</button>`:''}
-          ${r.status==='new'?`<button data-id="${r.id}" data-act="accepted" style="background:#3d5a40;color:#fff;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600">Accept \u2713</button>`:''}
-          ${r.status==='new'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
         ${active?`
         <div class="shiprow">

@@ -112,7 +112,7 @@
       <div class="card">
         <div class="chead">
           <span class="ono">${esc(r.order_number)}</span>
-          <span class="badge ${esc(r.status)}">${esc(r.status)}</span>
+          <span class="badge ${esc(r.status)}">${({new:'NEW',accepted:'준비됨',shipped:'SHIPPED',rejected:'REJECTED'})[r.status]||esc(r.status)}</span>
           <span class="meta">${esc(r.company_name||'')} · ${esc(r.contact_name||'')} · ${esc(r.email||'')} ${r.phone?('· '+esc(r.phone)):''}</span>
           <span class="meta" style="margin-left:auto">${(r.created_at||'').replace('T',' ').slice(0,16)} · <b>${r.total_pcs||0} pcs</b>${r.total_amount!=null?(' · <b style="color:var(--accent)">'+fmtMoney(r.total_amount)+'</b>'):''}</span>
         </div>
@@ -121,14 +121,15 @@
         <div class="acts">
           ${hasSC?`<button class="pt" data-pt="SC" data-id="${r.id}">🖨 Pick ticket — SC</button>`:''}
           ${hasCA?`<button class="pt" data-pt="CA" data-id="${r.id}">🖨 Pick ticket — CA</button>`:''}
+          ${r.status==='new'?`<button data-id="${r.id}" data-act="accepted" style="background:#3d5a40;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600">✓ 준비 완료 (Ready)</button>`:''}
         </div>
-        ${active?`
+        ${r.status==='accepted'?`
         <div class="shiprow">
           <select id="carrier-${r.id}">
             <option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option>
           </select>
-          <input type="text" id="trk-${r.id}" placeholder="Tracking number" value="${esc(r.tracking_number||'')}">
-          <button class="shipbtn" data-ship="${r.id}">Mark shipped ✓</button>
+          <textarea id="trk-${r.id}" placeholder="운송장번호 (여러 개면 한 줄에 하나씩)" rows="2" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:280px;resize:vertical;font-family:inherit">${esc(r.tracking_number||'')}</textarea>
+          <button class="shipbtn" data-ship="${r.id}">✓ 배송 완료 — 손님 알림</button>
         </div>`:''}
         ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
       </div>`;}).join('');

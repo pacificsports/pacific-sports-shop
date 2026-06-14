@@ -101,7 +101,7 @@
 
   function render(){
     const list=document.getElementById('list'); const msg=document.getElementById('msg');
-    const show = view==='new' ? rows.filter(r=>r.status==='new'||r.status==='accepted') : rows;
+    const show = view==='new' ? rows.filter(r=>r.status!=='shipped'&&r.status!=='rejected') : rows;
     if(!show.length){ list.innerHTML=''; msg.style.display='block'; msg.textContent = view==='new' ? 'No web orders to process. 🎉' : 'No web orders yet.'; return; }
     msg.style.display='none';
     list.innerHTML=show.map(r=>{
@@ -121,15 +121,15 @@
         <div class="acts">
           ${hasSC?`<button class="pt" data-pt="SC" data-id="${r.id}">🖨 Pick ticket — SC</button>`:''}
           ${hasCA?`<button class="pt" data-pt="CA" data-id="${r.id}">🖨 Pick ticket — CA</button>`:''}
-          ${r.status==='new'?`<button data-id="${r.id}" data-act="accepted" style="background:#3d5a40;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600">✓ 준비 완료 (Ready)</button>`:''}
+          
         </div>
-        ${r.status==='accepted'?`
+        ${r.status!=='shipped'?`
         <div class="shiprow">
-          <select id="carrier-${r.id}">
+          <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-right:12px"><input type="checkbox" id="pick-${r.id}" onchange="updateCmpl('${r.id}')" style="width:17px;height:17px"> 물건 준비 완료</label> <select id="carrier-${r.id}">
             <option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option>
           </select>
-          <textarea id="trk-${r.id}" placeholder="운송장번호 (여러 개면 한 줄에 하나씩)" rows="2" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:280px;resize:vertical;font-family:inherit">${esc(r.tracking_number||'')}</textarea>
-          <button class="shipbtn" data-ship="${r.id}">✓ 배송 완료 — 손님 알림</button>
+          <textarea id="trk-${r.id}" oninput="updateCmpl('${r.id}')" placeholder="운송장번호 (여러 개면 한 줄에 하나씩)" rows="2" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:280px;resize:vertical;font-family:inherit">${esc(r.tracking_number||'')}</textarea>
+          <button class="shipbtn" id="cmpl-${r.id}" data-ship="${r.id}" disabled style="opacity:.5">✓ 배송 완료 — 손님 알림</button>
         </div>`:''}
         ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
       </div>`;}).join('');
@@ -144,7 +144,8 @@
     }));
   }
 
-  async function setStatus(id,status,extra){
+  async function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; const ok=p&&p.checked&&tk&&tk.value.trim(); b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
+    function setStatus(id,status,extra){
     const s=session(); if(!s){ alert('Session expired.'); return; }
     const body=Object.assign({status},extra||{});
     if(status==='accepted') body.accepted_at=new Date().toISOString();

@@ -45,6 +45,7 @@ export default {
     try {
       if (url.pathname.endsWith('/rates')) return await rates(await req.json(), env);
       if (url.pathname.endsWith('/pay'))   return await pay(await req.json(), env);
+      if (url.pathname.endsWith('/refund')) return await refund(await req.json(), env);
       return J({ error: 'unknown endpoint' }, 404);
     } catch (e) {
       return J({ error: String(e.message || e).slice(0, 300) }, 500);
@@ -185,4 +186,62 @@ async function pay(body, env) {
     return J({ ok: false, error: msg }, 402);
   }
   return J({ ok: true, transId: tr.transId, authCode: tr.authCode, last4: (tr.accountNumber || '').slice(-4) });
+}
+
+/* Authorize.net refund (partial/full)
+   POST /refund  body: { transId, amount }
+   - settled  -> refundTransaction (partial ok)
+   - unsettled-> full=void, partial=409 with guidance
+   Card number is NOT stored; last4 is read from getTransactionDetails. */
+async function refund(body, env) {
+  const { transId, amount } = body || {};
+  if (!transId) return J({ ok: false, error: '거래번호(transId)가 없습니다' }, 400);
+  if (!(amount > 0)) return J({ ok: false, error: '환불 금액이 없습니다' }, 400);
+  const base = env.ANET_ENV === 'production'
+    ? 'https://api.authorize.net/xml/v1/request.api'
+    : 'https://apitest.authorize.net/xml/v1/request.api';
+  const auth = { name: env.ANET_API_LOGIN_ID, transactionKey: env.ANET_TRANSACTION_KEY };
+  const anet = async (payload) => {
+    const r = await fetch(base, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const text = await r.text();
+    return JSON.parse(text.replace(/^\uFEFF/, ''));
+  };
+  const amt = String(Math.round(amount * 100) / 100);
+  const dd = await anet({ getTransactionDetailsRequest: { merchantAuthentication: auth, transId: String(transId) } });
+  if (dd.messages && dd.messages.resultCode !== 'Ok') {
+    const m = (dd.messages.message && dd.messages.message[0] && dd.messages.message[0].text) || '거래 조회 실패';
+    return J({ ok: false, error: '거래 조회 실패: ' + m }, 502);
+  }
+  const tx = dd.transaction || {};
+  const status = tx.transactionStatus;
+  const cc = (tx.payment && tx.payment.creditCard) || {};
+  const last4 = String(cc.cardNumber || '').replace(/[^0-9]/g, '').slice(-4);
+  const expDate = cc.expirationDate || 'XXXX';
+  const settleAmount = Number(tx.settleAmount || tx.authAmount || 0);
+  if (status === 'capturedPendingSettlement' || status === 'authorizedPendingCapture') {
+    if (settleAmount > 0 && Math.round(amount * 100) >= Math.round(settleAmount * 100)) {
+      const vt = await anet({ createTransactionRequest: { merchantAuthentication: auth,
+        transactionRequest: { transactionType: 'voidTransaction', refTransId: String(transId) } } });
+      const vtr = vt.transactionResponse;
+      if (vt.messages && vt.messages.resultCode === 'Ok' && vtr && vtr.responseCode === '1')
+        return J({ ok: true, mode: 'void', refundTransId: vtr.transId, amount: settleAmount });
+      const em = (vtr && vtr.errors && vtr.errors[0] && vtr.errors[0].errorText) || (vt.messages && vt.messages.message && vt.messages.message[0] && vt.messages.message[0].text) || '주문 취소 실패';
+      return J({ ok: false, error: em, mode: 'void' }, 402);
+    }
+    return J({ ok: false, code: 'UNSETTLED_PARTIAL',
+      error: '이 주문은 아직 카드사 정산 전이라 부분환불이 안 됩니다. 정산(보통 다음 영업일) 후 다시 시도하거나, 전액 취소만 가능합니다.' }, 409);
+  }
+  if (!last4) return J({ ok: false, error: '카드 정보를 확인할 수 없어 환불할 수 없습니다' }, 502);
+  const rt = await anet({ createTransactionRequest: { merchantAuthentication: auth,
+    transactionRequest: {
+      transactionType: 'refundTransaction',
+      amount: amt,
+      payment: { creditCard: { cardNumber: last4, expirationDate: expDate || 'XXXX' } },
+      refTransId: String(transId)
+    } } });
+  const rtr = rt.transactionResponse;
+  if (rt.messages && rt.messages.resultCode === 'Ok' && rtr && rtr.responseCode === '1')
+    return J({ ok: true, mode: 'refund', refundTransId: rtr.transId, amount: Math.round(amount * 100) / 100 });
+  const em = (rtr && rtr.errors && rtr.errors[0] && rtr.errors[0].errorText) || (rt.messages && rt.messages.message && rt.messages.message[0] && rt.messages.message[0].text) || '환불 실패';
+  return J({ ok: false, error: em, mode: 'refund' }, 402);
 }

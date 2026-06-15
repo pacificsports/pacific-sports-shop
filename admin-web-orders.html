@@ -99,6 +99,79 @@
       +`</tr>`).join('')+'</tbody></table>';
   }
 
+  function refundBlock(r){
+    var items = Array.isArray(r.items)? r.items : [];
+    if(!items.length) return '';
+    var refs = Array.isArray(r.refunds)? r.refunds : [];
+    var byIdx = {}; refs.forEach(function(x){ byIdx[x.idx]=(byIdx[x.idx]||0)+(Number(x.qty)||0); });
+    var noTx = !r.transaction_id;
+    var body = items.map(function(it,idx){
+      var q = Number(it.qty)||0;
+      var done = byIdx[idx]||0;
+      var remain = Math.max(0, q-done);
+      var up = (it.unit_price!=null)? Number(it.unit_price) : null;
+      var priceCell = (up!=null)? fmtMoney(up) : '—';
+      var ctrl;
+      if(noTx || up==null || remain<=0){
+        ctrl = "<span style='color:var(--faint)'>" + (remain<=0?'전액 환불됨':(up==null?'단가없음':'')) + "</span>";
+      } else {
+        ctrl = "<input type='number' min='0' max='" + remain + "' value='0' id='ref-" + r.id + "-" + idx + "' style='width:58px;padding:5px 7px;border:1px solid var(--line-2);border-radius:7px;font-size:13px;text-align:right'>"
+             + "<button data-oid='" + r.id + "' data-idx='" + idx + "' onclick='doRefund(this)' style='background:#b23b3b;color:#fff;border:none;border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;margin-left:6px'>환불</button>";
+      }
+      return "<tr><td><b>" + esc(it.style) + "</b> " + esc(it.color||'') + " " + esc(it.size||'') + "</td>"
+           + "<td style='text-align:right'>" + q + "</td>"
+           + "<td style='text-align:right;color:var(--accent)'>" + (done||'') + "</td>"
+           + "<td style='text-align:right'>" + priceCell + "</td>"
+           + "<td style='text-align:right'>" + ctrl + "</td></tr>";
+    }).join('');
+    var totalRef = refs.reduce(function(s,x){ return s+(Number(x.amount)||0); },0);
+    var head = "<div style='font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--soft-ink);margin-bottom:7px'>환불 (REFUND)" + (totalRef>0?(' · 누적 '+fmtMoney(totalRef)):'') + "</div>";
+    var inner = noTx
+      ? "<div style='font-size:13px;color:var(--faint)'>카드 거래정보가 없어 앱에서 환불할 수 없습니다. (수동 환불 필요)</div>"
+      : "<table style='width:100%;border-collapse:collapse;font-size:13px'><thead><tr style='color:var(--faint);font-size:11px'><th style='text-align:left'>Item</th><th style='text-align:right'>배송</th><th style='text-align:right'>환불됨</th><th style='text-align:right'>단가</th><th style='text-align:right'>환불</th></tr></thead><tbody>" + body + "</tbody></table>";
+    return "<div style='margin-top:10px;border:1px solid var(--line);border-radius:9px;padding:10px 13px'>" + head + inner + "</div>";
+  }
+
+  async function doRefund(el){
+    var orderId = el.getAttribute('data-oid');
+    var idx = Number(el.getAttribute('data-idx'));
+    var s = session(); if(!s){ alert('Session expired.'); return; }
+    var row = rows.find(function(x){ return x.id===orderId; }); if(!row){ return; }
+    var items = Array.isArray(row.items)? row.items : [];
+    var it = items[idx]; if(!it){ return; }
+    var inp = document.getElementById('ref-' + orderId + '-' + idx);
+    var qty = Math.floor(Number(inp && inp.value)||0);
+    if(!(qty>0)){ alert('환불할 수량을 입력하세요.'); return; }
+    var refs = Array.isArray(row.refunds)? row.refunds.slice() : [];
+    var done = refs.filter(function(x){ return x.idx===idx; }).reduce(function(a,b){ return a+(Number(b.qty)||0); },0);
+    var q = Number(it.qty)||0;
+    if(qty > (q-done)){ alert('남은 수량보다 많이 환불할 수 없습니다. (남음 ' + (q-done) + ')'); return; }
+    var up = Number(it.unit_price);
+    if(!(up>=0)){ alert('이 품목은 단가 정보가 없어 환불 금액을 계산할 수 없습니다.'); return; }
+    if(!row.transaction_id){ alert('카드 거래정보가 없어 앱에서 환불할 수 없습니다.'); return; }
+    var amount = Math.round(qty*up*100)/100;
+    if(!confirm(esc(it.style) + ' ' + (it.size||'') + ' ' + qty + '장 · ' + fmtMoney(amount) + ' 환불할까요? (카드로 실제 환불이 진행됩니다)')){ return; }
+    var CW = (window.PACIFIC_CONFIG||{}).CHECKOUT_WORKER;
+    if(!CW){ alert('CHECKOUT_WORKER 설정이 없습니다.'); return; }
+    var CWB = (CW.charAt(CW.length-1)==='/') ? CW.slice(0,-1) : CW;
+    el.disabled = true;
+    var res;
+    try{
+      var rr = await fetch(CWB + '/refund', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({transId: row.transaction_id, amount: amount})});
+      res = await rr.json().catch(function(){ return {}; });
+      if(!rr.ok || !res.ok){ alert('환불 실패: ' + ((res && res.error) || rr.status)); el.disabled=false; return; }
+    }catch(e){ alert('환불 요청 오류: ' + e.message); el.disabled=false; return; }
+    refs.push({idx: idx, style: it.style, color: it.color, size: it.size, wh: it.wh, qty: qty, amount: amount, mode: res.mode||'refund', refundTransId: res.refundTransId||null, at: new Date().toISOString()});
+    var refunded_pcs = refs.reduce(function(a,b){ return a+(Number(b.qty)||0); },0);
+    var refunded_amount = Math.round(refs.reduce(function(a,b){ return a+(Number(b.amount)||0); },0)*100)/100;
+    var patch = {refunds: refs, refunded_pcs: refunded_pcs, refunded_amount: refunded_amount};
+    var pr = await fetch(URL_ + '/rest/v1/web_orders?id=eq.' + orderId, {method:'PATCH', headers:{apikey:KEY_, Authorization:'Bearer ' + s.token, 'Content-Type':'application/json', 'Prefer':'return=minimal'}, body: JSON.stringify(patch)});
+    if(!pr.ok){ alert('환불은 됐지만 기록 저장 실패(' + pr.status + '). DB에 refunds 컬럼이 있는지 확인하세요.'); }
+    Object.assign(row, patch);
+    render();
+    alert('환불 완료: ' + fmtMoney(amount) + (res.mode==='void'?' (카드 정산 전이라 주문 전체가 취소 처리됨)':''));
+  }
+
   function render(){
     const list=document.getElementById('list'); const msg=document.getElementById('msg');
     const show = view==='new' ? rows.filter(r=>r.status!=='shipped'&&r.status!=='rejected') : rows;
@@ -132,6 +205,7 @@
           <button class="shipbtn" id="cmpl-${r.id}" data-ship="${r.id}" disabled style="opacity:.5">✓ 배송 완료 — 손님 알림</button>
         </div>`:''}
         ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
+      ${r.status==='shipped'?refundBlock(r):''}
       </div>`;}).join('');
     list.querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act,{})));
     list.querySelectorAll('button[data-pt]').forEach(b=>b.addEventListener('click',()=>pickTicket(b.dataset.id,b.dataset.pt)));

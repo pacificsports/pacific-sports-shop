@@ -262,7 +262,7 @@
     if(status==='shipped' && row && row.email && EMAIL_WORKER){
       fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({type:'shipped',to:row.email,data:{
-          order_number:row.order_number,carrier:body.carrier||row.carrier,tracking_number:body.tracking_number||row.tracking_number
+          order_number:row.order_number,carrier:body.carrier||row.carrier,tracking_number:body.tracking_number||row.tracking_number,company_name:row.company_name,contact_name:row.contact_name,phone:row.phone,items:row.items,total_amount:row.total_amount,shipping_cost:row.shipping_cost,shipping_method:row.shipping_method,ship_to:row.ship_to,paid_at:row.paid_at,shipped_at:row.shipped_at,total_pcs:row.total_pcs
         }})}).catch(()=>console.warn('shipped email failed'));
     }
     render();

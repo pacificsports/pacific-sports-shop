@@ -338,7 +338,7 @@
       }catch(e){ console.warn('order save failed', e); }
       if(EMAIL_WORKER){
         fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({type:'order',to:s.email,data:{order_number:ono,total_pcs:pcs,items:cart,
+          body:JSON.stringify({type:'order',to:s.email,data:{order_number:ono,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,
             notes:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
             company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
       }

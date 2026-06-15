@@ -112,7 +112,7 @@ export default {
               H('New web order') +
               `<div style="margin:0 0 18px">${PILL(esc(d.order_number || ''))} &nbsp;<span style="font-size:14px;color:#8b8880">${d.total_pcs || 0} pcs</span></div>` +
               P(`<b>${esc(d.company_name || '')}</b> · ${esc(d.contact_name || '')} · ${esc(to)} ${d.phone ? '· ' + esc(d.phone) : ''}`) +
-              itemsTable(d.items) +
+              staffDetail(d) +
               (d.notes ? NOTE(d.notes) : '') +
               BTN(SHOP + '/admin-web-orders.html', 'Open Web Orders →'),
               'New web order from ' + (d.company_name || to))
@@ -184,6 +184,43 @@ function json(obj, status, cors) {
 /* ───────────── 순수 JS PDF 생성 (Helvetica, Latin-1) — 인보이스/패킹리스트 ─────────────
    외부 라이브러리 없이 워커 안에서 PDF를 만들고 base64로 반환(Resend 첨부용).
    주의: 비-Latin1(한글 등) 글자는 '?'로 치환됨(주소·이름은 영문 기준).            */
+function staffDetail(d) {
+  var items = Array.isArray(d.items) ? d.items : [];
+  if (!items.length) return "";
+  var sub = 0, rows = "";
+  for (var n = 0; n < items.length; n++) {
+    var i = items[n];
+    var up = (i.unit_price != null) ? Number(i.unit_price) : null;
+    var amt = (Number(i.qty) || 0) * (up || 0);
+    if (up != null) sub += amt;
+    var bg = (n % 2) ? "#faf9f5" : "#fdfdfb";
+    var whbg = (i.wh === 'SC') ? "#e7eef5" : "#fdf3e2";
+    var whc = (i.wh === 'SC') ? "#33414f" : "#9a6b1f";
+    rows += "<tr style='background:" + bg + "'>"
+      + "<td style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'><b>" + esc(i.style) + "</b></td>"
+      + "<td style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'>" + esc(i.color || '') + "</td>"
+      + "<td style='padding:9px 12px;font-size:12px;border-bottom:1px solid #f0ede5'><span style='background:" + whbg + ";color:" + whc + ";border-radius:999px;padding:3px 10px;font-weight:bold'>" + esc(i.wh || '') + "</span></td>"
+      + "<td style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'>" + esc(i.size || '') + "</td>"
+      + "<td align='right' style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'>" + (i.qty || 0) + "</td>"
+      + "<td align='right' style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'>" + (up != null ? _money(up) : '-') + "</td>"
+      + "<td align='right' style='padding:9px 12px;font-size:13px;border-bottom:1px solid #f0ede5'><b>" + (up != null ? _money(amt) : '-') + "</b></td>"
+      + "</tr>";
+  }
+  var ship = Number(d.shipping_cost || 0);
+  var total = (d.total_amount != null) ? Number(d.total_amount) : (sub + ship);
+  var th = "<td style='padding:9px 12px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8b8880'>";
+  var thr = "<td align='right' style='padding:9px 12px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#8b8880'>";
+  var head = "<tr style='background:#f3f1ea'>" + th + "Style</td>" + th + "Color</td>" + th + "WH</td>" + th + "Size</td>" + thr + "Qty</td>" + thr + "Unit</td>" + thr + "Amount</td></tr>";
+  var totals = "<tr><td colspan='5'></td><td align='right' style='padding:8px 12px;font-size:12.5px;color:#8b8880'>Subtotal</td><td align='right' style='padding:8px 12px;font-size:12.5px'>" + _money(sub) + "</td></tr>"
+    + "<tr><td colspan='5'></td><td align='right' style='padding:4px 12px;font-size:12.5px;color:#8b8880'>Shipping</td><td align='right' style='padding:4px 12px;font-size:12.5px'>" + _money(ship) + "</td></tr>"
+    + "<tr><td colspan='5'></td><td align='right' style='padding:8px 12px;font-size:14px;font-weight:bold'>Total</td><td align='right' style='padding:8px 12px;font-size:14px;font-weight:bold;color:#3d5a40'>" + _money(total) + "</td></tr>";
+  var table = "<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='margin:18px 0;border:1px solid #e7e4dc;border-radius:12px;border-collapse:separate;overflow:hidden;font-family:Arial,sans-serif'>" + head + rows + totals + "</table>";
+  var st = d.ship_to || {};
+  var shipLine = [st.addr1, [st.city, st.state, st.zip].filter(Boolean).join(', ')].filter(Boolean).join(', ');
+  var addr = shipLine ? "<p style='margin:0 0 8px;font-size:13px;color:#8b8880'>Ship to: " + esc(shipLine) + "</p>" : "";
+  return table + addr;
+}
+
 function _pdfEsc(s) { return String(s == null ? '' : s).replace(/[\\()]/g, m => '\\' + m); }
 function _toLatin1(s) { return String(s == null ? '' : s).split('').map(ch => { const c = ch.charCodeAt(0); return (c >= 0x20 && c <= 0xFF) ? ch : '?'; }).join(''); }
 function _T(x, y, size, font, str) { return 'BT /' + font + ' ' + size + ' Tf ' + x + ' ' + y + ' Td (' + _pdfEsc(_toLatin1(str)) + ') Tj ET\n'; }

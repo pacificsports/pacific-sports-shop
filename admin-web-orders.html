@@ -201,7 +201,7 @@
           <label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;margin-right:12px"><input type="checkbox" id="pick-${r.id}" onchange="updateCmpl('${r.id}')" style="width:17px;height:17px"> 물건 준비 완료</label> <select id="carrier-${r.id}">
             <option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option>
           </select>
-          <textarea id="trk-${r.id}" oninput="updateCmpl('${r.id}')" placeholder="운송장번호 (여러 개면 한 줄에 하나씩)" rows="2" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:280px;resize:vertical;font-family:inherit">${esc(r.tracking_number||'')}</textarea>
+          <span id="trkwrap-${r.id}" style="display:inline-flex;flex-direction:column;gap:5px;vertical-align:top"><input class="trkline" oninput="updateCmpl('${r.id}')" placeholder="운송장번호" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px"><button type="button" onclick="addTrk('${r.id}')" style="align-self:flex-start;background:none;border:1px dashed var(--line-2);border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--soft-ink)">+ 운송장 추가</button></span>
           <button class="shipbtn" id="cmpl-${r.id}" data-ship="${r.id}" disabled style="opacity:.5">✓ 배송 완료 — 손님 알림</button>
         </div>`:''}
         ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
@@ -211,14 +211,25 @@
     list.querySelectorAll('button[data-pt]').forEach(b=>b.addEventListener('click',()=>pickTicket(b.dataset.id,b.dataset.pt)));
     list.querySelectorAll('button[data-ship]').forEach(b=>b.addEventListener('click',()=>{
       const id=b.dataset.ship;
-      const trk=(document.getElementById('trk-'+id).value||'').trim();
+      var __w=document.getElementById('trkwrap-'+id); var trk=__w?Array.prototype.slice.call(__w.querySelectorAll('.trkline')).map(function(x){return x.value.trim();}).filter(Boolean).join(String.fromCharCode(10)):'';
       const carrier=document.getElementById('carrier-'+id).value;
-      if(!confirm('Mark this order as shipped?'+(trk?('\nTracking: '+trk):'\n(No tracking number entered)'))) return;
       setStatus(id,'shipped',{tracking_number:trk||null,carrier,shipped_at:new Date().toISOString()});
     }));
   }
 
-  function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; const ok=p&&p.checked&&tk&&tk.value.trim(); b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
+  function addTrk(id){
+    var w=document.getElementById('trkwrap-'+id); if(!w) return;
+    var inp=document.createElement('input');
+    inp.className='trkline';
+    inp.placeholder='운송장번호';
+    inp.setAttribute('oninput', "updateCmpl('"+id+"')");
+    inp.style.cssText='padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px;margin-top:5px';
+    var btn=w.querySelector('button');
+    w.insertBefore(inp, btn);
+    updateCmpl(id);
+  }
+
+  function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; var __w2=document.getElementById('trkwrap-'+id); var anyTrk=__w2&&Array.prototype.slice.call(__w2.querySelectorAll('.trkline')).some(function(x){return x.value.trim();}); const ok=p&&p.checked&&anyTrk; b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
     async function setStatus(id,status,extra){
     const s=session(); if(!s){ alert('Session expired.'); return; }
     const body=Object.assign({status},extra||{});

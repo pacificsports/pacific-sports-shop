@@ -35,7 +35,7 @@
   .accept{background:var(--accent);color:#fff}
   .reject{background:#f1efe9;color:var(--soft-ink)}
   .pt{background:#33414f;color:#fff}
-  .shiprow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;padding-top:12px;border-top:1px dashed var(--line)}
+  .shiprow{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:flex-start;padding-top:12px;border-top:1px dashed var(--line)}
   .shiprow input{padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:220px}
   .shiprow select{padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;background:var(--paper)}
   .shipbtn{background:var(--accent);color:#fff;border:none;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
@@ -201,7 +201,7 @@
            <select id="carrier-${r.id}">
             <option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option>
           </select>
-          <span id="trkwrap-${r.id}" style="display:inline-flex;flex-direction:column;gap:5px;vertical-align:top"><input class="trkline" oninput="updateCmpl('${r.id}')" placeholder="운송장번호" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px"><button type="button" onclick="addTrk('${r.id}')" style="align-self:flex-start;background:none;border:1px dashed var(--line-2);border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer;color:var(--soft-ink)">+ 운송장 추가</button></span>
+          <span id="trkwrap-${r.id}" style="display:inline-flex;flex-direction:column;gap:6px;vertical-align:top"><span style="display:flex;gap:6px;align-items:center"><input class="trkline" oninput="updateCmpl('${r.id}')" placeholder="운송장번호" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px"><button type="button" onclick="addTrk('${r.id}')" style="white-space:nowrap;background:none;border:1px dashed var(--line-2);border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;color:var(--soft-ink)">+ 운송장 추가</button></span></span>
           <button class="shipbtn" id="cmpl-${r.id}" data-ship="${r.id}" disabled style="opacity:.5">✓ 배송 완료 — 손님 알림</button>
         </div>`:''}
         ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
@@ -219,13 +219,25 @@
 
   function addTrk(id){
     var w=document.getElementById('trkwrap-'+id); if(!w) return;
+    var row=document.createElement('span');
+    row.style.cssText='display:flex;gap:6px;align-items:center';
     var inp=document.createElement('input');
     inp.className='trkline';
     inp.placeholder='운송장번호';
     inp.setAttribute('oninput', "updateCmpl('"+id+"')");
-    inp.style.cssText='padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px;margin-top:5px';
-    var btn=w.querySelector('button');
-    w.insertBefore(inp, btn);
+    inp.style.cssText='padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px';
+    var x=document.createElement('button');
+    x.type='button'; x.textContent='✕';
+    x.setAttribute('onclick', "removeTrk(this,'"+id+"')");
+    x.style.cssText='background:none;border:1px solid var(--line-2);border-radius:7px;width:30px;height:30px;cursor:pointer;color:var(--soft-ink);font-size:12px';
+    row.appendChild(inp); row.appendChild(x);
+    w.appendChild(row);
+    inp.focus(); updateCmpl(id);
+  }
+
+  function removeTrk(el, id){
+    var row=el.parentNode;
+    if(row && row.parentNode){ row.parentNode.removeChild(row); }
     updateCmpl(id);
   }
 

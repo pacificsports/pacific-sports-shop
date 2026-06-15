@@ -218,8 +218,8 @@
     }));
   }
 
-  async function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; const ok=p&&p.checked&&tk&&tk.value.trim(); b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
-    function setStatus(id,status,extra){
+  function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; const ok=p&&p.checked&&tk&&tk.value.trim(); b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
+    async function setStatus(id,status,extra){
     const s=session(); if(!s){ alert('Session expired.'); return; }
     const body=Object.assign({status},extra||{});
     if(status==='accepted') body.accepted_at=new Date().toISOString();

@@ -240,6 +240,24 @@
   }
 
   // ── 1) UPS 배송비 ──
+  // 주소 다 채워지면 자동으로 배송비 조회 (디바운스 700ms)
+  (function(){
+    var _rt=null, _lastSig='';
+    function _maybeAuto(){
+      var s; try{ s=shipToObj(); }catch(e){ return; }
+      if(!s.name||!s.addr1||!s.city||!s.state||!s.zip||!s.phone) return;
+      var res=document.getElementById('fResidential');
+      var sig=[s.name,s.addr1,s.addr2,s.city,s.state,s.zip,s.phone,(res&&res.checked)].join('|');
+      if(sig===_lastSig) return; _lastSig=sig;
+      var b=document.getElementById('rateBtn'); if(b && !b.disabled) b.click();
+    }
+    var sched=function(){ clearTimeout(_rt); _rt=setTimeout(_maybeAuto, 700); };
+    ['fName','fCompany','fAddr1','fAddr2','fCity','fState','fZip','fPhone'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){ el.addEventListener('input', sched); el.addEventListener('change', sched); }
+    });
+    var r=document.getElementById('fResidential'); if(r) r.addEventListener('change', _maybeAuto);
+  })();
   document.getElementById('rateBtn').addEventListener('click',async()=>{
     const st=shipToObj();
     if(!st.name||!st.addr1||!st.city||!st.state||!st.zip||!st.phone){ alert('이름/주소/도시/주/우편번호/전화를 입력해 주세요.'); return; }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pacific Sports — Customer Approvals</title>
+<title>Pacific Sports — Customers</title>
 <style>
   :root{--paper:#fdfdfb;--ink:#1c1c1a;--soft-ink:#4c4a44;--faint:#8b8880;--line:#e7e4dc;--line-2:#d6d2c6;--accent:#3d5a40;--accent-soft:#eef1ec}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -34,13 +34,14 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <h1>Customer Approvals</h1>
+    <h1>Customers</h1>
     <a href="epacific-timeless.html">← Back to site</a>
   </div>
   <div class="sub">Review wholesale account applications. Approved customers can log in and see pricing.</div>
   <div class="tabs">
     <button id="tabPending" class="on">Pending</button>
-    <button id="tabAll">All</button>
+    <button id="tabApproved">Approved</button>
+    <button id="tabRejected">Rejected</button>
   </div>
   <div id="list"></div>
   <div id="msg">Loading…</div>
@@ -83,10 +84,45 @@
     render();
   }
 
+  function _money(n){ return String.fromCharCode(36) + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  async function toggleOrders(id, email){
+    var p=document.getElementById('op-'+id); if(!p) return;
+    if(p.style.display!=='none'){ p.style.display='none'; return; }
+    p.style.display='block';
+    if(p.dataset.loaded){ return; }
+    if(!email){ p.innerHTML="<div style='color:#8b8880;font-size:13px;padding:6px 0'>No email on file.</div>"; p.dataset.loaded='1'; return; }
+    p.innerHTML="<div style='color:#8b8880;font-size:13px;padding:6px 0'>Loading orders...</div>";
+    var s=session(); if(!s){ p.innerHTML="<div style='color:#a8463f'>Session expired.</div>"; return; }
+    try{
+      var qs='/rest/v1/web_orders?email=eq.'+encodeURIComponent(email)+'&order=created_at.desc&select=order_number,created_at,total_amount,status,carrier,tracking_number,items,ship_to';
+      var rr=await fetch(URL_+qs, {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
+      if(!rr.ok){ p.innerHTML="<div style='color:#a8463f;font-size:13px;padding:6px 0'>Could not load orders ("+rr.status+").</div>"; p.dataset.loaded='1'; return; }
+      var orders=await rr.json();
+      p.innerHTML=renderOrders(orders);
+      p.dataset.loaded='1';
+    }catch(e){ p.innerHTML="<div style='color:#a8463f;font-size:13px;padding:6px 0'>Error: "+esc(e.message)+"</div>"; }
+  }
+  function renderOrders(orders){
+    if(!orders||!orders.length) return "<div style='color:#8b8880;font-size:13px;padding:6px 0'>No orders yet.</div>";
+    var head="<div style='font-size:11px;font-weight:700;letter-spacing:.08em;color:#8b8880;margin:10px 0 6px'>ORDER HISTORY ("+orders.length+")</div>";
+    var body=orders.map(function(o){
+      var items=Array.isArray(o.items)?o.items:[];
+      var il=items.map(function(i){ return esc(i.style)+" "+esc(i.color||'')+" "+esc(i.size||'')+" x"+(i.qty||0); }).join(", ");
+      var st=o.ship_to||{};
+      var shipTo=[st.city,st.state].filter(Boolean).join(', ');
+      var trk=o.tracking_number?String(o.tracking_number).split(String.fromCharCode(10)).join(', '):'';
+      return "<div style='border:1px solid #e7e4dc;border-radius:9px;padding:9px 12px;margin-bottom:6px;font-size:13px'>"
+        + "<div style='display:flex;justify-content:space-between;gap:8px'><b>"+esc(o.order_number||'')+"</b><span style='color:#8b8880'>"+String(o.created_at||'').slice(0,10)+"</span></div>"
+        + "<div style='color:#4c4a44;margin-top:3px'>"+_money(o.total_amount)+" &middot; <span style='text-transform:uppercase;font-size:10.5px;background:#eef1ec;color:#3d5a40;border-radius:999px;padding:2px 8px'>"+esc(o.status||'')+"</span>"+(o.carrier?" &middot; "+esc(o.carrier):'')+(trk?" &middot; "+esc(trk):'')+(shipTo?" &middot; "+esc(shipTo):'')+"</div>"
+        + (il?"<div style='color:#8b8880;margin-top:3px;font-size:12px'>"+il+"</div>":'')
+        + "</div>";
+    }).join("");
+    return head+body;
+  }
   function render(){
     const list=document.getElementById('list'); const msg=document.getElementById('msg');
-    const show = view==='pending' ? rows.filter(r=>r.status==='pending') : rows;
-    if(!show.length){ list.innerHTML=''; msg.style.display='block'; msg.textContent = view==='pending' ? 'No pending applications. 🎉' : 'No applications yet.'; return; }
+    const show = rows.filter(r=> view==='pending' ? (r.status==='pending'||!r.status) : view==='approved' ? r.status==='approved' : view==='rejected' ? r.status==='rejected' : true);
+    if(!show.length){ list.innerHTML=''; msg.style.display='block'; msg.textContent = view==='pending' ? 'No pending applications. 🎉' : (view==='approved'?'No approved customers yet.':view==='rejected'?'No rejected applications.':'No applications yet.'); return; }
     msg.style.display='none';
     list.innerHTML=show.map(r=>`
       <div class="card">
@@ -106,6 +142,8 @@
         </div>
         ${aiBadge(r.ai_check)}
         ${linkRow(r)}
+        <button data-orders="${esc(r.email||'')}" data-cid="${r.id}" style="margin-top:8px;border:1px solid var(--line-2,#d6d2c6);background:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--soft-ink,#4c4a44)">▾ Orders &amp; details</button>
+        <div class="orderpanel" id="op-${r.id}" style="display:none;margin-top:8px"></div>
       </div>`).join('');
     list.querySelectorAll('button[data-id]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act)));
     list.querySelectorAll('button[data-doc]').forEach(b=>b.addEventListener('click',()=>viewDoc(b.dataset.doc)));
@@ -221,10 +259,13 @@
   function esc(t){ return String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
   document.getElementById('tabPending').addEventListener('click',()=>{view='pending';tab();render();});
-  document.getElementById('tabAll').addEventListener('click',()=>{view='all';tab();render();});
+  document.getElementById('tabApproved').addEventListener('click',()=>{view='approved';tab();render();});
+  document.getElementById('tabRejected').addEventListener('click',()=>{view='rejected';tab();render();});
+  document.getElementById('list').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-orders]'); if(b){ toggleOrders(b.dataset.cid, b.dataset.orders); } });
   function tab(){
     document.getElementById('tabPending').classList.toggle('on',view==='pending');
-    document.getElementById('tabAll').classList.toggle('on',view==='all');
+    document.getElementById('tabApproved').classList.toggle('on',view==='approved');
+    document.getElementById('tabRejected').classList.toggle('on',view==='rejected');
   }
   load();
 </script>

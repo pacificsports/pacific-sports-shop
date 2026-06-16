@@ -84,8 +84,20 @@
     render();
   }
 
+  function aiWrap(ai,id){ if(!ai) return ''; return "<div style='position:relative'>"+aiBadge(ai)+"<button data-clear='"+id+"' title='Clear AI result' style='position:absolute;top:7px;right:9px;border:none;background:transparent;cursor:pointer;font-size:14px;line-height:1;color:inherit;opacity:.55'>\u2715</button></div>"; }
+  function clearAi(id, btn){
+    if(!confirm('AI \uac80\ud1a0 \uacb0\uacfc\ub97c \uc9c0\uc6c1\ub2c8\ub2e4. \uacc4\uc18d\ud560\uae4c\uc694?')) return;
+    var s=session(); if(!s){ alert('Session expired.'); return; }
+    btn.disabled=true;
+    (async function(){
+      var r=await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+id,{method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({ai_check:null})});
+      if(!r.ok){ btn.disabled=false; alert('Clear failed ('+r.status+')'); return; }
+      var row=rows.find(function(x){return x.id===id;}); if(row) row.ai_check=null;
+      render();
+    })();
+  }
   function _money(n){ return String.fromCharCode(36) + Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  async function toggleOrders(id, email){
+  function toggleOrders(id, email){
     var p=document.getElementById('op-'+id); if(!p) return;
     if(p.style.display!=='none'){ p.style.display='none'; return; }
     p.style.display='block';
@@ -93,30 +105,48 @@
     if(!email){ p.innerHTML="<div style='color:#8b8880;font-size:13px;padding:6px 0'>No email on file.</div>"; p.dataset.loaded='1'; return; }
     p.innerHTML="<div style='color:#8b8880;font-size:13px;padding:6px 0'>Loading orders...</div>";
     var s=session(); if(!s){ p.innerHTML="<div style='color:#a8463f'>Session expired.</div>"; return; }
-    try{
-      var qs='/rest/v1/web_orders?email=eq.'+encodeURIComponent(email)+'&order=created_at.desc&select=order_number,created_at,total_amount,status,carrier,tracking_number,items,ship_to';
+    (async function(){ try{
+      var qs='/rest/v1/web_orders?email=eq.'+encodeURIComponent(email)+'&order=created_at.desc&select=order_number,created_at,total_amount,shipping_cost,paid_at,status,carrier,tracking_number,items,ship_to';
       var rr=await fetch(URL_+qs, {headers:{apikey:KEY_,Authorization:'Bearer '+s.token}});
       if(!rr.ok){ p.innerHTML="<div style='color:#a8463f;font-size:13px;padding:6px 0'>Could not load orders ("+rr.status+").</div>"; p.dataset.loaded='1'; return; }
       var orders=await rr.json();
       p.innerHTML=renderOrders(orders);
       p.dataset.loaded='1';
-    }catch(e){ p.innerHTML="<div style='color:#a8463f;font-size:13px;padding:6px 0'>Error: "+esc(e.message)+"</div>"; }
+    }catch(e){ p.innerHTML="<div style='color:#a8463f;font-size:13px;padding:6px 0'>Error: "+esc(e.message)+"</div>"; } })();
   }
   function renderOrders(orders){
-    if(!orders||!orders.length) return "<div style='color:#8b8880;font-size:13px;padding:6px 0'>No orders yet.</div>";
-    var head="<div style='font-size:11px;font-weight:700;letter-spacing:.08em;color:#8b8880;margin:10px 0 6px'>ORDER HISTORY ("+orders.length+")</div>";
+    if(!orders||!orders.length) return "<div style='color:#8b8880;font-size:13px;padding:8px 0'>No orders yet.</div>";
+    var head="<div style='font-size:11px;font-weight:700;letter-spacing:.08em;color:#8b8880;margin:12px 0 8px'>ORDER HISTORY ("+orders.length+")</div>";
     var body=orders.map(function(o){
       var items=Array.isArray(o.items)?o.items:[];
-      var il=items.map(function(i){ return esc(i.style)+" "+esc(i.color||'')+" "+esc(i.size||'')+" x"+(i.qty||0); }).join(", ");
+      var sub=0;
+      var rowsHtml=items.map(function(i){
+        var up=(i.unit_price!=null)?Number(i.unit_price):null;
+        var amt=(Number(i.qty)||0)*(up!=null?up:0); if(up!=null) sub+=amt;
+        return "<tr style='border-top:1px solid #f0ede5'>"
+          +"<td style='padding:4px 8px 4px 0'>"+esc(i.style||'')+"</td>"
+          +"<td style='padding:4px 8px 4px 0;color:#6b6860'>"+esc(i.color||'')+"</td>"
+          +"<td style='padding:4px 8px 4px 0;color:#6b6860'>"+esc(i.wh||'')+"</td>"
+          +"<td style='padding:4px 8px 4px 0;color:#6b6860'>"+esc(i.size||'')+"</td>"
+          +"<td style='padding:4px 8px;text-align:right'>"+(i.qty||0)+"</td>"
+          +"<td style='padding:4px 8px;text-align:right;color:#6b6860'>"+(up!=null?_money(up):'-')+"</td>"
+          +"<td style='padding:4px 0 4px 8px;text-align:right;font-weight:600'>"+(up!=null?_money(amt):'-')+"</td></tr>";
+      }).join('');
+      var ship=Number(o.shipping_cost||0);
+      var total=(o.total_amount!=null)?Number(o.total_amount):(sub+ship);
       var st=o.ship_to||{};
-      var shipTo=[st.city,st.state].filter(Boolean).join(', ');
-      var trk=o.tracking_number?String(o.tracking_number).split(String.fromCharCode(10)).join(', '):'';
-      return "<div style='border:1px solid #e7e4dc;border-radius:9px;padding:9px 12px;margin-bottom:6px;font-size:13px'>"
-        + "<div style='display:flex;justify-content:space-between;gap:8px'><b>"+esc(o.order_number||'')+"</b><span style='color:#8b8880'>"+String(o.created_at||'').slice(0,10)+"</span></div>"
-        + "<div style='color:#4c4a44;margin-top:3px'>"+_money(o.total_amount)+" &middot; <span style='text-transform:uppercase;font-size:10.5px;background:#eef1ec;color:#3d5a40;border-radius:999px;padding:2px 8px'>"+esc(o.status||'')+"</span>"+(o.carrier?" &middot; "+esc(o.carrier):'')+(trk?" &middot; "+esc(trk):'')+(shipTo?" &middot; "+esc(shipTo):'')+"</div>"
-        + (il?"<div style='color:#8b8880;margin-top:3px;font-size:12px'>"+il+"</div>":'')
-        + "</div>";
-    }).join("");
+      var shipLines=[(st.name||''),(st.addr1||''),(st.addr2||''),[st.city,st.state,st.zip].filter(Boolean).join(', ')].filter(Boolean).map(esc).join('<br>');
+      var trk=o.tracking_number?String(o.tracking_number).split(String.fromCharCode(10)).map(function(x){return x.trim();}).filter(Boolean):[];
+      var sc=o.status==='shipped'?'#2e6b3a':(o.status==='cancelled'?'#a8463f':'#9a6b1f');
+      return "<div style='border:1px solid #e7e4dc;border-radius:10px;padding:12px 14px;margin-bottom:10px;background:#fff'>"
+        +"<div style='display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap'><b style='font-size:14px'>"+esc(o.order_number||'')+"</b><span style='color:#8b8880;font-size:12px'>"+String(o.created_at||'').slice(0,10)+"</span></div>"
+        +"<div style='margin:5px 0 9px'><span style='text-transform:uppercase;font-size:10.5px;font-weight:700;color:"+sc+";background:#f1efe9;border-radius:999px;padding:2px 9px'>"+esc(o.status||'')+"</span>"+(o.carrier?"<span style='color:#6b6860;font-size:12px;margin-left:8px'>"+esc(o.carrier)+"</span>":'')+(o.paid_at?"<span style='color:#2e6b3a;font-size:11px;font-weight:700;margin-left:8px'>PAID</span>":'')+"</div>"
+        +(items.length?("<table style='width:100%;border-collapse:collapse;font-size:12.5px'><tr style='color:#8b8880;font-size:10px;text-transform:uppercase;letter-spacing:.04em'><td style='padding:0 8px 4px 0'>Style</td><td style='padding:0 8px 4px 0'>Color</td><td style='padding:0 8px 4px 0'>WH</td><td style='padding:0 8px 4px 0'>Size</td><td style='padding:0 8px 4px 0;text-align:right'>Qty</td><td style='padding:0 8px 4px 0;text-align:right'>Unit</td><td style='padding:0 0 4px 8px;text-align:right'>Amount</td></tr>"+rowsHtml+"</table>"):'')
+        +"<div style='display:flex;justify-content:flex-end;gap:22px;margin-top:9px;font-size:12.5px;border-top:1px solid #ece9e1;padding-top:8px'><div style='text-align:right;color:#6b6860'>Subtotal<br>Shipping<br><b style='color:#3a3833'>Total</b></div><div style='text-align:right'>"+_money(sub)+"<br>"+_money(ship)+"<br><b>"+_money(total)+"</b></div></div>"
+        +(shipLines?("<div style='margin-top:9px;font-size:12px;color:#6b6860;line-height:1.5'><span style='font-weight:700;color:#8b8880;font-size:10px;letter-spacing:.04em'>SHIP TO</span><br>"+shipLines+"</div>"):'')
+        +(trk.length?("<div style='margin-top:7px;font-size:12px;color:#6b6860'><span style='font-weight:700;color:#8b8880;font-size:10px;letter-spacing:.04em'>TRACKING</span> "+trk.map(esc).join(', ')+"</div>"):'')
+        +"</div>";
+    }).join('');
     return head+body;
   }
   function render(){
@@ -140,7 +170,7 @@
           ${r.status!=='approved'?`<button class="approve" data-id="${r.id}" data-act="approved">Approve</button>`:''}
           ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
-        ${aiBadge(r.ai_check)}
+        ${aiWrap(r.ai_check, r.id)}
         ${linkRow(r)}
         <button data-orders="${esc(r.email||'')}" data-cid="${r.id}" style="margin-top:8px;border:1px solid var(--line-2,#d6d2c6);background:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--soft-ink,#4c4a44)">▾ Orders &amp; details</button>
         <div class="orderpanel" id="op-${r.id}" style="display:none;margin-top:8px"></div>
@@ -210,21 +240,25 @@
       .concat(customers.map(c=>`<option value="${c.id}" ${c.id===r.customer_id?'selected':''}>${esc(c.name)}${c.customer_no?(' ('+esc(c.customer_no)+')'):''}</option>`));
     return `<div style="flex-basis:100%;margin-top:10px;display:flex;align-items:center;gap:10px">
       <span style="font-size:12.5px;color:var(--faint);white-space:nowrap">IMS customer:</span>
-      <select data-link="${r.id}" style="flex:1;max-width:420px;padding:7px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff;font-size:13px;color:var(--soft-ink)">${opts.join('')}</select>
+      <select data-link="${r.id}" data-prev="${r.customer_id||''}" style="flex:1;max-width:420px;padding:7px 10px;border:1px solid var(--line-2);border-radius:8px;background:#fff;font-size:13px;color:var(--soft-ink)">${opts.join('')}</select>
       <span class="linkmsg" style="font-size:12.5px;color:var(--accent)"></span>
     </div>`;
   }
-  async function linkCustomer(appId,customerId,sel){
-    const s=session(); if(!s){ alert('Session expired.'); return; }
+  function linkCustomer(appId,customerId,sel){
+    var s=session(); if(!s){ alert('Session expired.'); sel.value=sel.dataset.prev||''; return; }
+    var name=sel.options[sel.selectedIndex]?sel.options[sel.selectedIndex].text:'';
+    var ok=customerId?confirm('\u26a0\ufe0f \uac00\uaca9 \uc801\uc6a9 \uc8fc\uc758\n\n\"'+name+'\" \uac70\ub798\ucc98\ub85c \uc5f0\uacb0\ud569\ub2c8\ub2e4.\n\uc774 \uac70\ub798\ucc98\uc5d0 \uc124\uc815\ub41c \ub3c4\ub9e4\uac00\uac00 \uc774 \uace0\uac1d\uc5d0\uac8c \uc801\uc6a9\ub429\ub2c8\ub2e4.\n\n\uc5f0\uacb0\ud560\uae4c\uc694?'):confirm('IMS \uac70\ub798\ucc98 \uc5f0\uacb0\uc744 \ud574\uc81c\ud569\ub2c8\ub2e4. \uae30\ubcf8\uac00\uac00 \uc801\uc6a9\ub429\ub2c8\ub2e4.\n\n\uacc4\uc18d\ud560\uae4c\uc694?');
+    if(!ok){ sel.value=sel.dataset.prev||''; return; }
     sel.disabled=true;
-    const r=await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+appId,
-      {method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
-       body:JSON.stringify({customer_id: customerId||null})});
-    sel.disabled=false;
-    const msg=sel.parentElement.querySelector('.linkmsg');
-    if(!r.ok){ msg.style.color='#a8463f'; msg.textContent='Save failed ('+r.status+')'; return; }
-    const row=rows.find(x=>x.id===appId); if(row) row.customer_id=customerId||null;
-    msg.style.color='var(--accent)'; msg.textContent='Saved ✓'; setTimeout(()=>{msg.textContent='';},2000);
+    (async function(){
+      var r=await fetch(URL_+'/rest/v1/customer_applications?id=eq.'+appId,{method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({customer_id:customerId||null})});
+      sel.disabled=false;
+      var msg=sel.parentElement.querySelector('.linkmsg');
+      if(!r.ok){ msg.style.color='#a8463f'; msg.textContent='Save failed ('+r.status+')'; sel.value=sel.dataset.prev||''; return; }
+      sel.dataset.prev=customerId||'';
+      var row=rows.find(function(x){return x.id===appId;}); if(row) row.customer_id=customerId||null;
+      msg.style.color='var(--accent)'; msg.textContent=customerId?('\u2713 '+name):'\uc5f0\uacb0 \ud574\uc81c\ub428';
+    })();
   }
 
   // 비공개 서류 → 1시간짜리 서명 링크 만들어 새 탭으로
@@ -261,7 +295,7 @@
   document.getElementById('tabPending').addEventListener('click',()=>{view='pending';tab();render();});
   document.getElementById('tabApproved').addEventListener('click',()=>{view='approved';tab();render();});
   document.getElementById('tabRejected').addEventListener('click',()=>{view='rejected';tab();render();});
-  document.getElementById('list').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-orders]'); if(b){ toggleOrders(b.dataset.cid, b.dataset.orders); } });
+  document.getElementById('list').addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('button[data-orders]'); if(b){ toggleOrders(b.dataset.cid, b.dataset.orders); return; } var c=e.target.closest&&e.target.closest('button[data-clear]'); if(c){ clearAi(c.dataset.clear, c); } });
   function tab(){
     document.getElementById('tabPending').classList.toggle('on',view==='pending');
     document.getElementById('tabApproved').classList.toggle('on',view==='approved');

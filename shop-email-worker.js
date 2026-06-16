@@ -99,8 +99,8 @@ export default {
             H('Order received') +
             `<div style="margin:0 0 18px">${PILL(esc(d.order_number || ''))} &nbsp;<span style="font-size:14px;color:#8b8880">${d.total_pcs || 0} pcs total</span></div>` +
             P(`Thanks${d.contact_name ? ', ' + esc(d.contact_name) : ''}! We've got your order and we're on it.
-               We'll confirm availability and pricing shortly — you'll hear from us by email.`) +
-            itemsTable(d.items) +
+               Your full order summary is below. We'll email you again as soon as it ships.`) +
+            staffDetail(d) +
             (d.notes ? NOTE(d.notes) : ''),
             'We received your order ' + (d.order_number || '') + ' — confirmation coming soon.')
         });

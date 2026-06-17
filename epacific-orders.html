@@ -193,6 +193,7 @@
   const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  async function refreshTok(s){ try{ const rr=await fetch(cfg.SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:cfg.SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})}); if(!rr.ok) return null; const j=await rr.json(); s.token=j.access_token; s.refresh=j.refresh_token; s.expires_at=j.expires_at; localStorage.setItem('pacific_user',JSON.stringify(s)); return s; }catch(e){ return null; } }
   const ordersEl=document.getElementById('orders');
   let orders=[];
   const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], shipped:['shipped','Shipped'], rejected:['processing','Rejected'] };
@@ -287,9 +288,9 @@
     }
     ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Loading…</div>';
     try{
-      const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?select=*&order=created_at.desc&limit=200',
+      let r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?select=*&order=created_at.desc&limit=200',
         {headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
-      if(!r.ok) throw new Error(r.status);
+      if(r.status===401 && s && s.refresh){ const ns=await refreshTok(s); if(ns){ r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?select=*&order=created_at.desc&limit=200',{headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+ns.token}}); } } if(!r.ok) throw new Error(r.status);
       const rows=await r.json();
       orders=rows.map(rw=>{
         const sm=STATUS_MAP[rw.status]||['processing',rw.status||''];

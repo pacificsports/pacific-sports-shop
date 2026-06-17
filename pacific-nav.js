@@ -63,6 +63,17 @@
         a.addEventListener('click', function (e) { e.preventDefault(); logout(); });
       }
     }
+    var accs = document.querySelectorAll('a');
+    for (var j = 0; j < accs.length; j++) {
+      var la = accs[j];
+      if ((la.textContent || '').trim().toLowerCase() !== 'my account') continue;
+      var nxt = la.nextElementSibling;
+      if (nxt && (nxt.textContent || '').trim().toLowerCase() === 'order history') continue;
+      var oh = la.cloneNode(true);
+      oh.textContent = 'Order History';
+      oh.setAttribute('href', 'epacific-orders.html');
+      if (la.parentNode) la.parentNode.insertBefore(oh, la.nextSibling);
+    }
   }
 
   // 헤더의 Cart 버튼/링크 → 장바구니로 이동 (텍스트에 'cart' 포함)

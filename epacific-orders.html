@@ -132,6 +132,25 @@
     .line{flex-wrap:wrap}.line .sizes{order:5;width:100%;padding-left:34px}
   }
 </style>
+<style>
+.reorder-panel{margin-top:10px}
+.re-wrap{background:#faf9f6;border:1px solid #e7e4dc;border-radius:12px;padding:14px 16px}
+.re-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8b8880;margin-bottom:10px}
+.re-group{margin-bottom:12px}
+.re-glabel{font-size:13px;margin-bottom:6px;color:#3a3833}
+.re-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+.re-wh{width:34px;font-size:11px;font-weight:700;color:#3d5a40;padding-top:18px}
+.re-cells{display:flex;flex-wrap:wrap;gap:6px}
+.re-cell{width:54px;text-align:center}
+.re-sz{font-size:10.5px;color:#8b8880;font-weight:700;margin-bottom:2px}
+.re-cell input{width:100%;text-align:center;border:1px solid #d6d2c6;border-radius:7px;padding:5px 2px;font-size:13px}
+.re-cell.re-out input{background:#f1efe9;color:#bbb}
+.re-stk{font-size:9.5px;color:#8b8880;margin-top:2px}
+.re-cell.re-out .re-stk{color:#a8463f}
+.re-foot{display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:10px;border-top:1px solid #ece9e1;flex-wrap:wrap}
+.re-sum{font-weight:700;font-size:13px;margin-right:auto}
+.re-loading{color:#8b8880;font-size:13px;padding:8px 0}
+</style>
 </head>
 <body>
 
@@ -266,11 +285,54 @@
     ordersEl.querySelectorAll('button[data-reorder]').forEach(b=>b.addEventListener('click',()=>{
       const o=orders.find(x=>x.id===b.dataset.reorder); if(!o) return;
       if(window.PacificCart){
-        window.PacificCart.add(o.items);
+        openReorder(o, b); return;
         showToast('✓ '+(o.total_pcs||0)+' pcs added to cart');
       }
     }));
   }
+
+  var reorderState={}, invCache={}, sizesCache={};
+function fmtStock(n){ if(!n||n<=0) return '0'; var B=[25000,20000,15000,12500,10000,7500,5000,2500,2000,1500,1000,500,200]; for(var i=0;i<B.length;i++){ if(n>=B[i]) return B[i].toLocaleString()+'+'; } return String(n); }
+async function invFor(style){ if(invCache[style]!==undefined) return invCache[style]; try{ invCache[style]=await PacificData.getInventory(style); }catch(e){ invCache[style]=null; } return invCache[style]; }
+async function sizesFor(style){ if(sizesCache[style]!==undefined) return sizesCache[style]; try{ var p=await PacificData.getProduct(style); sizesCache[style]=(p&&p.sizes&&p.sizes.length)?p.sizes:['S','M','L','XL']; }catch(e){ sizesCache[style]=['S','M','L','XL']; } return sizesCache[style]; }
+function stockAt(inv,color,wh,size){ if(!inv||!inv[color]||!inv[color][wh]) return 0; var idx=sizeOrder.indexOf(size); if(idx<0) return 0; return Number(inv[color][wh][idx])||0; }
+function buildRows(o){ var map={}; (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var k=it.style+'|'+it.color; if(!map[k]) map[k]={style:it.style, styleName:it.styleName||'', color:it.color, whs:{SC:{},CA:{}}}; var wh=(it.wh==='CA')?'CA':'SC'; map[k].whs[wh][it.size]=(map[k].whs[wh][it.size]||0)+(Number(it.qty)||0); }); var rows=[]; Object.keys(map).forEach(function(k){ var g=map[k]; ['SC','CA'].forEach(function(wh){ rows.push({style:g.style, styleName:g.styleName, color:g.color, wh:wh, sizes:Object.assign({}, g.whs[wh])}); }); }); return rows; }
+async function openReorder(o, btn){
+  var card=(btn&&btn.closest)?(btn.closest('.order')||btn.parentElement):document.body;
+  var panel=card.querySelector('.reorder-panel');
+  if(!panel){ panel=document.createElement('div'); panel.className='reorder-panel'; panel.style.display='none'; card.appendChild(panel); }
+  if(panel.style.display!=='none'){ panel.style.display='none'; panel.innerHTML=''; return; }
+  panel.style.display='block'; panel.innerHTML='<div class="re-loading">Loading availability...</div>';
+  var rows=buildRows(o); var styles={}; rows.forEach(function(r){ styles[r.style]=1; });
+  for(var st in styles){ await invFor(st); await sizesFor(st); }
+  reorderState[o.id]=rows;
+  panel.innerHTML=renderReorderGrid(o.id, rows);
+  var addB=panel.querySelector('.re-add'); if(addB) addB.addEventListener('click', function(){ addReorderToCart(o.id); });
+  var canB=panel.querySelector('.re-cancel'); if(canB) canB.addEventListener('click', function(){ closeReorder(o.id); });
+  panel.addEventListener('input', function(e){ if(e.target&&e.target.matches&&e.target.matches('input[data-sz]')) reInput(e.target); });
+}
+function renderReorderGrid(oid, rows){
+  var h='<div class="re-wrap"><div class="re-title">Adjust quantities &amp; reorder</div>';
+  var lastKey='';
+  rows.forEach(function(r,ri){
+    var inv=invCache[r.style]; var sizes=sizesCache[r.style]||[];
+    var key=r.style+'|'+r.color;
+    if(key!==lastKey){ if(lastKey!=='') h+='</div>'; h+='<div class="re-group"><div class="re-glabel"><b>'+esc(r.style)+'</b> '+esc(r.styleName||'')+' &middot; '+esc(r.color)+'</div>'; lastKey=key; }
+    h+='<div class="re-row"><div class="re-wh">'+esc(r.wh)+'</div><div class="re-cells">';
+    sizes.forEach(function(s){ var stock=stockAt(inv,r.color,r.wh,s); var out=stock<=0; var val=r.sizes[s]||'';
+      h+='<div class="re-cell'+(out?' re-out':'')+'"><div class="re-sz">'+esc(s)+'</div><input type="number" min="0" inputmode="numeric" placeholder="0" value="'+val+'" '+(out?'disabled':'')+' data-ri="'+ri+'" data-sz="'+esc(s)+'" data-max="'+stock+'"><div class="re-stk">'+(out?'out':fmtStock(stock))+'</div></div>';
+    });
+    h+='</div></div>';
+  });
+  if(lastKey!=='') h+='</div>';
+  h+='<div class="re-foot"><span class="re-sum" id="resum-'+esc(oid)+'">0 pcs</span><button class="btn-ghost re-cancel" type="button">Cancel</button><button class="btn-solid re-add" type="button">Add to cart</button></div></div>';
+  return h;
+}
+function reInput(inp){ var ri=+inp.getAttribute('data-ri'), sz=inp.getAttribute('data-sz'), max=+inp.getAttribute('data-max'); var oid=findOid(inp); var q=parseInt(inp.value,10); if(isNaN(q)||q<0) q=0; if(max>0&&q>max){ q=max; inp.value=max; } var rows=reorderState[oid]; if(rows&&rows[ri]){ if(q>0) rows[ri].sizes[sz]=q; else delete rows[ri].sizes[sz]; } var sum=0; (reorderState[oid]||[]).forEach(function(r){ for(var k in r.sizes) sum+=Number(r.sizes[k])||0; }); var el=document.getElementById('resum-'+oid); if(el) el.textContent=sum+' pcs'; }
+function findOid(el){ var p=el.closest('.reorder-panel'); if(!p) return null; var s=p.querySelector('.re-sum'); return s? s.id.replace('resum-','') : null; }
+function addReorderToCart(oid){ var rows=reorderState[oid]||[]; var items=[]; rows.forEach(function(r){ for(var sz in r.sizes){ var q=Number(r.sizes[sz])||0; if(q>0) items.push({style:r.style, styleName:r.styleName||'', color:r.color, wh:r.wh, size:sz, qty:q}); } }); if(!items.length){ showToast('Enter at least one quantity'); return; } if(window.PacificCart) window.PacificCart.add(items); var pcs=items.reduce(function(a,i){return a+i.qty;},0); showToast('\u2713 '+pcs+' pcs added to cart'); closeReorder(oid); }
+function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var panel=s?s.closest('.reorder-panel'):null; if(panel){ panel.style.display='none'; panel.innerHTML=''; } }
+  
 
   let toastT;
   function showToast(msg){

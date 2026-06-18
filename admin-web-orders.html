@@ -42,6 +42,7 @@
   .shippedinfo{margin-top:10px;background:var(--accent-soft);border-radius:9px;padding:9px 13px;font-size:13.5px;color:var(--accent);font-weight:600}
   .notes{background:var(--accent-soft);border-radius:9px;padding:9px 13px;font-size:13.5px;color:var(--soft-ink);margin-top:6px}
   #msg{padding:30px;text-align:center;color:var(--faint)}
+.badge.partial{background:#fdf3e2;color:#9a6b1f}
 </style>
 </head>
 <body>
@@ -96,7 +97,7 @@
       +(hasPrice?'<th style="text-align:right">Unit</th><th style="text-align:right">Amount</th>':'')+(proc?'<th style="text-align:center">준비 <input type="checkbox" class="pickall" data-ord="'+rid+'" onchange="toggleAllPick(this)" style="vertical-align:middle">':'')+'</tr></thead><tbody>';
     return head+items.map(i=>`<tr><td><b>${esc(i.style)}</b></td><td>${esc(i.color)}</td><td><span class="whb ${esc(i.wh)}">${esc(i.wh)}</span></td><td>${esc(i.size)}</td><td style="text-align:right"><b>${i.qty||0}</b></td>`
       +(hasPrice?`<td style="text-align:right">${i.unit_price!=null?fmtMoney(i.unit_price):'—'}</td><td style="text-align:right"><b>${i.unit_price!=null?fmtMoney((i.qty||0)*i.unit_price):'—'}</b></td>`:'')
-      +(proc?'<td style="text-align:center"><input type="checkbox" class="pickline" data-ord="'+rid+'" onchange="updateCmpl(this.dataset.ord)" style="width:16px;height:16px"></td>':'')+`</tr>`).join('')+'</tbody></table>';
+      +(proc?'<td style="text-align:center"><input type="checkbox" class="pickline" data-ord="'+rid+'" data-wh="'+esc(i.wh)+'" onchange="updateAllWh(this.dataset.ord)" style="width:16px;height:16px"></td>':'')+`</tr>`).join('')+'</tbody></table>';
   }
 
   function refundBlock(r){
@@ -185,7 +186,7 @@
       <div class="card">
         <div class="chead">
           <span class="ono">${esc(r.order_number)}</span>
-          <span class="badge ${esc(r.status)}">${({new:'NEW',accepted:'준비됨',shipped:'SHIPPED',rejected:'REJECTED'})[r.status]||esc(r.status)}</span>
+          <span class="badge ${esc(r.status)}">${({new:'NEW',accepted:'준비됨',partial:'일부배송',shipped:'SHIPPED',rejected:'REJECTED'})[r.status]||esc(r.status)}</span>
           <span class="meta">${esc(r.company_name||'')} · ${esc(r.contact_name||'')} · ${esc(r.email||'')} ${r.phone?('· '+esc(r.phone)):''}</span>
           <span class="meta" style="margin-left:auto">${(r.created_at||'').replace('T',' ').slice(0,16)} · <b>${r.total_pcs||0} pcs</b>${r.total_amount!=null?(' · <b style="color:var(--accent)">'+fmtMoney(r.total_amount)+'</b>'):''}</span>
         </div>
@@ -196,20 +197,13 @@
           ${hasCA?`<button class="pt" data-pt="CA" data-id="${r.id}">🖨 Pick ticket — CA</button>`:''}
           
         </div>
-        ${r.status!=='shipped'?`
-        <div class="shiprow">
-           <select id="carrier-${r.id}">
-            <option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option>
-          </select>
-          <span id="trkwrap-${r.id}" style="display:inline-flex;flex-direction:column;gap:6px;vertical-align:top"><span style="display:flex;gap:6px;align-items:center"><input class="trkline" oninput="updateCmpl('${r.id}')" placeholder="운송장번호" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px"><button type="button" onclick="addTrk('${r.id}')" style="white-space:nowrap;background:none;border:1px dashed var(--line-2);border-radius:7px;padding:7px 12px;font-size:12px;cursor:pointer;color:var(--soft-ink)">+ 운송장 추가</button></span></span>
-          <button class="shipbtn" id="cmpl-${r.id}" data-ship="${r.id}" disabled style="opacity:.5">✓ 배송 완료 — 손님 알림</button>
-        </div>`:''}
-        ${r.status==='shipped'?`<div class="shippedinfo">✓ Shipped ${(r.shipped_at||'').replace('T',' ').slice(0,16)} · ${esc(r.carrier||'')} ${esc(r.tracking_number||'')}</div>`:''}
+        ${shipBlocks(r)}
+        
       ${r.status==='shipped'?refundBlock(r):''}
       </div>`;}).join('');
     list.querySelectorAll('button[data-act]').forEach(b=>b.addEventListener('click',()=>setStatus(b.dataset.id,b.dataset.act,{})));
     list.querySelectorAll('button[data-pt]').forEach(b=>b.addEventListener('click',()=>pickTicket(b.dataset.id,b.dataset.pt)));
-    list.querySelectorAll('button[data-ship]').forEach(b=>b.addEventListener('click',()=>{
+    list.querySelectorAll('button[data-ship]').forEach(b=>b.addEventListener('click',()=>{ return markWhShipped(b.dataset.ship, b.dataset.wh);
       const id=b.dataset.ship;
       var __w=document.getElementById('trkwrap-'+id); var trk=__w?Array.prototype.slice.call(__w.querySelectorAll('.trkline')).map(function(x){return x.value.trim();}).filter(Boolean).join(String.fromCharCode(10)):'';
       const carrier=document.getElementById('carrier-'+id).value;
@@ -232,20 +226,20 @@
     x.style.cssText='background:none;border:1px solid var(--line-2);border-radius:7px;width:30px;height:30px;cursor:pointer;color:var(--soft-ink);font-size:12px';
     row.appendChild(inp); row.appendChild(x);
     w.appendChild(row);
-    inp.focus(); updateCmpl(id);
+    inp.focus(); updateAllWh(id);
   }
 
   function removeTrk(el, id){
     var row=el.parentNode;
     if(row && row.parentNode){ row.parentNode.removeChild(row); }
-    updateCmpl(id);
+    updateAllWh(id);
   }
 
   function toggleAllPick(el){
     var id=el.dataset.ord;
     var pls=document.querySelectorAll('.pickline[data-ord="'+id+'"]');
     Array.prototype.forEach.call(pls, function(x){ x.checked=el.checked; });
-    updateCmpl(id);
+    updateAllWh(id);
   }
 
   function updateCmpl(id){ const p=document.getElementById('pick-'+id),tk=document.getElementById('trk-'+id),b=document.getElementById('cmpl-'+id); if(!b)return; var __w2=document.getElementById('trkwrap-'+id); var anyTrk=__w2&&Array.prototype.slice.call(__w2.querySelectorAll('.trkline')).some(function(x){return x.value.trim();}); var pls=document.querySelectorAll('.pickline[data-ord="'+id+'"]'); var allPicked=pls.length>0&&Array.prototype.every.call(pls,function(x){return x.checked;}); const ok=allPicked&&anyTrk; b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
@@ -269,6 +263,34 @@
   }
 
   // ── 픽티켓: 창고별 스타일×색상 줄, 사이즈 열 ──
+  function whList(r){ var items=Array.isArray(r.items)?r.items:[]; var ws=[]; ['SC','CA'].forEach(function(w){ if(items.some(function(i){return i.wh===w;})) ws.push(w); }); items.forEach(function(i){ if(i.wh&&ws.indexOf(i.wh)<0) ws.push(i.wh); }); return ws; }
+function shippedWhs(r){ var sh=Array.isArray(r.shipments)?r.shipments:[]; var m={}; sh.forEach(function(x){ if(x&&x.wh) m[x.wh]=x; }); return m; }
+function shipBlocks(r){
+  var ws=whList(r); if(!ws.length) return '';
+  var sh=Array.isArray(r.shipments)?r.shipments:[];
+  if(!sh.length && r.status==='shipped'){ return '<div class="shippedinfo">\u2713 Shipped '+String(r.shipped_at||'').replace('T',' ').slice(0,16)+' \u00b7 '+esc(r.carrier||'')+' '+esc(r.tracking_number||'')+'</div>'; }
+  var done=shippedWhs(r); var out='';
+  ws.forEach(function(w){
+    if(done[w]){ var x=done[w]; var trk=(x.tracking||[]).join(' ');
+      out+='<div class="shippedinfo">\u2713 '+esc(w)+' Shipped '+String(x.shipped_at||'').replace('T',' ').slice(0,16)+' \u00b7 '+esc(x.carrier||'')+' '+esc(trk)+'</div>'; return; }
+    out+='<div class="shiprow">'
+      +'<b style="font-size:13px;color:var(--accent);min-width:28px">'+esc(w)+'</b>'
+      +'<select id="carrier-'+r.id+'-'+w+'"><option>UPS</option><option>FedEx</option><option>Freight</option><option>Customer pickup</option><option>Other</option></select>'
+      +'<span class="trkwrap" id="trkwrap-'+r.id+'-'+w+'" style="display:inline-flex;flex-direction:column;gap:6px;vertical-align:top"><span class="trkrow" style="display:flex;gap:6px;align-items:center"><input class="trkline" placeholder="\uc6b4\uc1a1\uc7a5\ubc88\ud638" style="padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px"></span></span>'
+      +'<button type="button" class="addtrk" data-id="'+r.id+'" data-wh="'+w+'" style="border:1px dashed var(--line-2);background:none;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--soft-ink)">+ \uc6b4\uc1a1\uc7a5 \ucd94\uac00</button>'
+      +'<button class="shipbtn" id="cmpl-'+r.id+'-'+w+'" data-ship="'+r.id+'" data-wh="'+w+'" disabled style="opacity:.5">\u2713 '+esc(w)+' \ubc30\uc1a1 \uc644\ub8cc \u2014 \uc190\ub2d8 \uc54c\ub9bc</button>'
+      +'</div>';
+  });
+  return out;
+}
+function updateWh(id, wh){ var b=document.getElementById('cmpl-'+id+'-'+wh); if(!b) return; var pls=document.querySelectorAll('.pickline[data-ord="'+id+'"][data-wh="'+wh+'"]'); var allPicked=pls.length>0 && Array.prototype.every.call(pls,function(x){return x.checked;}); var w=document.getElementById('trkwrap-'+id+'-'+wh); var anyTrk=w && Array.prototype.slice.call(w.querySelectorAll('.trkline')).some(function(x){return x.value.trim();}); var ok=allPicked && anyTrk; b.disabled=!ok; b.style.opacity=ok?'1':'.5'; }
+function updateAllWh(id){ var bs=document.querySelectorAll('.shipbtn[data-ship="'+id+'"]'); Array.prototype.forEach.call(bs,function(b){ updateWh(id, b.dataset.wh); }); }
+function addTrkWh(id,wh){ var w=document.getElementById('trkwrap-'+id+'-'+wh); if(!w) return; var row=document.createElement('span'); row.className='trkrow'; row.style.cssText='display:flex;gap:6px;align-items:center'; var inp=document.createElement('input'); inp.className='trkline'; inp.placeholder='\uc6b4\uc1a1\uc7a5\ubc88\ud638'; inp.style.cssText='padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;font-size:13.5px;width:240px'; var x=document.createElement('button'); x.type='button'; x.className='rmtrk'; x.textContent='\u2715'; x.style.cssText='border:none;background:none;color:#a8463f;cursor:pointer;font-size:16px'; row.appendChild(inp); row.appendChild(x); w.appendChild(row); }
+async function markWhShipped(id, wh){ var s=session(); if(!s){ alert('Session expired.'); return; } var row=rows.find(function(x){return x.id===id;}); if(!row) return; var w=document.getElementById('trkwrap-'+id+'-'+wh); var trk=w? Array.prototype.slice.call(w.querySelectorAll('.trkline')).map(function(x){return x.value.trim();}).filter(Boolean):[]; var carrier=(document.getElementById('carrier-'+id+'-'+wh)||{}).value||''; if(!confirm(wh+' \ucc3d\uace0 \ubc30\uc1a1 \uc644\ub8cc\ub85c \ud45c\uc2dc\ud560\uae4c\uc694?'+(trk.length?('\n'+trk.join(', ')):''))) return; var items=(Array.isArray(row.items)?row.items:[]).filter(function(i){return i.wh===wh;}); var pcs=items.reduce(function(a,i){return a+(Number(i.qty)||0);},0); var ship={wh:wh,carrier:carrier,tracking:trk,shipped_at:new Date().toISOString(),pcs:pcs}; var shipments=(Array.isArray(row.shipments)?row.shipments.slice():[]).filter(function(x){return x.wh!==wh;}); shipments.push(ship); var ws=whList(row); var dn={}; shipments.forEach(function(x){dn[x.wh]=1;}); var allDone=ws.every(function(x){return dn[x];}); var status=allDone?'shipped':'partial'; var allTrk=[],carriers=[],lastAt=null; shipments.forEach(function(x){ (x.tracking||[]).forEach(function(tn){allTrk.push(tn);}); if(x.carrier&&carriers.indexOf(x.carrier)<0) carriers.push(x.carrier); if(x.shipped_at) lastAt=x.shipped_at; }); var patch={shipments:shipments,status:status,tracking_number:allTrk.join(String.fromCharCode(10))||null,carrier:carriers.join(', ')||null,shipped_at:lastAt}; var pr=await fetch(URL_+'/rest/v1/web_orders?id=eq.'+id,{method:'PATCH',headers:{apikey:KEY_,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(patch)}); if(!pr.ok){ alert('Save failed ('+pr.status+'). Check that web_orders has a shipments column.'); return; } Object.assign(row, patch); if(row.email && EMAIL_WORKER){ fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'shipped',to:row.email,data:{order_number:row.order_number,carrier:carrier,tracking_number:trk.join(String.fromCharCode(10)),items:items,company_name:row.company_name,contact_name:row.contact_name,phone:row.phone,ship_to:row.ship_to,paid_at:row.paid_at,shipped_at:ship.shipped_at,shipping_cost:row.shipping_cost,total_amount:row.total_amount,total_pcs:pcs,warehouse:wh}})}).catch(function(){}); } render(); }
+document.addEventListener('input',function(e){ if(e.target&&e.target.classList&&e.target.classList.contains('trkline')){ var wrap=e.target.closest('[id^="trkwrap-"]'); if(wrap){ var p=wrap.id.split('-'); var wh=p.pop(); var id=p.slice(1).join('-'); updateWh(id,wh); } } });
+document.addEventListener('click',function(e){ var a=e.target.closest&&e.target.closest('.addtrk'); if(a){ addTrkWh(a.dataset.id,a.dataset.wh); return; } var rm=e.target.closest&&e.target.closest('.rmtrk'); if(rm){ var wrap=rm.closest('[id^="trkwrap-"]'); var rowx=rm.closest('.trkrow'); if(rowx) rowx.remove(); if(wrap){ var p=wrap.id.split('-'); var wh=p.pop(); var id=p.slice(1).join('-'); updateWh(id,wh); } } });
+  
+
   function pickTicket(id,wh){
     const r=rows.find(x=>x.id===id); if(!r) return;
     const items=(Array.isArray(r.items)?r.items:[]).filter(i=>i.wh===wh);
@@ -309,6 +331,7 @@
   .sig div{flex:1;border-top:1px solid #111;padding-top:6px}
   .notes{margin-top:12px;border:1px dashed #888;padding:9px 12px;font-size:13px}
   @media print{ .noprint{display:none} }
+.badge.partial{background:#fdf3e2;color:#9a6b1f}
 </style></head><body>
   <div class="hd">
     <div><h1>PACIFIC SPORTS — PICK TICKET</h1>

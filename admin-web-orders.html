@@ -72,6 +72,8 @@
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
   function esc(t){ return String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
+  async function maybeRefresh(){ var s=session(); if(!s||!s.refresh) return; var now=Math.floor(Date.now()/1000); if(s.expires_at && (s.expires_at-now)>60) return; try{ var rr=await fetch(URL_+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:KEY_,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})}); if(rr.ok){ var j=await rr.json(); s.token=j.access_token; s.refresh=j.refresh_token; s.expires_at=j.expires_at; localStorage.setItem('pacific_user',JSON.stringify(s)); } }catch(e){} }
+
   async function load(){
     const s=session();
     if(!s||!s.token){
@@ -79,7 +81,7 @@
       return;
     }
     try{
-      const st=await PacificAuth.currentStaff();
+      await maybeRefresh(); const st=await PacificAuth.currentStaff();
       if(!st){ document.getElementById('msg').textContent='This page is for Pacific Sports staff only.'; return; }
     }catch(e){ document.getElementById('msg').textContent='Could not verify staff access.'; return; }
     const r=await fetch(URL_+'/rest/v1/web_orders?select=*&order=created_at.desc',

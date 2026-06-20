@@ -252,6 +252,15 @@
     .otable input{width:58px;font-size:14px}
   }
 </style>
+<style id="pp-css">
+.product{opacity:0;animation:ppReveal .01s linear 4s forwards}
+@keyframes ppReveal{to{opacity:1}}
+.product.pp-ready{opacity:1!important;animation:none;transition:opacity .22s ease}
+#pp-spin{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:60;pointer-events:none}
+#pp-spin i{width:34px;height:34px;border:3px solid #e6e3da;border-top-color:#3d5a40;border-radius:50%;display:block;animation:ppRot .7s linear infinite}
+@keyframes ppRot{to{transform:rotate(360deg)}}
+body.pp-done #pp-spin{display:none}
+</style>
 </head>
 <body>
 
@@ -1697,6 +1706,7 @@
   })();
 </script>
 <script src="pacific-nav.js"></script>
+<script id="pp-js">(function(){function start(){var prod=document.querySelector(".product");if(!prod){return;}var spin=document.createElement("div");spin.id="pp-spin";spin.innerHTML="<i></i>";document.body.appendChild(spin);function ready(){if(prod.classList.contains("pp-ready"))return;prod.classList.add("pp-ready");document.body.classList.add("pp-done");}function ok(){var ot=prod.querySelector(".otable");return ot&&ot.querySelectorAll("tbody tr").length>0;}if(ok()){ready();return;}var obs=new MutationObserver(function(){if(ok()){obs.disconnect();ready();}});obs.observe(prod,{childList:true,subtree:true});setTimeout(function(){try{obs.disconnect();}catch(e){}ready();},4000);}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}else{start();}})();</script>
 </body>
 <!-- v2026-06-08 sticky-nooverlap -->
 </html>

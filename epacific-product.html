@@ -1343,10 +1343,12 @@ body.pp-done #pp-spin{display:none}
       const cfg = PacificData.config;
       currentStyle = new URLSearchParams(location.search).get('style') || '1368';
       const STYLE = currentStyle;
+      const _pSettings = loadStyleSettings(STYLE);
+      const _pStaff = window.PacificAuth ? PacificAuth.currentStaff() : Promise.resolve(null);
       product   = await PacificData.getProduct(STYLE);
       if(!product){ throw new Error('Style '+STYLE+' not found.'); }
       allSizes  = product.sizes;                  // IMS에 있는 전체 사이즈
-      styleSettings = await loadStyleSettings(STYLE);   // 직원 설정 (사이즈/색상)
+      styleSettings = await _pSettings;   // 직원 설정 (사이즈/색상)
       hiddenSizes = styleSettings.hidden_sizes;
       sizes     = allSizes.filter(s=>!hiddenSizes.includes(s));  // 손님이 보는 사이즈
       // 색상: IMS 전체(allColors) → 직원이 숨긴/이름바꾼 것 적용
@@ -1361,7 +1363,7 @@ body.pp-done #pp-spin{display:none}
       stockMap  = await PacificData.getInventory(STYLE, product);
       // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
       try{
-        const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
+        const st = await _pStaff;
         if(st){ canOrder=true; lockReason=null; window._pacIsStaff=true; }
         else{
           const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
@@ -1393,7 +1395,7 @@ body.pp-done #pp-spin{display:none}
           : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
       })();
       // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
-      if(canOrder){ await loadPrices(STYLE); await loadSales(STYLE); }
+      if(canOrder){ await Promise.all([loadPrices(STYLE), loadSales(STYLE)]); }
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;

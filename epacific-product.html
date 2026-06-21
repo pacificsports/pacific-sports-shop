@@ -1173,7 +1173,7 @@ body.pp-done #pp-spin{display:none}
         const raw=st.dataset.raw;
         const newVal = (styleSettings.default_color===raw) ? null : raw;
         styleSettings.default_color=newVal;
-        buildAllRows(); recalc();
+        if(typeof stockMap!=='undefined'&&stockMap){buildAllRows();recalc();}
         setMain(pickDefaultColor());
         saveSettings(currentStyle,{default_color:newVal}).then(ok=>{ if(!ok) alert('Could not save.'); });
         return;
@@ -1330,7 +1330,7 @@ body.pp-done #pp-spin{display:none}
        body:JSON.stringify(body)});
     if(!r.ok){ alert('저장 실패 ('+r.status+') — 직원 계정인지 확인하세요'); return; }
     await loadPrices(currentStyle);
-    renderSizeHeaders(); buildAllRows(); recalc();    // 기본가면 XS~XL 칸 전체 갱신
+    renderSizeHeaders(); if(typeof stockMap!=='undefined'&&stockMap){buildAllRows();recalc();}    // 기본가면 XS~XL 칸 전체 갱신
     const nth=document.querySelector('th.szh[data-size="'+size+'"] input.szpin');
     if(nth){ nth.classList.add('saved'); setTimeout(()=>nth.classList.remove('saved'),1200); }
   }
@@ -1360,43 +1360,6 @@ body.pp-done #pp-spin{display:none}
       hiddenColors = styleSettings.hidden_colors || [];
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
-      stockMap  = await PacificData.getInventory(STYLE, product);
-      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
-      try{
-        const st = await _pStaff;
-        if(st){ canOrder=true; lockReason=null; window._pacIsStaff=true; }
-        else{
-          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
-          if(sess && sess.token && sess.userId){
-            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status,customer_id',
-              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
-            if(ar.ok){
-              const rows=await ar.json();
-              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; window._pacCustomerId=rows[0].customer_id||null; }
-              else if(rows && rows[0]){ lockReason='pending'; }
-              else { lockReason='login'; }
-            }
-          }else{ lockReason='login'; }
-        }
-      }catch(e){ canOrder=false; lockReason='login'; }
-      // 안내문 갱신 + 주문 섹션 표시/숨김
-      (function(){
-        const note=document.getElementById('loginNote');
-        const sec=document.getElementById('orderSection');
-        if(canOrder){
-          if(sec) sec.style.display='';
-          if(note) note.style.display='none';
-          return;
-        }
-        if(sec) sec.style.display='none';   // 권한 없으면 주문/재고 영역 통째로 숨김
-        if(!note) return;
-        note.innerHTML = lockReason==='pending'
-          ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
-          : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
-      })();
-      // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
-      if(canOrder){ await Promise.all([loadPrices(STYLE), loadSales(STYLE)]); }
-      // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=niceName;
@@ -1435,8 +1398,46 @@ body.pp-done #pp-spin{display:none}
         kick.textContent = cat + (fabric ? ' · ' + fabric : '');
       }
       renderSizeHeaders();
-      buildAllRows();
       setupGallery();
+      try{var _ppr=document.querySelector('.product');if(_ppr&&!_ppr.classList.contains('pp-ready')){_ppr.classList.add('pp-ready');document.body.classList.add('pp-done');}}catch(_e){}
+      stockMap  = await PacificData.getInventory(STYLE, product);
+      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
+      try{
+        const st = await _pStaff;
+        if(st){ canOrder=true; lockReason=null; window._pacIsStaff=true; }
+        else{
+          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+          if(sess && sess.token && sess.userId){
+            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status,customer_id',
+              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
+            if(ar.ok){
+              const rows=await ar.json();
+              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; window._pacCustomerId=rows[0].customer_id||null; }
+              else if(rows && rows[0]){ lockReason='pending'; }
+              else { lockReason='login'; }
+            }
+          }else{ lockReason='login'; }
+        }
+      }catch(e){ canOrder=false; lockReason='login'; }
+      // 안내문 갱신 + 주문 섹션 표시/숨김
+      (function(){
+        const note=document.getElementById('loginNote');
+        const sec=document.getElementById('orderSection');
+        if(canOrder){
+          if(sec) sec.style.display='';
+          if(note) note.style.display='none';
+          return;
+        }
+        if(sec) sec.style.display='none';   // 권한 없으면 주문/재고 영역 통째로 숨김
+        if(!note) return;
+        note.innerHTML = lockReason==='pending'
+          ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
+          : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
+      })();
+      // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
+      if(canOrder){ await Promise.all([loadPrices(STYLE), loadSales(STYLE)]); }
+      // 제목·브레드크럼·H1 을 이 스타일로 채움
+      buildAllRows();
       renderSpecChips();
       applyDescription();
       // 자동 칩 = 바로가기: 색상 칩 → 색칩으로, 사이즈 칩 → Size Guide로

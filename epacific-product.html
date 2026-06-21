@@ -1399,7 +1399,7 @@ body.pp-done #pp-spin{display:none}
       }
       setupGallery();
       try{var _ppr=document.querySelector('.product');if(_ppr&&!_ppr.classList.contains('pp-ready')){_ppr.classList.add('pp-ready');document.body.classList.add('pp-done');}}catch(_e){}
-      stockMap  = await PacificData.getInventory(STYLE, product);
+      const _pInv = PacificData.getInventory(STYLE, product);
       // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
       try{
         const st = await _pStaff;
@@ -1434,7 +1434,7 @@ body.pp-done #pp-spin{display:none}
           : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
       })();
       // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
-      if(canOrder){ await Promise.all([loadPrices(STYLE), loadSales(STYLE)]); }
+      const _pPrices = canOrder ? Promise.all([loadPrices(STYLE), loadSales(STYLE)]) : null; stockMap = await _pInv; if(_pPrices) await _pPrices;
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       renderSizeHeaders();
       buildAllRows();

@@ -1397,7 +1397,6 @@ body.pp-done #pp-spin{display:none}
           .trim();
         kick.textContent = cat + (fabric ? ' · ' + fabric : '');
       }
-      renderSizeHeaders();
       setupGallery();
       try{var _ppr=document.querySelector('.product');if(_ppr&&!_ppr.classList.contains('pp-ready')){_ppr.classList.add('pp-ready');document.body.classList.add('pp-done');}}catch(_e){}
       stockMap  = await PacificData.getInventory(STYLE, product);
@@ -1437,6 +1436,7 @@ body.pp-done #pp-spin{display:none}
       // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
       if(canOrder){ await Promise.all([loadPrices(STYLE), loadSales(STYLE)]); }
       // 제목·브레드크럼·H1 을 이 스타일로 채움
+      renderSizeHeaders();
       buildAllRows();
       renderSpecChips();
       applyDescription();

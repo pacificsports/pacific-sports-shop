@@ -74,6 +74,32 @@
       oh.setAttribute('href', 'epacific-orders.html');
       if (la.parentNode) la.parentNode.insertBefore(oh, la.nextSibling);
     }
+    // 직원(staff/owner)에게만 "관리" 링크를 Log out 앞에 표시
+    try {
+      var _sess = JSON.parse(localStorage.getItem('pacific_user') || 'null');
+      var _cfg = window.PACIFIC_CONFIG;
+      if (_sess && _sess.token && _sess.userId && _cfg && !document.getElementById('nav-admin-link')) {
+        fetch(_cfg.SUPABASE_URL + '/rest/v1/user_roles?select=role&user_id=eq.' + _sess.userId, {
+          headers: { apikey: _cfg.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + _sess.token }
+        }).then(function (r) { return r.ok ? r.json() : []; }).then(function (rows) {
+          if (!Array.isArray(rows) || !rows[0] || ['owner','accounting','sales','warehouse'].indexOf(rows[0].role) < 0) return;
+          var logoutA = null, all = document.querySelectorAll('a');
+          for (var k = 0; k < all.length; k++) {
+            var tx = (all[k].textContent || '').trim().toLowerCase();
+            if (tx === 'logout' || tx === 'log out') { logoutA = all[k]; break; }
+          }
+          if (!logoutA || document.getElementById('nav-admin-link')) return;
+          var adm = document.createElement('a');
+          adm.id = 'nav-admin-link';
+          adm.href = 'admin-dashboard.html';
+          adm.textContent = '관리';
+          adm.className = logoutA.className;
+          adm.style.cssText = logoutA.style.cssText;
+          logoutA.parentNode.insertBefore(adm, logoutA);
+        }).catch(function () {});
+      }
+    } catch (e) {}
+
   }
 
   // 헤더의 Cart 버튼/링크 → 장바구니로 이동 (텍스트에 'cart' 포함)

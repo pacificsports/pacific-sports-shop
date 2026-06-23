@@ -55,6 +55,12 @@
   .muted{color:var(--faint);font-size:13px;padding:8px 0}
   #gate{display:none;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:40px;text-align:center;color:var(--soft-ink)}
   #gate a{color:var(--accent);font-weight:600}
+    .hub{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+    .hubcard{display:flex;flex-direction:column;gap:3px;padding:20px 18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s,box-shadow .15s}
+    .hubcard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    .hubcard .hi{font-size:26px;line-height:1}
+    .hubcard b{font-size:16px;font-weight:600;margin-top:4px}
+    .hubcard i{font-style:normal;font-size:12.5px;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -76,6 +82,13 @@
   <div id="gate"></div>
 
   <div id="main" style="display:none">
+    <div class="hub">
+      <a class="hubcard" href="admin-web-orders.html"><span class="hi">📦</span><b>주문 관리</b><i>웹 주문 확인 · 출고 · 환불</i></a>
+      <a class="hubcard" href="admin-customers.html"><span class="hi">👤</span><b>고객 승인</b><i>거래처 신청 · 승인 · 관리</i></a>
+      <a class="hubcard" href="admin-prices.html"><span class="hi">🏷️</span><b>스타일 · 가격</b><i>가격 · 세일가 편집</i></a>
+      <a class="hubcard" href="admin-staff.html"><span class="hi">👥</span><b>직원 관리</b><i>직원 추가 · 역할</i></a>
+    </div>
+
     <div class="tabs">
       <button id="tabAll" class="on" data-range="all">All time</button>
       <button id="tab90" data-range="90">Last 90 days</button>

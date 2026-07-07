@@ -69,6 +69,9 @@
   /* 사진 칩: 셔츠 가슴 부분을 줌인해서 원단/색이 보이게 */
   .sw.sw-photo{background-repeat:no-repeat;background-size:340%;background-position:50% 36%}
   .sw:hover,.sw.active{transform:scale(1.12);border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 2px 8px rgba(28,28,26,.18);z-index:1}
+  .sw::after{content:attr(data-name);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);font-size:11px;font-weight:600;letter-spacing:.01em;white-space:nowrap;padding:4px 9px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .12s;z-index:6;box-shadow:0 4px 14px rgba(28,28,26,.28)}
+  .sw::before{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink);opacity:0;pointer-events:none;transition:opacity .12s;z-index:6}
+  .sw:hover::after,.sw:hover::before{opacity:1}
   .thumbs{display:flex;gap:10px}
   .thumbs .t{flex:1;aspect-ratio:1/1;border-radius:11px;background:#ffffff;border:1.5px solid var(--line);cursor:pointer;transition:border .2s,transform .2s;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
   .thumbs .t img{width:100%;height:100%;object-fit:contain;padding:5px}
@@ -193,8 +196,6 @@
   .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
   .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
   .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
-  .rowamt{font-weight:600;font-size:13.5px;color:var(--accent);min-width:54px;display:inline-block;text-align:right}
-  th.amtcol, td.amtcol{text-align:right;padding-right:14px}
 
   .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
   .case-note::before{content:"📦"}
@@ -206,30 +207,6 @@
   .addbtn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:999px;cursor:pointer;padding:18px 36px;transition:transform .2s,background .25s}
   .addbtn:hover{transform:translateY(-2px);background:var(--accent)}
   .addbtn:disabled{opacity:.3;cursor:not-allowed;transform:none;background:var(--ink)}
-  /* 화면 하단 고정 주문바 (스크롤해도 따라옴) */
-  .stickybar{position:fixed;left:0;right:0;bottom:0;z-index:120;transform:translateY(110%);transition:transform .28s ease;
-    background:rgba(253,253,251,.96);backdrop-filter:blur(12px);border-top:1.5px solid var(--ink);
-    box-shadow:0 -10px 30px -16px rgba(0,0,0,.35)}
-  .stickybar.show{transform:translateY(0)}
-  .stickybar .in{position:relative;height:66px;margin:0;padding:0}
-  .stickybar .sblk{position:absolute;top:50%;transform:translateY(-50%)}
-  .stickybar .sblk.colc{text-align:right}
-  .stickybar .sblk small{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-bottom:2px}
-  .stickybar .sblk b{font-family:var(--display);font-weight:400;font-size:26px;line-height:1}
-  .stickybar .scases{color:var(--accent);font-size:12.5px;font-weight:600;line-height:1.35}
-  .stickybar .scases .cl{color:var(--faint);font-weight:500;font-size:11px;margin-right:4px}
-  .stickybar .addbtn{position:absolute;top:50%;transform:translateY(-50%);padding:14px 26px;font-size:14.5px;white-space:nowrap;display:inline-flex;align-items:baseline;gap:8px}
-  .stickybar .addbtn:hover{transform:translateY(-50%) translateY(-2px)}
-  .stickybar .sbtnamt{font-weight:700;font-size:15px}
-  /* 좁은 화면: 칼럼정렬 포기, 단순 양끝 배치 */
-  .stickybar.simple .in{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;height:auto}
-  .stickybar.simple .sblk{position:static;transform:none}
-  .stickybar.simple #sCaseBlk{display:none}
-  .stickybar.simple .addbtn{position:static;transform:none}
-  @media(max-width:760px){
-    .stickybar .sblk b{font-size:20px}
-  }
-
 
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(150%);background:var(--ink);color:var(--bg);padding:16px 28px;border-radius:999px;font-weight:500;font-size:14px;z-index:300;transition:transform .45s cubic-bezier(.2,.8,.2,1);box-shadow:0 24px 48px -20px rgba(28,28,26,.5)}
   .toast.show{transform:translateX(-50%) translateY(0)}
@@ -251,15 +228,6 @@
     .f-in{grid-template-columns:1fr 1fr}
     .otable input{width:58px;font-size:14px}
   }
-</style>
-<style id="pp-css">
-.product{opacity:0;animation:ppReveal .01s linear 4s forwards}
-@keyframes ppReveal{to{opacity:1}}
-.product.pp-ready{opacity:1!important;animation:none;transition:opacity .22s ease}
-#pp-spin{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:60;pointer-events:none}
-#pp-spin i{width:34px;height:34px;border:3px solid #e6e3da;border-top-color:#3d5a40;border-radius:50%;display:block;animation:ppRot .7s linear infinite}
-@keyframes ppRot{to{transform:rotate(360deg)}}
-body.pp-done #pp-spin{display:none}
 </style>
 </head>
 <body>
@@ -314,7 +282,6 @@ body.pp-done #pp-spin{display:none}
   <span class="sp">
     <button class="toggle" id="editToggle">Edit</button>
     <button id="bulkBtn" style="display:none">Bulk upload photos</button>
-    <button onclick="location.href='admin-prices.html'">Prices</button>
     <button onclick="location.href='admin-customers.html'">Customers</button>
     <button id="staffLogout">Log out</button>
   </span>
@@ -391,8 +358,7 @@ body.pp-done #pp-spin{display:none}
               <th class="colcol" id="thColor">Color</th>
               <th class="whcol">WH</th>
               <!-- 사이즈 헤더는 JS가 채움 -->
-              <th id="thPieces">Pieces</th>
-              <th class="amtcol">Amount</th>
+              <th>Pieces</th>
             </tr>
           </thead>
           <tbody id="rows"></tbody>
@@ -405,7 +371,7 @@ body.pp-done #pp-spin{display:none}
       <div class="blk"><small>Total Pieces</small><b id="totalUnits">0</b></div>
       <div class="blk"><small>Case Breakdown</small><div id="caseConv">0</div></div>
       <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
-      <button class="addbtn" id="addBtn" disabled style="display:none">Add to Order</button>
+      <button class="addbtn" id="addBtn" disabled>Add to Order</button>
     </div>
     </div><!-- /orderSection -->
   </div>
@@ -424,21 +390,11 @@ body.pp-done #pp-spin{display:none}
   <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
 </footer>
 
-<div class="stickybar" id="stickyBar">
-  <div class="in">
-    <div class="sblk cases" id="sCaseBlk"><small>Case Breakdown</small><div class="scases" id="sCaseConv">—</div></div>
-    <div class="sblk colc" id="sPiecesBlk"><small>Total Pieces</small><b id="sTotalUnits">0</b></div>
-    <div class="sblk colc" id="sSubBlk"><small>Subtotal</small><b id="sSubtotal">—</b></div>
-    <button class="addbtn" id="sAddBtn" disabled>Add to Order <span class="sbtnamt" id="sBtnAmt"></span></button>
-  </div>
-</div>
-
 <div class="toast" id="toast">✓ Added to order</div>
 
 
 <script src="pacific-config.js"></script>
 <script src="pacific-admin-auth.js"></script>
-<script src="pacific-nav.js"></script>
 <script src="pacific-data.js"></script>
 <style>
   /* 직원 로그인 / 사진 수정 UI */
@@ -452,21 +408,15 @@ body.pp-done #pp-spin{display:none}
   /* 색상 셀 위 사진 편집 오버레이 (수정모드일 때만) */
   .cimg{position:relative}
   .editmode .cimg .editov{display:flex}
-  /* 사이즈 헤더 아래 가격 */
-  th.szh .szprice{display:block;font-size:10.5px;font-weight:600;color:var(--accent);letter-spacing:0;text-transform:none;margin-top:2px}
-  .cellwrap .saleprice{display:block;font-size:9.5px;font-weight:700;color:#c0392b;white-space:nowrap}
-  td.on-sale{background:#fdf3f1}
   /* 숨긴 사이즈 열: 손님에겐 완전히 숨김 */
   .size-hidden{display:none}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
   .editmode .size-hidden{display:table-cell;opacity:.35}
-  /* 수정모드: 사이즈 헤더 = 가격 입력칸 + 표시/숨김 체크박스 */
-  .editmode th.szh{position:relative;background:var(--accent-soft);border-radius:8px 8px 0 0}
+  /* 수정모드: 사이즈 헤더에 켜기/끄기 표시 */
+  .editmode th.szh{cursor:pointer;position:relative;background:var(--accent-soft);border-radius:8px 8px 0 0}
+  .editmode th.szh::after{content:'✓';display:block;font-size:10px;color:var(--accent);font-weight:700;margin-top:1px}
   .editmode th.szh.size-hidden{background:#f0efe9}
-  th.szh input.szpin{display:block;width:58px;margin:3px auto 0;padding:3px 4px;border:1px solid var(--line-2);border-radius:6px;font-size:11.5px;text-align:center;background:#fff;font-family:var(--body)}
-  th.szh input.szpin:focus{outline:none;border-color:var(--accent)}
-  th.szh input.szpin.saved{background:#e8f3e9;border-color:var(--accent)}
-  th.szh input.szchk{display:block;margin:4px auto 0;cursor:pointer;width:14px;height:14px;accent-color:var(--accent)}
+  .editmode th.szh.size-hidden::after{content:'+ add';color:var(--faint);font-size:9px}
   /* 숨긴 색상: 손님엔 안 보임, Edit 모드에선 흐리게 */
   .sw-hidden{display:none}
   .editmode .sw-hidden{display:inline-block;opacity:.32;outline:1.5px dashed var(--faint);outline-offset:1px}
@@ -535,56 +485,13 @@ body.pp-done #pp-spin{display:none}
     return {t:n.toLocaleString('en-US'),cls:''};
   }
 
-  // ── 가격 (거래처별 가격 → 없으면 기본가) ─────────────────────
-  // priceInfo = {base, p2xl, p3xl, p4xl, p5xl, source:'customer'|'base'} | null
-  let priceInfo=null;
-  function priceForSize(s){
-    if(!priceInfo || priceInfo.base==null) return null;
-    const b=Number(priceInfo.base);
-    const up=String(s||'').toUpperCase();
-    // 큰 사이즈는 해당 가격, 비어 있으면 "있는 것 중 가장 가까운 아래 단계"로
-    let v=b;
-    if(up==='2XL') v = priceInfo.p2xl ?? b;
-    else if(up==='3XL') v = priceInfo.p3xl ?? priceInfo.p2xl ?? b;
-    else if(up==='4XL') v = priceInfo.p4xl ?? priceInfo.p3xl ?? priceInfo.p2xl ?? b;
-    else if(up==='5XL') v = priceInfo.p5xl ?? priceInfo.p4xl ?? priceInfo.p3xl ?? priceInfo.p2xl ?? b;
-    return v==null ? null : Number(v);
-  }
-  function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-
-  // ── 세일가 (sale_prices: 스타일 전체 / 색상 / 사이즈 단위, $ 또는 %) ──
-  let salePrices=[];
-  function saleFor(rawColor,size){
-    if(!salePrices.length) return null;
-    const c=String(rawColor||'').toUpperCase(), s=String(size||'').toUpperCase();
-    let best=null,bestScore=-1;
-    salePrices.forEach(p=>{
-      const pc=p.color?String(p.color).toUpperCase():null;
-      const ps=p.size?String(p.size).toUpperCase():null;
-      if(pc&&pc!==c) return;            // 색상 지정인데 다른 색이면 제외
-      if(ps&&ps!==s) return;            // 사이즈 지정인데 다른 사이즈면 제외
-      const score=(pc?2:0)+(ps?1:0);    // 구체적인 것 우선 (색+사이즈 > 색 > 사이즈 > 전체)
-      if(score>bestScore){ bestScore=score; best=p; }
-    });
-    return best;
-  }
-  // 최종 단가: 세일 있으면 세일가($ 또는 %할인), 없으면 일반가
-  function unitPriceFor(rawColor,size){
-    const base=priceForSize(size);
-    const row=saleFor(rawColor,size);
-    if(!row) return base;
-    if(row.sale_price!=null) return Number(row.sale_price);
-    if(row.percent_off!=null && base!=null) return Math.round(base*(100-Number(row.percent_off)))/100;
-    return base;
-  }
-
   // 한 창고(SC 또는 CA)의 한 줄을 만든다
   // 주문 권한: 직원 또는 승인된 거래처만 재고/수량 입력 가능
   let canOrder=false, lockReason='login';   // 'login' | 'pending' | null
 
   function buildWHRow(c,wh,isFirst,hidden){
     const tr=document.createElement('tr');
-    tr.dataset.color=c.name; tr.dataset.wh=wh; tr.dataset.rawcolor=(c._raw||c.raw||c.name);
+    tr.dataset.color=c.name; tr.dataset.wh=wh;
     tr.className='wh-row wh-'+wh+(isFirst?' color-start':'')+(hidden?' color-hidden':'');
     if(isFirst) tr.id='color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
     // 재고는 여러 키로 안전하게 찾음 (이름 변경돼도 동작)
@@ -614,14 +521,11 @@ body.pp-done #pp-spin{display:none}
       const stockHtml = out
         ? `<span class="stock out">Out of<br>stock</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
-      // 세일 중인 칸이면 빨간 세일가 표시
-      const _eff = (!out && saleFor(raw,s)!=null) ? unitPriceFor(raw,s) : null;
-      const saleHtml = _eff!=null ? `<span class="saleprice">SALE ${fmtMoney(_eff)}</span>` : '';
-      return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}${saleHtml?' on-sale':''}"><div class="cellwrap">`+
+      return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
-        stockHtml+saleHtml+`</div></td>`;
+        stockHtml+`</div></td>`;
     }).join('');
-    tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td><td class="amtcol"><span class="rowamt"></span></td>`;
+    tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
     rowsBody.appendChild(tr);
     tr.querySelectorAll('input').forEach((inp)=>{
       const td=inp.closest('td'); const stIdx=parseInt(td.getAttribute('data-si'));
@@ -642,37 +546,14 @@ body.pp-done #pp-spin{display:none}
     if(!thColor) return;
     const headRow=thColor.parentElement;
     headRow.querySelectorAll('th.szh').forEach(th=>th.remove());
-    const piecesTh=document.getElementById('thPieces') || headRow.querySelector('th:last-child'); // Pieces 앞에 사이즈 삽입
+    const piecesTh=headRow.querySelector('th:last-child'); // Pieces
     allSizes.forEach(s=>{
       const th=document.createElement('th');
       const isHidden=hiddenSizes.includes(s);
       th.className='szh szcol'+(isHidden?' size-hidden':'');
       th.dataset.size=s;
       th.textContent=s;
-      const pv = canOrder ? priceForSize(s) : null;
-      if(editOn && window._pacIsStaff){
-        // ── Edit 모드: 가격 입력칸 (치고 Enter/클릭아웃 = 저장) ──
-        const pin=document.createElement('input');
-        pin.type='number'; pin.step='0.01'; pin.min='0'; pin.className='szpin';
-        pin.value = pv!=null ? Number(pv).toFixed(2) : '';
-        pin.placeholder='$';
-        pin.title = PRICE_COL[String(s).toUpperCase()] ? (s+' 사이즈 가격') : '기본가 — XS~XL 등 일반 사이즈 공통';
-        pin.addEventListener('click',e=>e.stopPropagation());
-        pin.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); pin.blur(); } });
-        pin.addEventListener('change',()=>saveInlinePrice(s,pin));
-        th.appendChild(pin);
-        // ── 표시/숨김 체크박스 (해제 = 손님에게 숨김) ──
-        const chk=document.createElement('input');
-        chk.type='checkbox'; chk.className='szchk'; chk.checked=!isHidden;
-        chk.title='체크 해제 = 손님에게 이 사이즈 숨김';
-        chk.addEventListener('click',e=>e.stopPropagation());
-        chk.addEventListener('change',()=>toggleSize(s));
-        th.appendChild(chk);
-      }else if(pv!=null || window._pacIsStaff){
-        const sp=document.createElement('span'); sp.className='szprice';
-        sp.textContent = pv!=null ? fmtMoney(pv) : '$ —';
-        th.appendChild(sp);
-      }
+      th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
     const note=document.getElementById('caseNote');
@@ -721,9 +602,9 @@ body.pp-done #pp-spin{display:none}
   }
 
   function recalc(){
-    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0, money=0;
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
-      let rt=0, rowMoney=0, rowPriced=true;
+      let rt=0;
       tr.querySelectorAll('input').forEach((inp)=>{
         const td=inp.closest('td');
         if(td && td.classList.contains('size-hidden')) return; // 숨긴 사이즈는 합계 제외
@@ -731,18 +612,9 @@ body.pp-done #pp-spin{display:none}
         rt+=q;
         const sname=td?td.getAttribute('data-size'):null;
         if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
-        const pv=unitPriceFor(tr.dataset.rawcolor,sname);
-        if(pv!=null){ money+=q*pv; rowMoney+=q*pv; } else if(q>0){ rowPriced=false; }
       });
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
-      // 줄 금액 (Pieces 옆)
-      const amtEl=tr.querySelector('.rowamt');
-      if(amtEl){
-        if(rt===0) amtEl.textContent='';
-        else if(canOrder && priceInfo && rowPriced) amtEl.textContent=fmtMoney(rowMoney);
-        else amtEl.textContent='—';
-      }
       if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
       total+=rt;
     });
@@ -760,52 +632,8 @@ body.pp-done #pp-spin{display:none}
       if(whline.length) parts.push(`<span class="cl">By WH</span> ${whline.join(' · ')}`);
       caseConvEl.innerHTML=parts.join('<br>');
     }
-    // SUBTOTAL 금액
-    const subText = !canOrder ? '— login' : (!priceInfo ? '—' : fmtMoney(money));
-    const stEl=document.getElementById('subtotal');
-    if(stEl) stEl.textContent=subText;
     addBtn.disabled=total===0;
-    // ── 하단 고정 주문바 동기화 ──
-    const bar=document.getElementById('stickyBar');
-    if(bar){
-      const su=document.getElementById('sTotalUnits'); if(su) su.textContent=total;
-      const ss=document.getElementById('sSubtotal'); if(ss) ss.textContent=subText;
-      const sc=document.getElementById('sCaseConv'); if(sc) sc.innerHTML = total===0 ? '—' : (caseConvEl.innerHTML.replace(/<br>/g,' · '));
-      const sb=document.getElementById('sAddBtn'); if(sb) sb.disabled=total===0;
-      const sba=document.getElementById('sBtnAmt'); if(sba) sba.textContent=(canOrder && priceInfo && total>0) ? ('· '+fmtMoney(money)) : '';
-      bar.classList.toggle('show', canOrder && total>0);
-      alignStickyBar();
-    }
   }
-
-  // 하단바 정렬: 버튼은 오른쪽 끝, 합계는 버튼 왼쪽에 모으고, Case는 표 왼쪽에
-  function alignStickyBar(){
-    const bar=document.getElementById('stickyBar'); if(!bar||!bar.classList.contains('show')) return;
-    const colorTh=document.getElementById('thColor');
-    const inEl=bar.querySelector('.in');
-    const cBlk=document.getElementById('sCaseBlk'), pBlk=document.getElementById('sPiecesBlk'),
-          sBlk=document.getElementById('sSubBlk'), btn=document.getElementById('sAddBtn');
-    if(!colorTh||!inEl||!btn) return;
-    if(window.innerWidth<860){ bar.classList.add('simple'); return; }
-    bar.classList.remove('simple');
-    const base=inEl.getBoundingClientRect().left;
-    const inW=inEl.getBoundingClientRect().width;
-    // 버튼: 오른쪽 끝
-    btn.style.left=''; btn.style.right='24px';
-    const btnW=btn.getBoundingClientRect().width;
-    const btnLeft = inW - 24 - btnW;     // 버튼 왼쪽 가장자리(컨테이너 기준)
-    // Subtotal: 버튼 왼쪽에서 살짝 띄워 오른쪽정렬
-    sBlk.style.left=''; sBlk.style.right=(24 + btnW + 28)+'px'; sBlk.style.transform='translateY(-50%)';
-    // 측정 후 Total Pieces를 Subtotal 왼쪽에
-    const sw=sBlk.getBoundingClientRect().width;
-    pBlk.style.left=''; pBlk.style.right=(24 + btnW + 28 + sw + 34)+'px'; pBlk.style.transform='translateY(-50%)';
-    // Case Breakdown → Color 칸 시작점 (왼쪽)
-    const cr=colorTh.getBoundingClientRect();
-    cBlk.style.left=(cr.left - base + 4)+'px'; cBlk.style.right='';
-  }
-  window.addEventListener('resize', alignStickyBar);
-  window.addEventListener('scroll', alignStickyBar, {passive:true});
-  (function(){ const sc=document.querySelector('.otable-scroll'); if(sc) sc.addEventListener('scroll', alignStickyBar, {passive:true}); })();
 
   // ── 사이즈 가이드 토글 ──
   const sgToggle=document.getElementById('sgToggle');
@@ -1138,7 +966,7 @@ body.pp-done #pp-spin{display:none}
       const isHidden = hiddenColors.includes(raw);
       const sw=document.createElement('button');
       sw.className='sw'+(isHidden?' sw-hidden':'')+(c.img?' sw-photo':'');
-      sw.dataset.name=c.name; sw.dataset.raw=raw; sw.title=c.name;
+      sw.dataset.name=c.name; sw.dataset.raw=raw;
       if(c.img){
         // 색칩 = 그 색 셔츠 사진을 줌인해서 원단/색이 그대로 보이게
         sw.style.backgroundImage='url("'+c.img+'")';
@@ -1173,7 +1001,7 @@ body.pp-done #pp-spin{display:none}
         const raw=st.dataset.raw;
         const newVal = (styleSettings.default_color===raw) ? null : raw;
         styleSettings.default_color=newVal;
-        if(typeof stockMap!=='undefined'&&stockMap){buildAllRows();recalc();}
+        buildAllRows(); recalc();
         setMain(pickDefaultColor());
         saveSettings(currentStyle,{default_color:newVal}).then(ok=>{ if(!ok) alert('Could not save.'); });
         return;
@@ -1203,8 +1031,6 @@ body.pp-done #pp-spin{display:none}
   // 헤더 Cart 버튼 → 카트 페이지
   (function(){ const b=cc&&cc.closest('button'); if(b) b.addEventListener('click',()=>{ location.href='epacific-cart.html'; }); })();
 
-  // 하단 고정바의 Add 버튼 → 위쪽 Add to Order와 동일 동작
-  (function(){ const sb=document.getElementById('sAddBtn'); if(sb) sb.addEventListener('click',()=>{ if(!addBtn.disabled) addBtn.click(); }); })();
   addBtn.addEventListener('click',()=>{
     const items=[]; let total=0,scPcs=0,caPcs=0; const colorSet=new Set();
     rowsBody.querySelectorAll('tr').forEach(tr=>{
@@ -1212,8 +1038,7 @@ body.pp-done #pp-spin{display:none}
         const q=parseInt(i.value)||0; if(q<=0) return;
         const td=i.closest('td'); if(td&&td.classList.contains('size-hidden')) return;
         const size=td?td.getAttribute('data-size'):'';
-        const up=unitPriceFor(tr.dataset.rawcolor,size);
-        items.push({style:currentStyle, styleName:(product&&product.name)||currentStyle, color:tr.dataset.color, wh:tr.dataset.wh, size, qty:q, unit_price:(up!=null?up:null)});
+        items.push({style:currentStyle, styleName:(product&&product.name)||currentStyle, color:tr.dataset.color, wh:tr.dataset.wh, size, qty:q});
         colorSet.add(tr.dataset.color);
         if(tr.dataset.wh==='SC') scPcs+=q; else caPcs+=q;
         total+=q;
@@ -1224,7 +1049,7 @@ body.pp-done #pp-spin{display:none}
     const cart=cartGet();
     items.forEach(n=>{
       const ex=cart.find(x=>x.style===n.style&&x.color===n.color&&x.wh===n.wh&&x.size===n.size);
-      if(ex){ ex.qty+=n.qty; if(n.unit_price!=null) ex.unit_price=n.unit_price; } else cart.push(n);
+      if(ex) ex.qty+=n.qty; else cart.push(n);
     });
     cartSet(cart); refreshCartBadge();
     const colorCount=colorSet.size;
@@ -1271,70 +1096,6 @@ body.pp-done #pp-spin{display:none}
   }
   async function saveHiddenSizes(style,hidden){ return saveSettings(style,{hidden_sizes:hidden}); }
 
-  // ── 가격 로드: ① 내 거래처 전용가(customer_prices) → ② 웹사이트 기본가(style_prices) ──
-  async function loadPrices(style){
-    priceInfo=null;
-    try{
-      const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
-      if(!sess||!sess.token) return;
-      const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token};
-      if(window._pacCustomerId){
-        const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_prices?customer_id=eq.'+window._pacCustomerId
-          +'&style_number=eq.'+encodeURIComponent(style)+'&select=base_price,price_2xl,price_3xl,price_4xl,price_5xl,included',{headers:H});
-        if(r.ok){
-          const rows=await r.json(); const row=rows&&rows[0];
-          if(row && row.included!==false && row.base_price!=null){
-            priceInfo={base:+row.base_price, p2xl:row.price_2xl, p3xl:row.price_3xl, p4xl:row.price_4xl, p5xl:row.price_5xl, source:'customer'};
-            return;
-          }
-        }
-      }
-      const r2=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_prices?style_number=eq.'+encodeURIComponent(style)
-        +'&select=base_price,price_2xl,price_3xl,price_4xl,price_5xl',{headers:H});
-      if(r2.ok){
-        const rows=await r2.json(); const row=rows&&rows[0];
-        if(row && row.base_price!=null)
-          priceInfo={base:+row.base_price, p2xl:row.price_2xl, p3xl:row.price_3xl, p4xl:row.price_4xl, p5xl:row.price_5xl, source:'base'};
-      }
-    }catch(e){ priceInfo=null; }
-  }
-  async function loadSales(style){
-    salePrices=[];
-    try{
-      const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
-      if(!sess||!sess.token) return;
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/sale_prices?style_number=eq.'+encodeURIComponent(style)
-        +'&active=is.true&select=color,size,sale_price,percent_off',
-        {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
-      if(r.ok) salePrices=await r.json();
-    }catch(e){ salePrices=[]; }
-  }
-
-  // ── (직원) Edit 모드: 헤더 가격 입력칸에서 바로 저장 ──
-  const PRICE_COL={ '2XL':'price_2xl','3XL':'price_3xl','4XL':'price_4xl','5XL':'price_5xl' };
-  async function saveInlinePrice(size,inp){
-    const up=String(size).toUpperCase();
-    const col=PRICE_COL[up]||'base_price';
-    const raw=inp.value.trim();
-    let val=null;                                     // 빈 칸 = 가격 지움 (아래 단계로 fallback)
-    if(raw!==''){
-      const num=parseFloat(raw);
-      if(!(num>0)){ alert('가격을 숫자로 입력하세요 (예: 3.75)'); inp.focus(); return; }
-      val=Math.round(num*100)/100;
-    }
-    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
-    if(!tk){ alert('Session expired. Please log in again.'); return; }
-    const body={style_number:currentStyle}; body[col]=val;
-    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_prices?on_conflict=style_number',
-      {method:'POST',headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-       body:JSON.stringify(body)});
-    if(!r.ok){ alert('저장 실패 ('+r.status+') — 직원 계정인지 확인하세요'); return; }
-    await loadPrices(currentStyle);
-    renderSizeHeaders(); if(typeof stockMap!=='undefined'&&stockMap){buildAllRows();recalc();}    // 기본가면 XS~XL 칸 전체 갱신
-    const nth=document.querySelector('th.szh[data-size="'+size+'"] input.szpin');
-    if(nth){ nth.classList.add('saved'); setTimeout(()=>nth.classList.remove('saved'),1200); }
-  }
-
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
@@ -1343,12 +1104,10 @@ body.pp-done #pp-spin{display:none}
       const cfg = PacificData.config;
       currentStyle = new URLSearchParams(location.search).get('style') || '1368';
       const STYLE = currentStyle;
-      const _pSettings = loadStyleSettings(STYLE);
-      const _pStaff = window.PacificAuth ? PacificAuth.currentStaff() : Promise.resolve(null);
       product   = await PacificData.getProduct(STYLE);
       if(!product){ throw new Error('Style '+STYLE+' not found.'); }
       allSizes  = product.sizes;                  // IMS에 있는 전체 사이즈
-      styleSettings = await _pSettings;   // 직원 설정 (사이즈/색상)
+      styleSettings = await loadStyleSettings(STYLE);   // 직원 설정 (사이즈/색상)
       hiddenSizes = styleSettings.hidden_sizes;
       sizes     = allSizes.filter(s=>!hiddenSizes.includes(s));  // 손님이 보는 사이즈
       // 색상: IMS 전체(allColors) → 직원이 숨긴/이름바꾼 것 적용
@@ -1360,6 +1119,41 @@ body.pp-done #pp-spin{display:none}
       hiddenColors = styleSettings.hidden_colors || [];
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
+      stockMap  = await PacificData.getInventory(STYLE, product);
+      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
+      try{
+        const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
+        if(st){ canOrder=true; lockReason=null; }
+        else{
+          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+          if(sess && sess.token && sess.userId){
+            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
+              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
+            if(ar.ok){
+              const rows=await ar.json();
+              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; }
+              else if(rows && rows[0]){ lockReason='pending'; }
+              else { lockReason='login'; }
+            }
+          }else{ lockReason='login'; }
+        }
+      }catch(e){ canOrder=false; lockReason='login'; }
+      // 안내문 갱신 + 주문 섹션 표시/숨김
+      (function(){
+        const note=document.getElementById('loginNote');
+        const sec=document.getElementById('orderSection');
+        if(canOrder){
+          if(sec) sec.style.display='';
+          if(note) note.style.display='none';
+          return;
+        }
+        if(sec) sec.style.display='none';   // 권한 없으면 주문/재고 영역 통째로 숨김
+        if(!note) return;
+        note.innerHTML = lockReason==='pending'
+          ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
+          : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
+      })();
+      // 제목·브레드크럼·H1 을 이 스타일로 채움
       const niceName = product.name || STYLE;
       document.title = 'Pacific Sports — Style #'+STYLE;
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=niceName;
@@ -1397,47 +1191,9 @@ body.pp-done #pp-spin{display:none}
           .trim();
         kick.textContent = cat + (fabric ? ' · ' + fabric : '');
       }
-      setupGallery();
-      try{var _ppr=document.querySelector('.product');if(_ppr&&!_ppr.classList.contains('pp-ready')){_ppr.classList.add('pp-ready');document.body.classList.add('pp-done');}}catch(_e){}
-      const _pInv = PacificData.getInventory(STYLE, product);
-      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
-      try{
-        const st = await _pStaff;
-        if(st){ canOrder=true; lockReason=null; window._pacIsStaff=true; }
-        else{
-          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
-          if(sess && sess.token && sess.userId){
-            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status,customer_id',
-              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
-            if(ar.ok){
-              const rows=await ar.json();
-              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; window._pacCustomerId=rows[0].customer_id||null; }
-              else if(rows && rows[0]){ lockReason='pending'; }
-              else { lockReason='login'; }
-            }
-          }else{ lockReason='login'; }
-        }
-      }catch(e){ canOrder=false; lockReason='login'; }
-      // 안내문 갱신 + 주문 섹션 표시/숨김
-      (function(){
-        const note=document.getElementById('loginNote');
-        const sec=document.getElementById('orderSection');
-        if(canOrder){
-          if(sec) sec.style.display='';
-          if(note) note.style.display='none';
-          return;
-        }
-        if(sec) sec.style.display='none';   // 권한 없으면 주문/재고 영역 통째로 숨김
-        if(!note) return;
-        note.innerHTML = lockReason==='pending'
-          ? '🔒 <span><b>Your wholesale account is pending approval.</b> Live stock and ordering unlock once approved.</span>'
-          : '🔒 <span><b>Wholesale pricing, live stock, and ordering</b> are available to approved wholesale accounts. <a href="epacific-login.html" style="color:inherit;font-weight:700">Log in</a> or <a href="epacific-login.html?pane=reg" style="color:inherit;font-weight:700">apply for an account</a>.</span>';
-      })();
-      // 가격 로드 (거래처별 → 기본가) — 권한 있을 때만
-      const _pPrices = canOrder ? Promise.all([loadPrices(STYLE), loadSales(STYLE)]) : null; stockMap = await _pInv; if(_pPrices) await _pPrices;
-      // 제목·브레드크럼·H1 을 이 스타일로 채움
       renderSizeHeaders();
       buildAllRows();
+      setupGallery();
       renderSpecChips();
       applyDescription();
       // 자동 칩 = 바로가기: 색상 칩 → 색칩으로, 사이즈 칩 → Size Guide로
@@ -1496,7 +1252,6 @@ body.pp-done #pp-spin{display:none}
     if(_renderSwatchesFn) _renderSwatchesFn();
     renderSpecChips();
     applyDescription();
-    renderSizeHeaders();     // 가격 입력칸/체크박스 ↔ 일반 표시 전환
     buildAllRows();
     recalc();
   });
@@ -1709,7 +1464,5 @@ body.pp-done #pp-spin{display:none}
   })();
 </script>
 <script src="pacific-nav.js"></script>
-<script id="pp-js">(function(){function start(){var prod=document.querySelector(".product");if(!prod){return;}var spin=document.createElement("div");spin.id="pp-spin";spin.innerHTML="<i></i>";document.body.appendChild(spin);function ready(){if(prod.classList.contains("pp-ready"))return;prod.classList.add("pp-ready");document.body.classList.add("pp-done");}function ok(){var ot=prod.querySelector(".otable");return ot&&ot.querySelectorAll("tbody tr").length>0;}if(ok()){ready();return;}var obs=new MutationObserver(function(){if(ok()){obs.disconnect();ready();}});obs.observe(prod,{childList:true,subtree:true});setTimeout(function(){try{obs.disconnect();}catch(e){}ready();},4000);}if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start);}else{start();}})();</script>
 </body>
-<!-- v2026-06-08 sticky-nooverlap -->
 </html>

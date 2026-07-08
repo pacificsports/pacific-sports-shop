@@ -362,6 +362,10 @@
   (async function initCategory(){
     try{
       allStyles = await PacificData.getStyles();
+      // ── 진열 순서(Featured): 사장님이 정한 순서 우선, 나머지는 스타일번호순 ──
+      const FEATURED_ORDER=['8368','1368','1362','1348','1364','2388','1315','1322','1314','2316','2310','3310','5310','1210','1212','1214','2210','3210','5210','1350'];
+      const _rank=x=>{ const i=FEATURED_ORDER.indexOf(String(x.no)); return i<0?100000:i; };
+      allStyles.sort((x,y)=> _rank(x)-_rank(y) || String(x.no).localeCompare(String(y.no),undefined,{numeric:true}) );
       thumbs = await PacificData.getStyleThumbs();   // 사진 있으면 카드에 표시
       await loadHiddenStyles();                       // 숨긴 스타일 로드
       try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }

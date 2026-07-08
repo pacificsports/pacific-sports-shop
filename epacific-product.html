@@ -1480,7 +1480,9 @@
 (function(){
   // 같은 라인/컬렉션 묶음 — 필요시 배열만 추가하면 됨
   const FAMILIES=[
-    ['8368','1368','1362','1348','1364','2388']
+    ['8368','1368','1362','1348','1364','2388'],
+    ['1315','1322','1314','2316','2310','3310','5310'],
+    ['1210','1212','1214','2216','2210','3210','5210']
   ];
   function famFor(no){ no=String(no); for(const g of FAMILIES){ if(g.map(String).indexOf(no)>-1) return g.map(String); } return null; }
   async function boot(){

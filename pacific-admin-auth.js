@@ -48,3 +48,30 @@ window.PacificAuth = (function () {
 
   return { currentUser, currentStaff, logout, STAFF_ROLES };
 })();
+
+/* =====================================================================
+   관리자 하위 페이지(admin-*.html)에 'Dashboard' 바로가기 링크 자동 추가
+   — 'Back to site' 링크 앞에 삽입. 대시보드/손님 페이지엔 안 넣음.
+   ===================================================================== */
+(function () {
+  function addDashLink() {
+    var p = (location.pathname.split('/').pop() || '').toLowerCase();
+    if (p.indexOf('admin-') !== 0 || p === 'admin-dashboard.html') return;
+    if (document.querySelector('a[data-dashlink]')) return;
+    var links = document.getElementsByTagName('a');
+    for (var i = 0; i < links.length; i++) {
+      var t = (links[i].textContent || '').toLowerCase();
+      if (t.indexOf('back to site') > -1 || t.indexOf('back to shop') > -1) {
+        var a = document.createElement('a');
+        a.href = 'admin-dashboard.html';
+        a.textContent = '← Dashboard';
+        a.setAttribute('data-dashlink', '1');
+        a.style.cssText = 'color:var(--accent,#3d5a40);text-decoration:none;font-weight:600;margin-right:14px';
+        links[i].parentNode.insertBefore(a, links[i]);
+        break;
+      }
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addDashLink);
+  else addDashLink();
+})();

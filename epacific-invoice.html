@@ -8,234 +8,233 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
-    --line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
-    --display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
-  a{color:inherit;text-decoration:none}
+:root{
+--bg:#fbfbf9;--paper:#ffffff;--ink:#1c1c1a;--soft-ink:#56564f;--faint:#8e8e85;
+--line:#e8e7e1;--line-2:#deded6;--accent:#3d5a40;--accent-soft:#eef1ec;--warm:#d9cfbf;
+--display:'Instrument Serif',Georgia,serif;--body:'Geist','Helvetica Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.55;-webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+a{color:inherit;text-decoration:none}
 
-  .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
-  .toolbar{max-width:880px;margin:0 auto;padding:20px 30px 0;display:flex;justify-content:space-between;align-items:center}
-  .toolbar a{font-size:14px;color:var(--soft-ink)}.toolbar a:hover{color:var(--ink)}
-  .toolbar .acts{display:flex;gap:10px}
-  .btn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:14px;border:none;border-radius:10px;cursor:pointer;padding:11px 20px;transition:transform .2s,background .25s}
-  .btn:hover{transform:translateY(-2px);background:var(--accent)}
-  .btn-ghost{background:none;border:1.5px solid var(--line-2);color:var(--ink);font-family:var(--body);font-weight:500;font-size:14px;border-radius:10px;cursor:pointer;padding:11px 20px;transition:.2s}
-  .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
+.toolbar{max-width:880px;margin:0 auto;padding:20px 30px 0;display:flex;justify-content:space-between;align-items:center}
+.toolbar a{font-size:14px;color:var(--soft-ink)}.toolbar a:hover{color:var(--ink)}
+.toolbar .acts{display:flex;gap:10px}
+.btn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:14px;border:none;border-radius:10px;cursor:pointer;padding:11px 20px;transition:transform .2s,background .25s}
+.btn:hover{transform:translateY(-2px);background:var(--accent)}
+.btn-ghost{background:none;border:1.5px solid var(--line-2);color:var(--ink);font-family:var(--body);font-weight:500;font-size:14px;border-radius:10px;cursor:pointer;padding:11px 20px;transition:.2s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 
-  .sheet{max-width:880px;margin:22px auto 70px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:50px 54px;box-shadow:0 30px 70px -50px rgba(28,28,26,.4)}
+.sheet{max-width:880px;margin:22px auto 70px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:50px 54px;box-shadow:0 30px 70px -50px rgba(28,28,26,.4)}
 
-  .inv-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:26px}
-  .logo{display:flex;align-items:center;gap:2px}
-  .logo-img{height:40px;width:auto;display:block}
-  .fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
+.inv-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid var(--ink);padding-bottom:26px;margin-bottom:26px}
+.logo{display:flex;align-items:center;gap:2px}
+.logo-img{height:40px;width:auto;display:block}
+.fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
 
-  .logo i{font-style:italic;color:var(--accent)}
-  .co-meta{font-size:12.5px;color:var(--soft-ink);line-height:1.7;margin-top:10px}
-  .inv-label{text-align:right}
-  .inv-label .big{font-family:var(--display);font-size:38px;line-height:1;color:var(--ink)}
-  .inv-label .num{font-size:14px;color:var(--soft-ink);margin-top:8px}
-  .inv-label .status{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:5px 13px;margin-top:10px}
+.logo i{font-style:italic;color:var(--accent)}
+.co-meta{font-size:12.5px;color:var(--soft-ink);line-height:1.7;margin-top:10px}
+.inv-label{text-align:right}
+.inv-label .big{font-family:var(--display);font-size:38px;line-height:1;color:var(--ink)}
+.inv-label .num{font-size:14px;color:var(--soft-ink);margin-top:8px}
+.inv-label .status{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:5px 13px;margin-top:10px}
 
-  .meta-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:34px}
-  .meta-row .blk h4{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;font-weight:600}
-  .meta-row .blk div{font-size:13.5px;line-height:1.65}
-  .meta-row .blk b{font-weight:600}
+.meta-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:34px}
+.meta-row .blk h4{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:7px;font-weight:600}
+.meta-row .blk div{font-size:13.5px;line-height:1.65}
+.meta-row .blk b{font-weight:600}
 
-  table.items{width:100%;border-collapse:collapse;margin-bottom:8px}
-  table.items thead th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;text-align:left;padding:10px 8px;border-bottom:1.5px solid var(--line-2)}
-  table.items thead th.r{text-align:right}
-  table.items tbody td{font-size:13.5px;padding:13px 8px;border-bottom:1px solid var(--line);vertical-align:top}
-  table.items tbody td.r{text-align:right}
-  .it-style{font-weight:600}
-  .it-sub{font-size:12px;color:var(--faint)}
-  .it-color{display:flex;align-items:center;gap:8px}
-  .it-dot{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);flex-shrink:0}
-  .wh-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
-  .wh-SC{background:#e7eef3;color:#2f5b7a}.wh-CA{background:#f1ece0;color:#8a6a3a}
-  .sz-detail{font-size:12px;color:var(--soft-ink);margin-top:3px}
+table.items{width:100%;border-collapse:collapse;margin-bottom:8px}
+table.items thead th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600;text-align:left;padding:10px 8px;border-bottom:1.5px solid var(--line-2)}
+table.items thead th.r{text-align:right}
+table.items tbody td{font-size:13.5px;padding:13px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+table.items tbody td.r{text-align:right}
+.it-style{font-weight:600}
+.it-sub{font-size:12px;color:var(--faint)}
+.it-color{display:flex;align-items:center;gap:8px}
+.it-dot{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);flex-shrink:0}
+.wh-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}
+.wh-SC{background:#e7eef3;color:#2f5b7a}.wh-CA{background:#f1ece0;color:#8a6a3a}
+.sz-detail{font-size:12px;color:var(--soft-ink);margin-top:3px}
 
-  .totals{margin-left:auto;width:300px;margin-top:18px}
-  .totals .row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px}
-  .totals .row .lbl{color:var(--soft-ink)}
-  .totals .grand{border-top:2px solid var(--ink);margin-top:8px;padding-top:14px}
-  .totals .grand .lbl{font-weight:600;font-size:16px}
-  .totals .grand .val{font-family:var(--display);font-size:28px}
+.totals{margin-left:auto;width:300px;margin-top:18px}
+.totals .row{display:flex;justify-content:space-between;padding:8px 0;font-size:14px}
+.totals .row .lbl{color:var(--soft-ink)}
+.totals .grand{border-top:2px solid var(--ink);margin-top:8px;padding-top:14px}
+.totals .grand .lbl{font-weight:600;font-size:16px}
+.totals .grand .val{font-family:var(--display);font-size:28px}
 
-  .split-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:11px;padding:14px 18px;font-size:13px;color:var(--accent);margin-top:30px;line-height:1.55}
-  .foot-note{margin-top:30px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);line-height:1.7;text-align:center}
+.split-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:11px;padding:14px 18px;font-size:13px;color:var(--accent);margin-top:30px;line-height:1.55}
+.foot-note{margin-top:30px;padding-top:20px;border-top:1px solid var(--line);font-size:12px;color:var(--faint);line-height:1.7;text-align:center}
 
-  @media print{
-    .demo-banner,.toolbar{display:none}
-    body{background:#fff}
-    .sheet{box-shadow:none;border:none;margin:0;border-radius:0;max-width:100%;padding:20px}
-  }
-  @media(max-width:720px){
-    .sheet{padding:30px 24px}
-    .inv-top{flex-direction:column;gap:18px}
-    .inv-label{text-align:left}
-    .meta-row{grid-template-columns:1fr;gap:18px}
-    .totals{width:100%}
-    table.items thead{display:none}
-    table.items tbody td{display:block;border:none;padding:3px 0}
-    table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:14px 0}
-  }
+@media print{
+.demo-banner,.toolbar{display:none}
+body{background:#fff}
+.sheet{box-shadow:none;border:none;margin:0;border-radius:0;max-width:100%;padding:20px}
+}
+@media(max-width:720px){
+.sheet{padding:30px 24px}
+.inv-top{flex-direction:column;gap:18px}
+.inv-label{text-align:left}
+.meta-row{grid-template-columns:1fr;gap:18px}
+.totals{width:100%}
+table.items thead{display:none}
+table.items tbody td{display:block;border:none;padding:3px 0}
+table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:14px 0}
+}
 </style>
 </head>
 <body>
 
-
 <div class="toolbar">
-  <a href="epacific-orders.html">← Back to orders</a>
-  <div class="acts">
-    <button class="btn-ghost" onclick="window.print()">🖨 Print</button>
-    <button class="btn" onclick="window.print()">Download PDF</button>
-  </div>
+<a href="epacific-orders.html">← Back to orders</a>
+<div class="acts">
+<button class="btn-ghost" onclick="window.print()">🖨 Print</button>
+<button class="btn" onclick="window.print()">Download PDF</button>
+</div>
 </div>
 
 <div class="sheet">
-  <!-- HEADER -->
-  <div class="inv-top">
-    <div>
-      <div class="logo"><img src="logo-pacific-dark.png" alt="Pacific Sports" class="logo-img"></div>
-      <div class="co-meta">
-        1605 South Guignard Parkway, Sumter, SC 29150<br>
-        14129 The Merge Street, Unit B, Eastvale, CA 92880<br>
-        (CA) 803-447-0012 · (SC) 803-840-2405
-      </div>
-    </div>
-    <div class="inv-label">
-      <div class="big">Invoice</div>
-      <div class="num" id="invNo">No. —</div>
-      <div class="status" id="invStatus"></div>
-    </div>
-  </div>
+<!-- HEADER -->
+<div class="inv-top">
+<div>
+<div class="logo"><img src="logo-pacific-dark.png" alt="Pacific Sports" class="logo-img"></div>
+<div class="co-meta">
+1605 South Guignard Parkway, Sumter, SC 29150<br>
+14129 The Merge Street, Unit B, Eastvale, CA 92880<br>
+(CA) 803-447-0012 · (SC) 803-773-2177
+</div>
+</div>
+<div class="inv-label">
+<div class="big">Invoice</div>
+<div class="num" id="invNo">No. —</div>
+<div class="status" id="invStatus"></div>
+</div>
+</div>
 
-  <!-- META -->
-  <div class="meta-row">
-    <div class="blk">
-      <h4>Billed to</h4>
-      <div id="billTo">—</div>
-    </div>
-    <div class="blk">
-      <h4>Ship to</h4>
-      <div id="shipTo">See order notes / account</div>
-    </div>
-    <div class="blk">
-      <h4>Order details</h4>
-      <div id="orderMeta">—</div>
-    </div>
-  </div>
+<!-- META -->
+<div class="meta-row">
+<div class="blk">
+<h4>Billed to</h4>
+<div id="billTo">—</div>
+</div>
+<div class="blk">
+<h4>Ship to</h4>
+<div id="shipTo">See order notes / account</div>
+</div>
+<div class="blk">
+<h4>Order details</h4>
+<div id="orderMeta">—</div>
+</div>
+</div>
 
-  <!-- ITEMS -->
-  <table class="items">
-    <thead>
-      <tr>
-        <th>Style</th>
-        <th>Color</th>
-        <th>WH</th>
-        <th class="r">Qty</th>
-        <th class="r">Unit</th>
-        <th class="r">Amount</th>
-      </tr>
-    </thead>
-    <tbody id="itemRows"></tbody>
-  </table>
+<!-- ITEMS -->
+<table class="items">
+<thead>
+<tr>
+<th>Style</th>
+<th>Color</th>
+<th>WH</th>
+<th class="r">Qty</th>
+<th class="r">Unit</th>
+<th class="r">Amount</th>
+</tr>
+</thead>
+<tbody id="itemRows"></tbody>
+</table>
 
-  <!-- TOTALS -->
-  <div class="totals">
-    <div class="row"><span class="lbl">Total pieces</span><span id="tPcs">0</span></div>
-    <div class="row"><span class="lbl">From SC — Sumter</span><span id="tSC">0</span></div>
-    <div class="row"><span class="lbl">From CA — Eastvale</span><span id="tCA">0</span></div>
-    <div class="row grand"><span class="lbl">Total</span><span class="val" id="tAmt">$0.00</span></div>
-  </div>
+<!-- TOTALS -->
+<div class="totals">
+<div class="row"><span class="lbl">Total pieces</span><span id="tPcs">0</span></div>
+<div class="row"><span class="lbl">From SC — Sumter</span><span id="tSC">0</span></div>
+<div class="row"><span class="lbl">From CA — Eastvale</span><span id="tCA">0</span></div>
+<div class="row grand"><span class="lbl">Total</span><span class="val" id="tAmt">$0.00</span></div>
+</div>
 
-  <div class="split-note" id="splitNote" style="display:none">📦 This order ships from both warehouses. SC and CA items are sent as separate shipments and may arrive on different days.</div>
+<div class="split-note" id="splitNote" style="display:none">📦 This order ships from both warehouses. SC and CA items are sent as separate shipments and may arrive on different days.</div>
 
-  <div class="foot-note">
-    Thank you for your business.<br>
-    Questions about this invoice? Contact us at (CA) 803-447-0012 or (SC) 803-840-2405.
-  </div>
+<div class="foot-note">
+Thank you for your business.<br>
+Questions about this invoice? Contact us at (CA) 803-447-0012 or (SC) 803-773-2177.
+</div>
 </div>
 
 <script src="pacific-config.js"></script>
 <script>
-  const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  const sizeOrder=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
-  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
-  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
-  const ONO=new URLSearchParams(location.search).get('order')||'';
+const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sizeOrder=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+const ONO=new URLSearchParams(location.search).get('order')||'';
 
-  function groupLines(items){
-    const map={}, out=[];
-    (items||[]).forEach(i=>{
-      const k=i.style+'|'+i.color+'|'+i.wh;
-      if(!map[k]){ map[k]={style:i.style,styleName:i.styleName||'',color:i.color,wh:i.wh||'SC',sizes:{},prices:{}}; out.push(map[k]); }
-      map[k].sizes[i.size]=(map[k].sizes[i.size]||0)+(i.qty||0);
-      if(i.unit_price!=null) map[k].prices[i.size]=Number(i.unit_price);
-    });
-    return out;
-  }
-  const lineQty=l=>Object.values(l.sizes).reduce((a,b)=>a+b,0);
-  function lineAmt(l){ let t=0; for(const z in l.sizes){ if(l.prices[z]==null) return null; t+=l.sizes[z]*l.prices[z]; } return t; }
-  function unitText(l){
-    const need=Object.keys(l.sizes), have=need.filter(z=>l.prices[z]!=null);
-    if(have.length<need.length) return '—';
-    const vals=[...new Set(have.map(z=>l.prices[z]))];
-    if(vals.length===1) return money(vals[0]);
-    return money(lineAmt(l)/lineQty(l));   // 사이즈별 가격이 섞이면 평균 단가
-  }
+function groupLines(items){
+const map={}, out=[];
+(items||[]).forEach(i=>{
+const k=i.style+'|'+i.color+'|'+i.wh;
+if(!map[k]){ map[k]={style:i.style,styleName:i.styleName||'',color:i.color,wh:i.wh||'SC',sizes:{},prices:{}}; out.push(map[k]); }
+map[k].sizes[i.size]=(map[k].sizes[i.size]||0)+(i.qty||0);
+if(i.unit_price!=null) map[k].prices[i.size]=Number(i.unit_price);
+});
+return out;
+}
+const lineQty=l=>Object.values(l.sizes).reduce((a,b)=>a+b,0);
+function lineAmt(l){ let t=0; for(const z in l.sizes){ if(l.prices[z]==null) return null; t+=l.sizes[z]*l.prices[z]; } return t; }
+function unitText(l){
+const need=Object.keys(l.sizes), have=need.filter(z=>l.prices[z]!=null);
+if(have.length<need.length) return '—';
+const vals=[...new Set(have.map(z=>l.prices[z]))];
+if(vals.length===1) return money(vals[0]);
+return money(lineAmt(l)/lineQty(l)); // 사이즈별 가격이 섞이면 평균 단가
+}
 
-  async function load(){
-    const cfg=window.PACIFIC_CONFIG||{};
-    const body=document.getElementById('itemRows');
-    if(!ONO){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">No order specified. Open this page from Order History.</td></tr>'; return; }
-    const s=session();
-    if(!s||!s.token){ location.href='epacific-login.html?next='+encodeURIComponent('epacific-invoice.html?order='+ONO); return; }
-    const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?order_number=eq.'+encodeURIComponent(ONO)+'&select=*',
-      {headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
-    const rows=r.ok?await r.json():[];
-    const o=rows[0];
-    if(!o){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">Order not found (or no access).</td></tr>'; return; }
-    document.getElementById('invNo').textContent='No. '+o.order_number;
-    document.getElementById('invStatus').textContent=(o.status||'').charAt(0).toUpperCase()+(o.status||'').slice(1);
-    document.getElementById('billTo').innerHTML=[
-      o.company_name?('<b>'+esc(o.company_name)+'</b>'):null,
-      o.contact_name?esc(o.contact_name):null,
-      o.email?esc(o.email):null,
-      o.phone?esc(o.phone):null
-    ].filter(Boolean).join('<br>')||'—';
-    document.getElementById('orderMeta').innerHTML=
-      'Order date: <b>'+(o.created_at||'').slice(0,10)+'</b><br>Order #: <b>'+esc(o.order_number)+'</b>'
-      +(o.carrier?('<br>Carrier: <b>'+esc(o.carrier)+'</b>'):'')
-      +(o.tracking_number?('<br>Tracking: <b>'+esc(o.tracking_number)+'</b>'):'');
-    const lines=groupLines(Array.isArray(o.items)?o.items:[]);
-    let total=0,sc=0,ca=0,grand=0,grandOk=true;
-    body.innerHTML=lines.map(l=>{
-      const q=lineQty(l), a=lineAmt(l);
-      total+=q; if(l.wh==='SC')sc+=q; else ca+=q;
-      if(a==null) grandOk=false; else grand+=a;
-      const szText=sizeOrder.filter(z=>l.sizes[z]).map(z=>z+'×'+l.sizes[z]).join(', ');
-      return `<tr>
-        <td><div class="it-style">#${esc(l.style)}</div><div class="it-sub">${esc(String(l.styleName||'').replace(/^\d+\s*/,''))}</div></td>
-        <td><div class="it-color"><span class="it-dot" style="background:#d6d2c6"></span>${esc(l.color)}</div><div class="sz-detail">${szText}</div></td>
-        <td><span class="wh-badge wh-${esc(l.wh)}">${esc(l.wh)}</span></td>
-        <td class="r">${q}</td>
-        <td class="r">${unitText(l)}</td>
-        <td class="r">${a!=null?money(a):'—'}</td>
-      </tr>`;
-    }).join('');
-    document.getElementById('tPcs').textContent=total;
-    document.getElementById('tSC').textContent=sc;
-    document.getElementById('tCA').textContent=ca;
-    const amt=o.total_amount!=null?Number(o.total_amount):(grandOk?grand:null);
-    document.getElementById('tAmt').textContent=amt!=null?money(amt):'—';
-    if(sc>0&&ca>0) document.getElementById('splitNote').style.display='';
-  }
-  load();
+async function load(){
+const cfg=window.PACIFIC_CONFIG||{};
+const body=document.getElementById('itemRows');
+if(!ONO){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">No order specified. Open this page from Order History.</td></tr>'; return; }
+const s=session();
+if(!s||!s.token){ location.href='epacific-login.html?next='+encodeURIComponent('epacific-invoice.html?order='+ONO); return; }
+const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?order_number=eq.'+encodeURIComponent(ONO)+'&select=*',
+{headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+const rows=r.ok?await r.json():[];
+const o=rows[0];
+if(!o){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">Order not found (or no access).</td></tr>'; return; }
+document.getElementById('invNo').textContent='No. '+o.order_number;
+document.getElementById('invStatus').textContent=(o.status||'').charAt(0).toUpperCase()+(o.status||'').slice(1);
+document.getElementById('billTo').innerHTML=[
+o.company_name?('<b>'+esc(o.company_name)+'</b>'):null,
+o.contact_name?esc(o.contact_name):null,
+o.email?esc(o.email):null,
+o.phone?esc(o.phone):null
+].filter(Boolean).join('<br>')||'—';
+document.getElementById('orderMeta').innerHTML=
+'Order date: <b>'+(o.created_at||'').slice(0,10)+'</b><br>Order #: <b>'+esc(o.order_number)+'</b>'
++(o.carrier?('<br>Carrier: <b>'+esc(o.carrier)+'</b>'):'')
++(o.tracking_number?('<br>Tracking: <b>'+esc(o.tracking_number)+'</b>'):'');
+const lines=groupLines(Array.isArray(o.items)?o.items:[]);
+let total=0,sc=0,ca=0,grand=0,grandOk=true;
+body.innerHTML=lines.map(l=>{
+const q=lineQty(l), a=lineAmt(l);
+total+=q; if(l.wh==='SC')sc+=q; else ca+=q;
+if(a==null) grandOk=false; else grand+=a;
+const szText=sizeOrder.filter(z=>l.sizes[z]).map(z=>z+'×'+l.sizes[z]).join(', ');
+return `<tr>
+<td><div class="it-style">#${esc(l.style)}</div><div class="it-sub">${esc(String(l.styleName||'').replace(/^\d+\s*/,''))}</div></td>
+<td><div class="it-color"><span class="it-dot" style="background:#d6d2c6"></span>${esc(l.color)}</div><div class="sz-detail">${szText}</div></td>
+<td><span class="wh-badge wh-${esc(l.wh)}">${esc(l.wh)}</span></td>
+<td class="r">${q}</td>
+<td class="r">${unitText(l)}</td>
+<td class="r">${a!=null?money(a):'—'}</td>
+</tr>`;
+}).join('');
+document.getElementById('tPcs').textContent=total;
+document.getElementById('tSC').textContent=sc;
+document.getElementById('tCA').textContent=ca;
+const amt=o.total_amount!=null?Number(o.total_amount):(grandOk?grand:null);
+document.getElementById('tAmt').textContent=amt!=null?money(amt):'—';
+if(sc>0&&ca>0) document.getElementById('splitNote').style.display='';
+}
+load();
 </script>
 </body>
 <!-- v2026-06-07 real-invoice -->

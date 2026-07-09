@@ -74,7 +74,7 @@
       oh.setAttribute('href', 'epacific-orders.html');
       if (la.parentNode) la.parentNode.insertBefore(oh, la.nextSibling);
     }
-    // 직원(staff/owner)에게만 "관리" 링크를 Log out 앞에 표시
+    // 직원(staff/owner)에게만 "Manage" 링크를 Log out 앞에 표시
     try {
       var _sess = JSON.parse(localStorage.getItem('pacific_user') || 'null');
       var _cfg = window.PACIFIC_CONFIG;
@@ -92,7 +92,7 @@
           var adm = document.createElement('a');
           adm.id = 'nav-admin-link';
           adm.href = 'admin-dashboard.html';
-          adm.textContent = '관리';
+          adm.textContent = 'Settings';
           adm.className = logoutA.className;
           adm.style.cssText = logoutA.style.cssText;
           logoutA.parentNode.insertBefore(adm, logoutA);
@@ -129,10 +129,10 @@
     var as = document.querySelectorAll('a[href^="epacific-login.html"]');
     for (var i = 0; i < as.length; i++) {
       var a = as[i], href = a.getAttribute('href') || '';
-      if (href.indexOf('pane=reg') > -1) {           // Register → My Account
+      if (href.indexOf('pane=reg') > -1) { // Register → My Account
         a.textContent = 'My Account';
         a.setAttribute('href', 'epacific-account.html');
-      } else {                                        // Login → Log out
+      } else { // Login → Log out
         a.textContent = 'Log out';
         a.setAttribute('href', '#');
         a.addEventListener('click', function (e) { e.preventDefault(); logout(); });
@@ -141,7 +141,7 @@
   }
 
   // ── 로그인 자동연장: 만료 10분 전부터 refresh_token으로 토큰 갱신 ──
-  //    (epacific-login.html이 {token, refresh, expires_at, ...} 형태로 저장해 둠)
+  // (epacific-login.html이 {token, refresh, expires_at, ...} 형태로 저장해 둠)
   var _refreshing = false;
   function refreshSession() {
     var s = getSession();
@@ -149,7 +149,7 @@
     var cfg = window.PACIFIC_CONFIG || {};
     if (!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) return;
     var exp = s.expires_at || 0;
-    if (exp - Date.now() > 10 * 60 * 1000) return;   // 10분 이상 남았으면 그대로
+    if (exp - Date.now() > 10 * 60 * 1000) return; // 10분 이상 남았으면 그대로
     _refreshing = true;
     fetch(cfg.SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
       method: 'POST',
@@ -157,7 +157,7 @@
       body: JSON.stringify({ refresh_token: s.refresh })
     }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
       _refreshing = false;
-      if (!d || !d.access_token) return;             // 갱신 실패 → 다음 기회에
+      if (!d || !d.access_token) return; // 갱신 실패 → 다음 기회에
       var cur = getSession() || s;
       cur.token = d.access_token;
       cur.refresh = d.refresh_token || cur.refresh;

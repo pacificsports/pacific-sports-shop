@@ -1,240 +1,240 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Pacific Sports — 직원 관리</title>
+<title>Pacific Sports — Staff Management</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root{
-    --bg:#fbfbf9; --paper:#ffffff; --ink:#1c1c1a; --soft-ink:#56564f; --faint:#8e8e85;
-    --line:#e8e7e1; --line-2:#deded6; --accent:#3d5a40; --accent-soft:#eef1ec; --warm:#d9cfbf;
-    --display:'Instrument Serif',Georgia,serif; --body:'Geist','Helvetica Neue',sans-serif;
-    --bad:#b0443c; --good:#3d5a40;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1000px;margin:0 auto;padding:28px 22px 80px}
-  .top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px;flex-wrap:wrap}
-  h1{font-family:var(--display);font-size:34px;font-weight:400;letter-spacing:-.01em}
-  h1 .em{font-style:italic;color:var(--accent)}
-  .who{font-size:12.5px;color:var(--faint)}
-  .sub{font-size:14px;color:var(--soft-ink);margin:-8px 0 22px}
-  .gate{max-width:560px;margin:60px auto;text-align:center;color:var(--soft-ink);font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:38px 30px}
-  .gate b{color:var(--ink)}
-  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:20px}
-  .card h2{font-family:var(--display);font-size:21px;font-weight:400;margin-bottom:4px}
-  .card .hint{font-size:12.5px;color:var(--faint);margin-bottom:16px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-  .fld{display:flex;flex-direction:column;gap:5px}
-  .fld label{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
-  input,select{font-family:var(--body);font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;outline:none}
-  input:focus,select:focus{border-color:var(--accent)}
-  input[type=text]{min-width:170px}
-  .btn{font-family:var(--body);font-size:14px;font-weight:500;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:9px;padding:10px 18px;cursor:pointer;transition:opacity .15s}
-  .btn:hover{opacity:.9}
-  .btn[disabled]{opacity:.5;cursor:default}
-  .btn.ghost{background:#fff;color:var(--ink);border-color:var(--line-2)}
-  .btn.danger{background:#fff;color:var(--bad);border-color:#e7c9c5;padding:7px 12px;font-size:12.5px}
-  .msg{font-size:13px;margin-top:12px;min-height:18px}
-  .msg.err{color:var(--bad)} .msg.ok{color:var(--good)}
-  table{width:100%;border-collapse:collapse;margin-top:6px}
-  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
-  th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
-  td .nm{font-weight:500}
-  td .em{color:var(--faint);font-size:12.5px}
-  .pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);border:1px solid #dbe3da}
-  .pwbox{margin-top:14px;background:#fbf7ee;border:1px solid var(--warm);border-radius:11px;padding:16px 18px;display:none}
-  .pwbox.show{display:block}
-  .pwbox .lbl{font-size:12px;color:var(--soft-ink);margin-bottom:8px}
-  .pwbox .creds{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-  .pwbox code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:8px 12px;letter-spacing:.5px}
-  .pwbox .warn{font-size:12px;color:var(--bad);margin-top:10px}
-  .muted{color:var(--faint);font-size:12.5px}
-  a.back{font-size:13px;color:var(--soft-ink);text-decoration:none}
-  a.back:hover{color:var(--ink)}
+:root{
+--bg:#fbfbf9; --paper:#ffffff; --ink:#1c1c1a; --soft-ink:#56564f; --faint:#8e8e85;
+--line:#e8e7e1; --line-2:#deded6; --accent:#3d5a40; --accent-soft:#eef1ec; --warm:#d9cfbf;
+--display:'Instrument Serif',Georgia,serif; --body:'Geist','Helvetica Neue',sans-serif;
+--bad:#b0443c; --good:#3d5a40;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 22px 80px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:34px;font-weight:400;letter-spacing:-.01em}
+h1 .em{font-style:italic;color:var(--accent)}
+.who{font-size:12.5px;color:var(--faint)}
+.sub{font-size:14px;color:var(--soft-ink);margin:-8px 0 22px}
+.gate{max-width:560px;margin:60px auto;text-align:center;color:var(--soft-ink);font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:38px 30px}
+.gate b{color:var(--ink)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-bottom:20px}
+.card h2{font-family:var(--display);font-size:21px;font-weight:400;margin-bottom:4px}
+.card .hint{font-size:12.5px;color:var(--faint);margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+input,select{font-family:var(--body);font-size:14px;color:var(--ink);background:#fff;border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=text]{min-width:170px}
+.btn{font-family:var(--body);font-size:14px;font-weight:500;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:9px;padding:10px 18px;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line-2)}
+.btn.danger{background:#fff;color:var(--bad);border-color:#e7c9c5;padding:7px 12px;font-size:12.5px}
+.msg{font-size:13px;margin-top:12px;min-height:18px}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--good)}
+table{width:100%;border-collapse:collapse;margin-top:6px}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);font-weight:600}
+td .nm{font-weight:500}
+td .em{color:var(--faint);font-size:12.5px}
+.pill{display:inline-block;font-size:11px;padding:2px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);border:1px solid #dbe3da}
+.pwbox{margin-top:14px;background:#fbf7ee;border:1px solid var(--warm);border-radius:11px;padding:16px 18px;display:none}
+.pwbox.show{display:block}
+.pwbox .lbl{font-size:12px;color:var(--soft-ink);margin-bottom:8px}
+.pwbox .creds{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pwbox code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;background:#fff;border:1px solid var(--line-2);border-radius:8px;padding:8px 12px;letter-spacing:.5px}
+.pwbox .warn{font-size:12px;color:var(--bad);margin-top:10px}
+.muted{color:var(--faint);font-size:12.5px}
+a.back{font-size:13px;color:var(--soft-ink);text-decoration:none}
+a.back:hover{color:var(--ink)}
 </style>
 </head>
 <body>
-  <div id="gate" class="gate">직원 인증 확인 중…</div>
+<div id="gate" class="gate">Checking staff access…</div>
 
-  <div id="main" class="wrap" style="display:none">
-    <div class="top">
-      <h1>직원 <span class="em">관리</span></h1>
-      <div class="who" id="whoami"></div>
-    </div>
-    <p class="sub">쇼핝몰 관리자에 접근할 직원을 추가/관리합니다. (재고관리 IMS 와는 별개입니다.)</p>
+<div id="main" class="wrap" style="display:none">
+<div class="top">
+<h1>Staff <span class="em">Management</span></h1>
+<div class="who" id="whoami"></div>
+</div>
+<p class="sub">Add and manage staff who can access the shop admin. (Separate from the IMS inventory system.)</p>
 
-    <div id="cfgWarn" class="card" style="display:none;border-color:#e7c9c5;background:#fdf3f1">
-      <b style="color:var(--bad)">설정 필요:</b> <span class="muted">pacific-config.js 의 <code>STAFF_WORKER</code> 주소가 비어 있어요. 워커를 배포한 뒤 주소를 넣어야 직원 추가가 됩니다.</span>
-    </div>
+<div id="cfgWarn" class="card" style="display:none;border-color:#e7c9c5;background:#fdf3f1">
+<b style="color:var(--bad)">Setup needed:</b> <span class="muted">The <code>STAFF_WORKER</code> URL in pacific-config.js is empty. Deploy the worker and add its URL before you can add staff.</span>
+</div>
 
-    <!-- 추가 -->
-    <div class="card">
-      <h2>직원 추가</h2>
-      <div class="hint">계정과 권한을 한 번에 만들어요. 만들면 <b>임시 비밀번호</b>가 1회 표시됩니다 — 직원에게 이메일과 함께 전달하세요.</div>
-      <div class="row">
-        <div class="fld"><label>이름</label><input id="f_name" type="text" placeholder="홍길동" /></div>
-        <div class="fld"><label>이메일</label><input id="f_email" type="text" placeholder="staff@example.com" style="min-width:220px" /></div>
-        <div class="fld"><label>역할</label>
-          <select id="f_role">
-            <option value="sales">영업 (sales)</option>
-            <option value="accounting">회계 (accounting)</option>
-            <option value="warehouse">창고 (warehouse)</option>
-            <option value="owner">대표/관리자 (owner)</option>
-          </select>
-        </div>
-        <button class="btn" id="addBtn">+ 직원 만들기</button>
-      </div>
-      <div id="addMsg" class="msg"></div>
-      <div id="pwbox" class="pwbox">
-        <div class="lbl"><b id="pwName"></b> 계정이 생성되었습니다. 아래 정보를 직원에게 전달하세요:</div>
-        <div class="creds">
-          <span>이메일 <code id="pwEmail"></code></span>
-          <span>임시 비번 <code id="pwCode"></code></span>
-          <button class="btn ghost" id="copyBtn" style="padding:7px 12px;font-size:12.5px">복사</button>
-        </div>
-        <div class="warn">⚠️ 이 비밀번호는 지금만 보입니다. 직원은 첫 로그인 후 비밀번호를 바꾸도록 안내하세요.</div>
-      </div>
-    </div>
+<!-- Add -->
+<div class="card">
+<h2>Add staff</h2>
+<div class="hint">Create the account and role in one step. A <b>temporary password</b> is shown once — share it with the staff member along with their email.</div>
+<div class="row">
+<div class="fld"><label>Name</label><input id="f_name" type="text" placeholder="Jane Doe" /></div>
+<div class="fld"><label>Email</label><input id="f_email" type="text" placeholder="staff@example.com" style="min-width:220px" /></div>
+<div class="fld"><label>Role</label>
+<select id="f_role">
+<option value="sales">Sales</option>
+<option value="accounting">Accounting</option>
+<option value="warehouse">Warehouse</option>
+<option value="owner">Owner / Admin</option>
+</select>
+</div>
+<button class="btn" id="addBtn">+ Create staff</button>
+</div>
+<div id="addMsg" class="msg"></div>
+<div id="pwbox" class="pwbox">
+<div class="lbl"><b id="pwName"></b>'s account has been created. Share the details below with the staff member:</div>
+<div class="creds">
+<span>Email <code id="pwEmail"></code></span>
+<span>Temp password <code id="pwCode"></code></span>
+<button class="btn ghost" id="copyBtn" style="padding:7px 12px;font-size:12.5px">Copy</button>
+</div>
+<div class="warn">⚠️ This password is shown only now. Ask the staff member to change it after their first login.</div>
+</div>
+</div>
 
-    <!-- 목록 -->
-    <div class="card">
-      <h2>직원 목록</h2>
-      <div class="hint">역할을 바꾸거나 권한을 회수할 수 있어요. (회수해도 로그인 계정 자체는 남지만 관리자 접근은 사라집니다.)</div>
-      <div id="listMsg" class="msg"></div>
-      <table id="tbl" style="display:none">
-        <thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>추가일</th><th></th></tr></thead>
-        <tbody id="rows"></tbody>
-      </table>
-      <div id="empty" class="muted" style="display:none;padding:14px 4px">아직 등록된 직원이 없습니다.</div>
-    </div>
+<!-- List -->
+<div class="card">
+<h2>Staff list</h2>
+<div class="hint">Change roles or revoke access. (Revoking keeps the login account, but admin access is removed.)</div>
+<div id="listMsg" class="msg"></div>
+<table id="tbl" style="display:none">
+<thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+<div id="empty" class="muted" style="display:none;padding:14px 4px">No staff added yet.</div>
+</div>
 
-    <a class="back" href="admin-dashboard.html">← 대시보드로</a>
-  </div>
+<a class="back" href="admin-dashboard.html">← Dashboard</a>
+</div>
 
 <script src="pacific-config.js"></script>
 <script src="pacific-admin-auth.js"></script>
 <script>
-  const CFG = window.PACIFIC_CONFIG || {};
-  const STAFF_WORKER = (CFG.STAFF_WORKER || '').replace(/\/+$/, '');
-  const ROLE_LABEL = { owner:'대푠/관리자', accounting:'회계', sales:'영업', warehouse:'창고' };
-  const ROLES = ['owner','accounting','sales','warehouse'];
+const CFG = window.PACIFIC_CONFIG || {};
+const STAFF_WORKER = (CFG.STAFF_WORKER || '').replace(/\/+$/, '');
+const ROLE_LABEL = { owner:'Owner', accounting:'Accounting', sales:'Sales', warehouse:'Warehouse' };
+const ROLES = ['owner','accounting','sales','warehouse'];
 
-  function session(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
-  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-  function gate(msg){ const g=document.getElementById('gate'); g.innerHTML = msg; g.style.display='block'; document.getElementById('main').style.display='none'; }
-  function setMsg(id, text, kind){ const e=document.getElementById(id); e.textContent=text||''; e.className='msg'+(kind?' '+kind:''); }
+function session(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function gate(msg){ const g=document.getElementById('gate'); g.innerHTML = msg; g.style.display='block'; document.getElementById('main').style.display='none'; }
+function setMsg(id, text, kind){ const e=document.getElementById(id); e.textContent=text||''; e.className='msg'+(kind?' '+kind:''); }
 
-  let CALLER = null;
+let CALLER = null;
 
-  async function api(path, body){
-    const s = session();
-    if(!s || !s.token) throw new Error('로그인이 만료되었습니다. 다시 로그인하세요.');
-    if(!STAFF_WORKER) throw new Error('STAFF_WORKER 주소가 설정되지 않았습니다.');
-    const r = await fetch(STAFF_WORKER + path, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+s.token },
-      body: JSON.stringify(body||{})
-    });
-    let j; try{ j = await r.json(); }catch(e){ j = { error:'서버 응답 오류' }; }
-    if(!r.ok) throw new Error(j.error || ('HTTP '+r.status));
-    return j;
-  }
+async function api(path, body){
+const s = session();
+if(!s || !s.token) throw new Error('Your session expired. Please log in again.');
+if(!STAFF_WORKER) throw new Error('STAFF_WORKER URL is not configured.');
+const r = await fetch(STAFF_WORKER + path, {
+method:'POST',
+headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+s.token },
+body: JSON.stringify(body||{})
+});
+let j; try{ j = await r.json(); }catch(e){ j = { error:'Invalid server response' }; }
+if(!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+return j;
+}
 
-  function fmtDate(s){ if(!s) return ''; const d=new Date(s); return isNaN(d)?'':d.toLocaleDateString('ko-KR',{year:'2-digit',month:'short',day:'numeric'}); }
+function fmtDate(s){ if(!s) return ''; const d=new Date(s); return isNaN(d)?'':d.toLocaleDateString('en-US',{year:'2-digit',month:'short',day:'numeric'}); }
 
-  function renderRows(staff){
-    const tb = document.getElementById('rows');
-    const tbl = document.getElementById('tbl');
-    const empty = document.getElementById('empty');
-    tb.innerHTML='';
-    if(!staff || !staff.length){ tbl.style.display='none'; empty.style.display='block'; return; }
-    empty.style.display='none'; tbl.style.display='';
-    staff.forEach(s=>{
-      const isSelf = CALLER && s.user_id===CALLER.id;
-      const tr=document.createElement('tr');
-      const opts = ROLES.map(r=>`<option value="${r}"${r===s.role?' selected':''}>${ROLE_LABEL[r]} (${r})</option>`).join('');
-      tr.innerHTML =
-        `<td><span class="nm">${esc(s.full_name||'—')}</span>${isSelf?' <span class="pill">나</span>':''}</td>`+
-        `<td class="em">${esc(s.email||'')}</td>`+
-        `<td><select data-uid="${esc(s.user_id)}" class="roleSel"${isSelf?' disabled title="본인 역할은 여기서 변경 불가"':''}>${opts}</select></td>`+
-        `<td class="muted">${fmtDate(s.created_at)}</td>`+
-        `<td style="text-align:right">${isSelf?'':`<button class="btn danger" data-uid="${esc(s.user_id)}" data-nm="${esc(s.full_name||s.email)}">권한 회수</button>`}</td>`;
-      tb.appendChild(tr);
-    });
-    tb.querySelectorAll('.roleSel').forEach(sel=>sel.addEventListener('change', onRoleChange));
-    tb.querySelectorAll('.btn.danger').forEach(b=>b.addEventListener('click', onRemove));
-  }
+function renderRows(staff){
+const tb = document.getElementById('rows');
+const tbl = document.getElementById('tbl');
+const empty = document.getElementById('empty');
+tb.innerHTML='';
+if(!staff || !staff.length){ tbl.style.display='none'; empty.style.display='block'; return; }
+empty.style.display='none'; tbl.style.display='';
+staff.forEach(s=>{
+const isSelf = CALLER && s.user_id===CALLER.id;
+const tr=document.createElement('tr');
+const opts = ROLES.map(r=>`<option value="${r}"${r===s.role?' selected':''}>${ROLE_LABEL[r]} (${r})</option>`).join('');
+tr.innerHTML =
+`<td><span class="nm">${esc(s.full_name||'—')}</span>${isSelf?' <span class="pill">You</span>':''}</td>`+
+`<td class="em">${esc(s.email||'')}</td>`+
+`<td><select data-uid="${esc(s.user_id)}" class="roleSel"${isSelf?' disabled title="You can\'t change your own role here"':''}>${opts}</select></td>`+
+`<td class="muted">${fmtDate(s.created_at)}</td>`+
+`<td style="text-align:right">${isSelf?'':`<button class="btn danger" data-uid="${esc(s.user_id)}" data-nm="${esc(s.full_name||s.email)}">Revoke</button>`}</td>`;
+tb.appendChild(tr);
+});
+tb.querySelectorAll('.roleSel').forEach(sel=>sel.addEventListener('change', onRoleChange));
+tb.querySelectorAll('.btn.danger').forEach(b=>b.addEventListener('click', onRemove));
+}
 
-  async function loadList(){
-    setMsg('listMsg','불러오는 중…');
-    try{ const j = await api('/staff/list', {}); setMsg('listMsg',''); renderRows(j.staff||[]); }
-    catch(e){ setMsg('listMsg', e.message, 'err'); }
-  }
+async function loadList(){
+setMsg('listMsg','Loading…');
+try{ const j = await api('/staff/list', {}); setMsg('listMsg',''); renderRows(j.staff||[]); }
+catch(e){ setMsg('listMsg', e.message, 'err'); }
+}
 
-  async function onAdd(){
-    const name = document.getElementById('f_name').value.trim();
-    const email = document.getElementById('f_email').value.trim();
-    const role = document.getElementById('f_role').value;
-    document.getElementById('pwbox').classList.remove('show');
-    if(!name) return setMsg('addMsg','이름을 입력하세요.','err');
-    if(!email) return setMsg('addMsg','이메일을 입력하세요.','err');
-    const btn=document.getElementById('addBtn'); btn.disabled=true; setMsg('addMsg','만드는 중…');
-    try{
-      const j = await api('/staff/create', { full_name:name, email, role });
-      setMsg('addMsg', '✅ '+name+' 직원이 추가되었습니다.', 'ok');
-      document.getElementById('pwName').textContent = name;
-      document.getElementById('pwEmail').textContent = j.email;
-      document.getElementById('pwCode').textContent = j.temp_password;
-      document.getElementById('pwbox').classList.add('show');
-      document.getElementById('f_name').value=''; document.getElementById('f_email').value='';
-      loadList();
-    }catch(e){ setMsg('addMsg', e.message, 'err'); }
-    finally{ btn.disabled=false; }
-  }
+async function onAdd(){
+const name = document.getElementById('f_name').value.trim();
+const email = document.getElementById('f_email').value.trim();
+const role = document.getElementById('f_role').value;
+document.getElementById('pwbox').classList.remove('show');
+if(!name) return setMsg('addMsg','Enter a name.','err');
+if(!email) return setMsg('addMsg','Enter an email.','err');
+const btn=document.getElementById('addBtn'); btn.disabled=true; setMsg('addMsg','Creating…');
+try{
+const j = await api('/staff/create', { full_name:name, email, role });
+setMsg('addMsg', '✅ Staff '+name+' added.', 'ok');
+document.getElementById('pwName').textContent = name;
+document.getElementById('pwEmail').textContent = j.email;
+document.getElementById('pwCode').textContent = j.temp_password;
+document.getElementById('pwbox').classList.add('show');
+document.getElementById('f_name').value=''; document.getElementById('f_email').value='';
+loadList();
+}catch(e){ setMsg('addMsg', e.message, 'err'); }
+finally{ btn.disabled=false; }
+}
 
-  async function onRoleChange(e){
-    const uid = e.target.getAttribute('data-uid'); const role = e.target.value;
-    e.target.disabled=true;
-    try{ await api('/staff/role', { user_id:uid, role }); setMsg('listMsg','✅ 역할이 변경되었습니다.','ok'); }
-    catch(err){ setMsg('listMsg', err.message, 'err'); loadList(); }
-    finally{ e.target.disabled=false; }
-  }
+async function onRoleChange(e){
+const uid = e.target.getAttribute('data-uid'); const role = e.target.value;
+e.target.disabled=true;
+try{ await api('/staff/role', { user_id:uid, role }); setMsg('listMsg','✅ Role updated.','ok'); }
+catch(err){ setMsg('listMsg', err.message, 'err'); loadList(); }
+finally{ e.target.disabled=false; }
+}
 
-  async function onRemove(e){
-    const uid = e.target.getAttribute('data-uid'); const nm = e.target.getAttribute('data-nm');
-    if(!confirm(nm+' 직원의 관리자 권한을 회수할까요?\n(로그인 계정은 남지만 관리자 페이지 접근이 사라집니다.)')) return;
-    e.target.disabled=true;
-    try{ await api('/staff/remove', { user_id:uid }); setMsg('listMsg','권한을 회수했습니다.','ok'); loadList(); }
-    catch(err){ setMsg('listMsg', err.message, 'err'); e.target.disabled=false; }
-  }
+async function onRemove(e){
+const uid = e.target.getAttribute('data-uid'); const nm = e.target.getAttribute('data-nm');
+if(!confirm('Revoke admin access for '+nm+'?\n(The login account remains, but admin page access is removed.)')) return;
+e.target.disabled=true;
+try{ await api('/staff/remove', { user_id:uid }); setMsg('listMsg','Access revoked.','ok'); loadList(); }
+catch(err){ setMsg('listMsg', err.message, 'err'); e.target.disabled=false; }
+}
 
-  function copyCreds(){
-    const email=document.getElementById('pwEmail').textContent;
-    const pw=document.getElementById('pwCode').textContent;
-    const txt='Pacific Sports 관리자 로그인\n이메일: '+email+'\n임시 비밀번호: '+pw+'\n로그인: '+location.origin+'/epacific-login.html';
-    navigator.clipboard.writeText(txt).then(()=>{ const b=document.getElementById('copyBtn'); b.textContent='복사됨 ✓'; setTimeout(()=>b.textContent='복사',1500); });
-  }
+function copyCreds(){
+const email=document.getElementById('pwEmail').textContent;
+const pw=document.getElementById('pwCode').textContent;
+const txt='Pacific Sports admin login\nEmail: '+email+'\nTemp password: '+pw+'\nLogin: '+location.origin+'/epacific-login.html';
+navigator.clipboard.writeText(txt).then(()=>{ const b=document.getElementById('copyBtn'); b.textContent='Copied ✓'; setTimeout(()=>b.textContent='Copy',1500); });
+}
 
-  document.getElementById('addBtn').addEventListener('click', onAdd);
-  document.getElementById('copyBtn').addEventListener('click', copyCreds);
+document.getElementById('addBtn').addEventListener('click', onAdd);
+document.getElementById('copyBtn').addEventListener('click', copyCreds);
 
-  (async ()=>{
-    let st;
-    try{ st = await PacificAuth.currentStaff(); }
-    catch(e){ return gate('직원 인증을 확인할 수 없습니다. 잠시 후 다시 시도하세요.'); }
-    if(!st) return gate('이 페이지는 <b>Pacific Sports 직원 전용</b>입니다. <a href="epacific-login.html">로그인</a> 후 이용하세요.');
-    if(st.role!=='owner') return gate('이 페이지는 <b>대표(owner) 전용</b>입니다.<br><span class="muted">현재 역할: '+esc(st.role)+'</span>');
-    CALLER = { id: (session()||{}).userId, role: st.role };
-    document.getElementById('gate').style.display='none';
-    document.getElementById('main').style.display='';
-    document.getElementById('whoami').textContent = (st.name||st.email)+' · owner';
-    if(!STAFF_WORKER) document.getElementById('cfgWarn').style.display='';
-    loadList();
-  })();
+(async ()=>{
+let st;
+try{ st = await PacificAuth.currentStaff(); }
+catch(e){ return gate('Could not verify staff access. Please try again shortly.'); }
+if(!st) return gate('This page is for <b>Pacific Sports staff only</b>. Please <a href="epacific-login.html">log in</a>.');
+if(st.role!=='owner') return gate('This page is for the <b>owner only</b>.<br><span class="muted">Your role: '+esc(st.role)+'</span>');
+CALLER = { id: (session()||{}).userId, role: st.role };
+document.getElementById('gate').style.display='none';
+document.getElementById('main').style.display='';
+document.getElementById('whoami').textContent = (st.name||st.email)+' · owner';
+if(!STAFF_WORKER) document.getElementById('cfgWarn').style.display='';
+loadList();
+})();
 </script>
 </body>
 </html>

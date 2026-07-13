@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pacific Sports — Inventory Upload</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+--bg:#fbfbf9; --paper:#ffffff; --ink:#1c1c1a; --soft-ink:#56564f; --faint:#8e8e85;
+--line:#e8e7e1; --line-2:#deded6; --accent:#3d5a40; --accent-soft:#eef1ec; --warm:#d9cfbf;
+--display:'Instrument Serif',Georgia,serif; --body:'Geist','Helvetica Neue',sans-serif;
+--bad:#b0443c; --good:#3d5a40;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--body);color:var(--ink);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 22px 80px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:16px;margin-bottom:22px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:34px;font-weight:400;letter-spacing:-.01em}
+h1 .em{font-style:italic;color:var(--accent)}
+.who{font-size:12.5px;color:var(--faint)}
+.sub{font-size:14px;color:var(--soft-ink);margin:-8px 0 22px}
+.gate{max-width:560px;margin:60px auto;text-align:center;color:var(--soft-ink);font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:38px 30px}
+.gate b{color:var(--ink)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:20px}
+.card h2{font-family:var(--display);font-size:21px;font-weight:400;margin-bottom:4px}
+.card .hint{font-size:12.5px;color:var(--faint);margin-bottom:16px;line-height:1.6}
+.drop{border:2px dashed var(--line-2);border-radius:14px;padding:34px 20px;text-align:center;background:#fdfdfb;transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop p{font-size:14px;color:var(--soft-ink);margin-bottom:12px}
+.btn{font-family:var(--body);font-size:14px;font-weight:500;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:9px;padding:10px 18px;cursor:pointer;transition:opacity .15s}
+.btn:hover{opacity:.9}
+.btn[disabled]{opacity:.5;cursor:default}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line-2)}
+.bar{height:8px;background:#eceae3;border-radius:999px;overflow:hidden;margin-top:16px;display:none}
+.bar.show{display:block}
+.bar span{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.msg{font-size:13.5px;margin-top:14px;min-height:18px}
+.msg.err{color:var(--bad)} .msg.ok{color:var(--good)}
+.log{margin-top:14px;max-height:260px;overflow:auto;font-size:12.5px;line-height:1.75;display:none;background:#fdfdfb;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.log.show{display:block}
+.log .ok{color:var(--good)} .log .er{color:var(--bad)} .log .sk{color:var(--faint)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:16px;display:none}
+.stats.show{display:grid}
+.stat{background:#fdfdfb;border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+.stat .l{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:700}
+.stat .v{font-size:20px;font-weight:700;margin-top:3px}
+.muted{color:var(--faint);font-size:12.5px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:#f3f1ea;border-radius:5px;padding:1px 5px}
+a.back{font-size:13px;color:var(--soft-ink);text-decoration:none}
+a.back:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="gate" class="gate">Checking staff access…</div>
+
+<div id="main" class="wrap" style="display:none">
+<div class="top">
+<h1>Inventory <span class="em">Upload</span></h1>
+<div class="who" id="whoami"></div>
+</div>
+<p class="sub">Upload the inventory CSV export to refresh stock for every style. Replaces the current SC / CA quantities.</p>
+
+<div class="card">
+<h2>Upload CSV</h2>
+<div class="hint">
+Expected columns: <code>Style</code>, <code>Color</code>, <code>Size</code>, <code>SC</code>, <code>CA</code> (exact quantities).<br>
+Styles present in the file are fully replaced; styles not in the file are left untouched.
+</div>
+
+<div class="drop" id="drop">
+<p>Drag the CSV here, or choose a file</p>
+<input type="file" id="file" accept=".csv,text/csv" style="display:none" />
+<button class="btn" id="pick">Choose CSV file</button>
+</div>
+
+<div class="bar" id="bar"><span id="barIn"></span></div>
+<div id="msg" class="msg"></div>
+
+<div class="stats" id="stats">
+<div class="stat"><div class="l">Rows read</div><div class="v" id="sRows">0</div></div>
+<div class="stat"><div class="l">Styles</div><div class="v" id="sStyles">0</div></div>
+<div class="stat"><div class="l">Rows written</div><div class="v" id="sWritten">0</div></div>
+<div class="stat"><div class="l">Skipped</div><div class="v" id="sSkipped">0</div></div>
+</div>
+
+<div class="log" id="log"></div>
+</div>
+
+<a class="back" href="admin-dashboard.html">← Dashboard</a>
+</div>
+
+<script src="pacific-config.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script>
+const CFG = window.PACIFIC_CONFIG || {};
+const SB = (CFG.SUPABASE_URL || '').replace(/\/+$/, '');
+const KEY = CFG.SUPABASE_ANON_KEY || '';
+
+// Warehouse ids (from the warehouses table)
+const WH = {
+  SC:     '0bf200b1-409f-459f-beb2-7cf2e840fdfb',
+  CA:     '02fda9c2-380e-488d-abd8-55f5e8d9775a',
+  SC_PCR: 'c61be0c5-d82f-4eaa-96e9-d3197a081ed7',
+  CA_PCR: '5bd988e9-4f81-4362-88fe-d6157f4e7a12'
+};
+
+function session(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
+function token(){ const s=session(); return s && s.token ? s.token : null; }
+function gate(msg){ const g=document.getElementById('gate'); g.innerHTML=msg; g.style.display='block'; document.getElementById('main').style.display='none'; }
+function setMsg(t, kind){ const e=document.getElementById('msg'); e.textContent=t||''; e.className='msg'+(kind?' '+kind:''); }
+function log(html){ const l=document.getElementById('log'); l.classList.add('show'); l.insertAdjacentHTML('beforeend', html+'<br>'); l.scrollTop=l.scrollHeight; }
+function setBar(p){ const b=document.getElementById('bar'); b.classList.add('show'); document.getElementById('barIn').style.width=Math.round(p)+'%'; }
+
+// "1368 - Mens CVC Short Sleeve Tee" → "1368"
+function styleNo(v){
+  v = String(v==null?'':v).trim();
+  if(!v) return '';
+  const i = v.indexOf(' - ');
+  const head = (i>=0 ? v.slice(0,i) : v).trim();
+  const p = head.split(/\s+/);
+  return p[0] || '';
+}
+function qty(v){
+  if(v==null) return 0;
+  const m = String(v).replace(/,/g,'').match(/\d+/);
+  return m ? (parseInt(m[0],10)||0) : 0;
+}
+
+// CSV parser (handles quoted fields containing commas / quotes)
+function parseCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);   // strip BOM
+  const rows = []; let row = []; let cur = ''; let q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cur+='"'; i++; } else q=false; }
+      else cur += c;
+    } else {
+      if(c === '"') q = true;
+      else if(c === ','){ row.push(cur); cur=''; }
+      else if(c === '\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if(c === '\r'){ /* skip */ }
+      else cur += c;
+    }
+  }
+  if(cur.length || row.length){ row.push(cur); rows.push(row); }
+  if(!rows.length) return [];
+  const head = rows[0].map(h=>h.trim());
+  return rows.slice(1).filter(r=>r.length>1).map(r=>{
+    const o = {};
+    head.forEach((h,idx)=>{ o[h] = (r[idx]==null?'':r[idx]).trim(); });
+    return o;
+  });
+}
+
+function H(extra){
+  return Object.assign({ apikey: KEY, Authorization: 'Bearer ' + token() }, extra || {});
+}
+async function fetchStyleMap(){
+  const r = await fetch(SB + '/rest/v1/styles?select=id,style_number&limit=10000', { headers: H() });
+  if(!r.ok) throw new Error('Could not load styles (' + r.status + ')');
+  const map = {};
+  (await r.json()).forEach(x=>{ if(x.style_number) map[String(x.style_number).trim()] = x.id; });
+  return map;
+}
+async function delStyles(list){
+  const inS = 'in.(' + list.map(s=>'"'+String(s).replace(/"/g,'')+'"').join(',') + ')';
+  const inW = 'in.(' + [WH.SC,WH.CA,WH.SC_PCR,WH.CA_PCR].join(',') + ')';
+  const u = SB + '/rest/v1/inventory?style_number=' + encodeURIComponent(inS) + '&warehouse_id=' + encodeURIComponent(inW);
+  const r = await fetch(u, { method:'DELETE', headers: H({ Prefer:'return=minimal' }) });
+  if(!r.ok) throw new Error('Delete failed (' + r.status + '): ' + (await r.text()).slice(0,140));
+}
+async function insertRows(chunk){
+  const r = await fetch(SB + '/rest/v1/inventory', {
+    method:'POST',
+    headers: H({ 'Content-Type':'application/json', Prefer:'return=minimal' }),
+    body: JSON.stringify(chunk)
+  });
+  if(!r.ok) throw new Error('Insert failed (' + r.status + '): ' + (await r.text()).slice(0,140));
+}
+function chunk(arr,n){ const o=[]; for(let i=0;i<arr.length;i+=n) o.push(arr.slice(i,i+n)); return o; }
+
+async function handleFile(file){
+  if(!file) return;
+  if(!token()) return setMsg('Your session expired. Please log in again.','err');
+  document.getElementById('log').innerHTML='';
+  document.getElementById('stats').classList.remove('show');
+  setMsg('Reading ' + file.name + ' …');
+  setBar(2);
+
+  let recs;
+  try{ recs = parseCSV(await file.text()); }
+  catch(e){ return setMsg('Could not read the CSV: ' + e.message, 'err'); }
+  if(!recs.length) return setMsg('The CSV appears to be empty.','err');
+
+  const cols = Object.keys(recs[0]);
+  const need = ['Style','Color','Size','SC','CA'];
+  const missing = need.filter(c=>cols.indexOf(c) < 0);
+  if(missing.length) return setMsg('Missing column(s): ' + missing.join(', '), 'err');
+
+  setMsg('Loading style list …'); setBar(8);
+  let smap;
+  try{ smap = await fetchStyleMap(); }
+  catch(e){ return setMsg(e.message,'err'); }
+
+  // Build inventory rows
+  const rows = [], styles = new Set(), unmatched = new Set();
+  let skipped = 0;
+  recs.forEach(r=>{
+    const sNo = styleNo(r['Style']);
+    const color = (r['Color']||'').trim();
+    const size = (r['Size']||'').trim();
+    if(!sNo || !color || !size){ skipped++; return; }
+    const sid = smap[sNo];
+    if(!sid){ unmatched.add(sNo); skipped++; return; }
+    styles.add(sNo);
+    rows.push({ style_id:sid, style_number:sNo, color, size, warehouse_id:WH.SC, qty_on_hand:qty(r['SC']) });
+    rows.push({ style_id:sid, style_number:sNo, color, size, warehouse_id:WH.CA, qty_on_hand:qty(r['CA']) });
+  });
+
+  document.getElementById('sRows').textContent = recs.length.toLocaleString();
+  document.getElementById('sStyles').textContent = styles.size;
+  document.getElementById('sSkipped').textContent = skipped.toLocaleString();
+  document.getElementById('stats').classList.add('show');
+
+  if(!rows.length) return setMsg('No usable rows found (no styles matched the shop catalog).','err');
+
+  const list = [...styles];
+  try{
+    setMsg('Clearing old stock for ' + list.length + ' styles …'); setBar(14);
+    for(const c of chunk(list, 60)) await delStyles(c);
+
+    const parts = chunk(rows, 500);
+    let done = 0;
+    for(let i=0;i<parts.length;i++){
+      await insertRows(parts[i]);
+      done += parts[i].length;
+      document.getElementById('sWritten').textContent = done.toLocaleString();
+      setBar(14 + (i+1)/parts.length*86);
+      setMsg('Writing stock … ' + done.toLocaleString() + ' / ' + rows.length.toLocaleString());
+    }
+    setBar(100);
+    setMsg('✅ Done — ' + list.length + ' styles updated (' + rows.length.toLocaleString() + ' stock rows).', 'ok');
+    log('<span class="ok">✓ Updated styles: ' + list.sort().join(', ') + '</span>');
+    if(unmatched.size) log('<span class="sk">— Skipped (not in shop catalog): ' + [...unmatched].sort().join(', ') + '</span>');
+  }catch(e){
+    setMsg('Upload failed: ' + e.message, 'err');
+    log('<span class="er">✗ ' + e.message + '</span>');
+  }
+}
+
+// wire up
+const drop = document.getElementById('drop');
+const fileEl = document.getElementById('file');
+document.getElementById('pick').addEventListener('click', ()=>fileEl.click());
+fileEl.addEventListener('change', ()=>handleFile(fileEl.files[0]));
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) handleFile(f); });
+
+(async ()=>{
+  let st;
+  try{ st = await PacificAuth.currentStaff(); }
+  catch(e){ return gate('Could not verify staff access. Please try again shortly.'); }
+  if(!st) return gate('This page is for <b>Pacific Sports staff only</b>. Please <a href="epacific-login.html">log in</a>.');
+  document.getElementById('gate').style.display='none';
+  document.getElementById('main').style.display='';
+  document.getElementById('whoami').textContent = (st.name||st.email) + ' · ' + st.role;
+})();
+</script>
+</body>
+</html>

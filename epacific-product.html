@@ -238,6 +238,10 @@
   .rel-no{font-size:12px;color:var(--faint);font-weight:600}
   .rel-nm{font-size:13px;color:var(--ink);font-weight:500;line-height:1.2}
   .rel-cat{font-size:11.5px;color:var(--soft-ink)}
+
+  /* 품절 칸 → 대체 스타일(재고 있는 곳) 유도 링크 */
+  .subhint{display:block;margin-top:3px;font-size:10px;font-weight:600;line-height:1.15;color:var(--accent);text-decoration:none;white-space:nowrap}
+  .subhint:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -489,6 +493,10 @@
   const addBtn=document.getElementById('addBtn');
 
 
+  // ── 품절 시 유도할 대체 스타일 (같은 색·사이즈에 재고가 있으면 링크 표시) ──
+  const SUBSTITUTE = { '1368':'8368' };
+  let subStyle=null, subStock=null, subSizes=[];
+
   function fmtStock(n){
     // 표시 규칙: 음수→0(품절), 0~1,999 정확한 숫자, 2,000 이상은 1000단위 내림 + '+'
     //           (예: 2,540 → 2,000+ / 3,888 → 3,000+ / 7,920 → 7,000+)
@@ -531,8 +539,18 @@
           `<input type="number" min="0" placeholder="–" inputmode="numeric" disabled title="Available to approved wholesale accounts">`+
           `<span class="stock lockd">·</span></div></td>`;
       }
+      let subHtml='';
+      if(out && subStyle && subStock){
+        const ssm = subStock[c.name] || subStock[raw] || null;
+        const sIdx = subSizes.indexOf(s);
+        const sAvail = (ssm && sIdx>=0 && ssm[wh]) ? (ssm[wh][sIdx]||0) : 0;
+        if(sAvail>0){
+          const anchor = 'color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
+          subHtml = `<a class="subhint" href="epacific-product.html?style=${subStyle}#${anchor}" title="In stock on style #${subStyle} — same color &amp; size">#${subStyle} · ${fmtStock(sAvail).t} \u2192</a>`;
+        }
+      }
       const stockHtml = out
-        ? `<span class="stock out">Out of<br>stock</span>`
+        ? `<span class="stock out">Out of<br>stock</span>`+subHtml
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
       return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
@@ -1133,6 +1151,15 @@
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
       stockMap  = await PacificData.getInventory(STYLE, product);
+      // 대체 스타일 재고 (품절 칸 유도용)
+      try{
+        const _sub = SUBSTITUTE[String(STYLE)];
+        if(_sub){
+          const sp = await PacificData.getProduct(_sub);
+          const si = await PacificData.getInventory(_sub, sp);
+          subStyle = _sub; subSizes = sp.sizes || []; subStock = si;
+        }
+      }catch(e){ subStyle=null; subStock=null; }
       // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
       try{
         const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;

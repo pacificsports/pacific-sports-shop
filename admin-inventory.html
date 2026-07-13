@@ -124,9 +124,11 @@ function styleNo(v){
   return p[0] || '';
 }
 function qty(v){
+  // 음수(예약/선출고분)는 0 = 품절로 처리. CSV 표시 규칙과 동일.
   if(v==null) return 0;
-  const m = String(v).replace(/,/g,'').match(/\d+/);
-  return m ? (parseInt(m[0],10)||0) : 0;
+  const m = String(v).replace(/,/g,'').trim().match(/-?\d+/);
+  const n = m ? parseInt(m[0],10) : 0;
+  return (isNaN(n) || n < 0) ? 0 : n;
 }
 
 // CSV parser (handles quoted fields containing commas / quotes)

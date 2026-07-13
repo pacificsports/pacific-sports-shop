@@ -490,9 +490,10 @@
 
 
   function fmtStock(n){
-    // Airtable 대략치(200+/500+/1000+...)는 '+' 붙여 표시, 그 외엔 실제 숫자
-    const BANDS=[200,500,1000,1500,2000,2500,5000,7500,10000,12500,15000,20000,25000];
-    if(n>0 && BANDS.indexOf(n)>-1) return {t:n.toLocaleString('en-US')+'+',cls:''};
+    // 표시 규칙: 음수→0(품절), 0~1,999 정확한 숫자, 2,000 이상은 1000단위 내림 + '+'
+    //           (예: 2,540 → 2,000+ / 3,888 → 3,000+ / 7,920 → 7,000+)
+    if(!(n>0)) n=0;
+    if(n>=2000) return {t:(Math.floor(n/1000)*1000).toLocaleString('en-US')+'+',cls:''};
     if(n<=72) return {t:String(n),cls:'low'};
     return {t:n.toLocaleString('en-US'),cls:''};
   }

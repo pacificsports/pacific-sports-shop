@@ -239,9 +239,11 @@
   .rel-nm{font-size:13px;color:var(--ink);font-weight:500;line-height:1.2}
   .rel-cat{font-size:11.5px;color:var(--soft-ink)}
 
-  /* 품절 칸 → 대체 스타일(재고 있는 곳) 유도 링크 */
-  .subhint{display:block;margin-top:3px;font-size:10px;font-weight:600;line-height:1.15;color:var(--accent);text-decoration:none;white-space:nowrap}
-  .subhint:hover{text-decoration:underline}
+  /* 품절 칸 → 대체 스타일 배지 (수량 없이 짧게) */
+  .subhint{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:700;line-height:1;letter-spacing:.02em;
+    color:var(--accent);background:var(--accent-soft);border:1px solid #dbe3da;border-radius:6px;
+    padding:3px 6px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+  .subhint:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -494,7 +496,7 @@
 
 
   // ── 품절 시 유도할 대체 스타일 (같은 색·사이즈에 재고가 있으면 링크 표시) ──
-  const SUBSTITUTE = { '1368':'8368' };
+  const SUBSTITUTE = { '1368':'8368', '8368':'1368' };   // 양방향: 한쪽이 품절이면 다른 쪽 추천
   let subStyle=null, subStock=null, subSizes=[];
 
   function fmtStock(n){
@@ -546,7 +548,7 @@
         const sAvail = (ssm && sIdx>=0 && ssm[wh]) ? (ssm[wh][sIdx]||0) : 0;
         if(sAvail>0){
           const anchor = 'color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
-          subHtml = `<a class="subhint" href="epacific-product.html?style=${subStyle}#${anchor}" title="In stock on style #${subStyle} — same color &amp; size">#${subStyle} · ${fmtStock(sAvail).t} \u2192</a>`;
+          subHtml = `<a class="subhint" href="epacific-product.html?style=${subStyle}#${anchor}" title="Same color &amp; size is in stock on style #${subStyle}">${subStyle} \u2197</a>`;
         }
       }
       const stockHtml = out

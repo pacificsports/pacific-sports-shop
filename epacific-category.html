@@ -98,13 +98,12 @@
   .quick{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(251,251,249,.95);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:11px;text-align:center;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
   .card:hover .quick{opacity:1;transform:translateY(0)}
   .swatches-mini{display:flex;gap:6px;margin-bottom:9px}
-  .sm{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12);background-size:cover;background-position:center}
-  .sm-photo{background-size:340%;background-position:50% 36%}
-  body.editmode .swatches-mini{gap:7px;flex-wrap:wrap}
-  body.editmode .swatches-mini .sm{cursor:pointer;width:18px;height:18px}
-  body.editmode .sm-dim{opacity:.3;outline:1px dashed var(--faint,#b9b7ad);outline-offset:1px}
-  body.editmode .sm-sel{outline:2px solid var(--ink);outline-offset:1px}
-  .swx-hint{font-size:11px;color:var(--faint);margin:2px 0 6px;font-style:italic}
+  .sm{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .pcount{font-size:13px;color:var(--soft-ink);font-weight:400;margin-bottom:4px}
+  body.editmode .card.editable{cursor:grab}
+  body.editmode .card.dragging{opacity:.45}
+  body.editmode .card.drag-over{outline:2px dashed var(--accent,#6b7b5e);outline-offset:3px;border-radius:14px}
+  .drag-hint{font-size:11px;color:var(--faint);margin-top:6px;font-style:italic}
   .style-no{font-size:12px;color:var(--faint);font-weight:500;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
   .pmeta{font-size:13px;color:var(--soft-ink);font-weight:350}
@@ -287,26 +286,32 @@
   let hiddenStyles=new Set();   // 숨긴 스타일 번호
   let editOn=false, isStaff=false;
   const _SBcfg=window.PACIFIC_CONFIG||{};
-  const FEAT_KEY='__FEATURED__';         // color_names 안 예약 키에 목록 스와치 지정 저장 (별도 컬럼 불필요)
-  let styleColors={};                    // 스타일번호 → [{color, url}] (실제 색, 사진 순)
-  let featuredMap={};                    // 스타일번호 → [color(대문자)] (직원이 지정한 목록 색)
+  const RANK_KEY='__RANK__';             // color_names 안 예약 키에 진열 순서(rank) 저장 (별도 컬럼 불필요)
+  let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
+  let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
+  let colorCount={};                     // 스타일번호 → 색상 수
+  let rankMap={};                        // 스타일번호 → 저장된 진열 순서(rank)
+  let defaultRank={};                    // 스타일번호 → 기본 순서 인덱스(FEATURED 기준)
   const _anonH=()=>({apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY});
   function _imgUrl(p){ return (window.PacificData&&PacificData.imageUrl)?PacificData.imageUrl(p):(_SBcfg.SUPABASE_URL+'/storage/v1/object/public/product-images/'+p); }
+  function effRank(no){ const r=rankMap[String(no)]; return (r!=null)?r:(defaultRank[String(no)]!=null?defaultRank[String(no)]:100000); }
+  function sortStylesByRank(){ allStyles.sort((a,b)=>effRank(a.no)-effRank(b.no) || String(a.no).localeCompare(String(b.no),undefined,{numeric:true})); }
 
-  // 숨긴 스타일 + color_names(featured 포함) 로드
+  // 스타일 설정 로드: 숨김 / color_names / ★메인색 / 진열순서(rank)
   async function loadHiddenStyles(){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names&limit=100000',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color&limit=100000',
         {headers:_anonH()});
       if(!r.ok) return;
       const d=await r.json();
       hiddenStyles=new Set((d||[]).filter(x=>x.is_hidden).map(x=>String(x.style_number)));
       (d||[]).forEach(x=>{ const no=String(x.style_number); const cn=x.color_names||{}; colorNamesMap[no]=cn;
-        const f=cn[FEAT_KEY]; if(Array.isArray(f)&&f.length) featuredMap[no]=f.map(c=>String(c).toUpperCase()); });
+        if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
+        const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk; });
     }catch(e){}
   }
-  // 스타일별 실제 색상 목록 로드 (product_images, 사진 순) — 목록 스와치용
+  // 스타일별 실제 색상 목록 로드 (★메인색 썸네일 매핑용)
   async function loadStyleColors(){
     try{
       const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/product_images?select=style_number,color,image_path,sort_order&order=sort_order&limit=100000',
@@ -319,13 +324,26 @@
         styleColors[no].push({color:col, url:_imgUrl(row.image_path)}); });
     }catch(e){}
   }
-  // 목록 스와치 지정 저장 (color_names 안 예약 키에 병합 upsert)
-  async function saveFeatured(styleNo, colorsArr){
+  // 스타일별 색상 수 (skus 활성 색 distinct)
+  async function loadColorCounts(){
+    try{
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/skus?select=style_number,color&is_active=eq.true&limit=100000',{headers:_anonH()});
+      if(!r.ok) return;
+      const d=await r.json(); const m={};
+      (d||[]).forEach(row=>{ const no=String(row.style_number); (m[no]=m[no]||new Set()).add(String(row.color||'').toUpperCase().trim()); });
+      Object.keys(m).forEach(no=>colorCount[no]=m[no].size);
+    }catch(e){}
+  }
+  // ★메인색을 카테고리 대표 사진(썸네일)에 반영
+  function applyDefaultThumbs(){
+    Object.keys(defaultColorMap).forEach(no=>{ const dc=defaultColorMap[no]; const list=styleColors[no]||[];
+      const hit=list.find(c=>c.color===dc); if(hit&&hit.url) thumbs[no]=hit.url; });
+  }
+  // 진열 순서(rank) 저장 (color_names 안 예약 키에 병합 upsert)
+  async function saveRank(styleNo, rank){
     const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
     if(!tk){ alert('Session expired. Please log in again.'); return false; }
-    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
-    if(colorsArr&&colorsArr.length) cn[FEAT_KEY]=colorsArr; else delete cn[FEAT_KEY];
-    colorNamesMap[no]=cn;
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{}); cn[RANK_KEY]=rank; colorNamesMap[no]=cn;
     const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
     const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
       {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
@@ -341,6 +359,19 @@
     return r.ok;
   }
 
+  let dragNo=null, lastRenderList=[];
+  // 드래그로 놓았을 때: dragged 를 target 바로 앞에 오도록 rank 재계산 후 저장
+  async function handleReorder(draggedNo, targetNo){
+    const arr=lastRenderList.map(p=>String(p.no));
+    const ti=arr.indexOf(targetNo); if(ti<0) return;
+    let prevNo=null; for(let i=ti-1;i>=0;i--){ if(arr[i]!==draggedNo){ prevNo=arr[i]; break; } }
+    const tr=effRank(targetNo); const pr=(prevNo!=null)?effRank(prevNo):(tr-1);
+    const newRank=(pr+tr)/2;
+    rankMap[String(draggedNo)]=newRank;
+    sortStylesByRank(); renderGrid();
+    const ok=await saveRank(draggedNo,newRank); if(!ok) alert('Could not save order.');
+  }
+
   function renderGrid(){
     let list;
     if(fabricKey && FABRIC_MATCH[fabricKey]){ const re=FABRIC_MATCH[fabricKey].re; list = allStyles.filter(s=>re.test(String(s.desc||''))); }
@@ -349,77 +380,53 @@
     if(!(isStaff && editOn)) list = list.filter(s=>!hiddenStyles.has(String(s.no)));
     grid.innerHTML='';
     if(!list.length){ grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:var(--faint)">No styles in this category.</div>'; return; }
+    lastRenderList = list;
     list.forEach((p,idx)=>{
       const no=String(p.no);
-      const allCols=styleColors[no]||[];
-      const feat=featuredMap[no]||[];
       const editing=isStaff&&editOn;
-      const _hex=c=>(window.PacificData&&PacificData.colorHex)?PacificData.colorHex(c):'#c9c7bf';
-      const _dot=(c,cls)=>{ const st=c.url?`background-image:url('${c.url}')`:`background:${_hex(c.color)}`;
-        return `<span class="${cls}" data-color="${String(c.color).replace(/"/g,'&quot;')}" style="${st}" title="${String(c.color).replace(/"/g,'&quot;')}"></span>`; };
-      let dots;
-      if(!allCols.length){
-        dots = editing ? '<span class="swx-hint">사진 없음</span>'
-          : colors.slice(0,5).map(c=>`<span class="sm" style="background:${c}"></span>`).join('');
-      } else if(editing){
-        const selSet=new Set(feat);
-        dots = allCols.map(c=>{ const on=feat.length?selSet.has(c.color):false;
-          return _dot(c,'sm '+(c.url?'sm-photo':'')+' '+(feat.length?(on?'sm-sel':'sm-dim'):'')); }).join('');
-      } else {
-        let show = feat.length ? allCols.filter(c=>feat.includes(c.color)) : allCols.slice(0,6);
-        if(feat.length){ const ord={}; feat.forEach((f,i)=>ord[f]=i); show=show.slice().sort((a,b)=>(ord[a.color]??99)-(ord[b.color]??99)); }
-        dots = show.map(c=>_dot(c,'sm '+(c.url?'sm-photo':''))).join('');
-      }
-      const featHint = (editing && allCols.length)
-        ? `<div class="swx-hint">${feat.length? feat.length+'개 선택됨 — 클릭해서 변경' : '보여줄 색을 클릭 (선택 안 하면 자동)'}</div>` : '';
-      const hidden=hiddenStyles.has(String(p.no));
+      const cc=colorCount[no];
+      const colorLine = cc ? (cc+' color'+(cc>1?'s':'')) : '';
+      const hidden=hiddenStyles.has(no);
       const card=document.createElement('div');
-      card.className='card'+(hidden?' style-hidden':'');
+      card.className='card'+(hidden?' style-hidden':'')+(editing?' editable':'');
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
-      const editBadge = (isStaff && editOn)
-        ? `<div class="hide-toggle" data-no="${p.no}">${hidden?'Hidden — click to show':'Showing — click to hide'}</div>`
+      card.dataset.no=no;
+      if(editing) card.setAttribute('draggable','true');
+      const editBadge = editing
+        ? `<div class="hide-toggle" data-no="${no}">${hidden?'Hidden — click to show':'Showing — click to hide'}</div>`
         : '';
+      const dragHint = editing ? '<div class="drag-hint">↕ 드래그로 순서 변경</div>' : '';
       card.innerHTML=`
         <div class="thumb">
-          ${thumbs[p.no] ? `<img src="${thumbs[p.no]}" alt="Style ${p.no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${p.no}</div>`}
+          ${thumbs[no] ? `<img src="${thumbs[no]}" alt="Style ${no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${no}</div>`}
           <div class="quick">View &amp; order →</div>
           ${editBadge}
         </div>
-        <div class="style-no">Style #${p.no}</div>
+        <div class="style-no">Style #${no}</div>
         <div class="pname">${p.desc}</div>
         <div class="pmeta">${p.cat} · ${p.sr}</div>
-        <div class="swatches-mini">${dots}</div>
-        ${featHint}
+        ${colorLine?`<div class="pcount">${colorLine}</div>`:''}
         <div class="pcolors">View colors &amp; stock</div>
+        ${dragHint}
       `;
-      // Edit 모드: 숨김 토글 클릭은 이동 막고 토글. 그 외엔 제품으로 이동
-      if(isStaff && editOn){
+      if(editing){
         const tg=card.querySelector('.hide-toggle');
         if(tg) tg.addEventListener('click',async(e)=>{
           e.stopPropagation();
-          const no=String(p.no); const willHide=!hiddenStyles.has(no);
+          const willHide=!hiddenStyles.has(no);
           if(willHide) hiddenStyles.add(no); else hiddenStyles.delete(no);
           renderGrid();
           const ok=await saveStyleHidden(no, willHide);
           if(!ok){ alert('Could not save.'); }
         });
-        // 목록 스와치 색 지정: 점 클릭으로 선택/해제 (선택 없으면 자동)
-        card.querySelectorAll('.swatches-mini .sm[data-color]').forEach(sm=>{
-          sm.addEventListener('click',async(e)=>{
-            e.stopPropagation();
-            const col=sm.getAttribute('data-color');
-            let cur=(featuredMap[no]||[]).slice();
-            if(cur.includes(col)) cur=cur.filter(x=>x!==col); else cur.push(col);
-            if(cur.length) featuredMap[no]=cur; else delete featuredMap[no];
-            renderGrid();
-            const ok=await saveFeatured(no, cur);
-            if(!ok) alert('Could not save.');
-          });
-        });
-        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
-      }else{
-        card.addEventListener('click',()=>{ location.href='epacific-product.html?style='+encodeURIComponent(p.no); });
+        // 드래그로 진열 순서 변경
+        card.addEventListener('dragstart',e=>{ dragNo=no; card.classList.add('dragging'); try{e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',no);}catch(_){} });
+        card.addEventListener('dragend',()=>{ dragNo=null; document.querySelectorAll('.card.dragging,.card.drag-over').forEach(c=>c.classList.remove('dragging','drag-over')); });
+        card.addEventListener('dragover',e=>{ if(dragNo&&dragNo!==no){ e.preventDefault(); card.classList.add('drag-over'); } });
+        card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
+        card.addEventListener('drop',async e=>{ e.preventDefault(); card.classList.remove('drag-over'); if(!dragNo||dragNo===no)return; await handleReorder(dragNo,no); });
       }
+      card.addEventListener('click',(e)=>{ if(editing && e.target.closest('.hide-toggle'))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
       grid.appendChild(card);
     });
     const cnt=document.getElementById('resultCount');
@@ -452,8 +459,12 @@
       const _rank=x=>{ const i=FEATURED_ORDER.indexOf(String(x.no)); return i<0?100000:i; };
       allStyles.sort((x,y)=> _rank(x)-_rank(y) || String(x.no).localeCompare(String(y.no),undefined,{numeric:true}) );
       thumbs = await PacificData.getStyleThumbs();   // 사진 있으면 카드에 표시
-      await loadHiddenStyles();                       // 숨긴 스타일 + featured 로드
-      await loadStyleColors();                        // 스타일별 실제 색상(목록 스와치)
+      await loadHiddenStyles();                       // 숨김 / ★메인색 / 진열순서 로드
+      await loadStyleColors();                        // ★메인색 썸네일 매핑용
+      await loadColorCounts();                        // 색상 수 (skus)
+      applyDefaultThumbs();                            // ★메인색을 대표 사진에 반영
+      allStyles.forEach((s,i)=>{ defaultRank[String(s.no)]=i; });  // 기본 순서 인덱스
+      sortStylesByRank();                              // 저장된 진열 순서 반영
       try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }
       setupStaffBar();
       const params=new URLSearchParams(location.search);

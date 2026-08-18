@@ -291,7 +291,8 @@
   let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
-  let colorCount={};                     // 스타일번호 → 색상 수
+  let styleHiddenColors={};              // 스타일번호 → [숨긴 색(raw)]  (상품페이지와 색상 수 일치용)
+  let colorCount={};                     // 스타일번호 → 색상 수(표시되는 색만)
   let rankMap={};                        // 스타일번호 → 저장된 진열 순서(rank)
   let defaultRank={};                    // 스타일번호 → 기본 순서 인덱스(FEATURED 기준)
   const _anonH=()=>({apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY});
@@ -302,13 +303,14 @@
   // 스타일 설정 로드: 숨김 / color_names / ★메인색 / 진열순서(rank)
   async function loadHiddenStyles(){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color&limit=100000',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color,hidden_colors&limit=100000',
         {headers:_anonH()});
       if(!r.ok) return;
       const d=await r.json();
       hiddenStyles=new Set((d||[]).filter(x=>x.is_hidden).map(x=>String(x.style_number)));
       (d||[]).forEach(x=>{ const no=String(x.style_number); const cn=x.color_names||{}; colorNamesMap[no]=cn;
         if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
+        if(Array.isArray(x.hidden_colors)&&x.hidden_colors.length) styleHiddenColors[no]=x.hidden_colors.map(c=>String(c).toUpperCase());
         const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk; });
     }catch(e){}
   }
@@ -325,14 +327,20 @@
         styleColors[no].push({color:col, url:_imgUrl(row.image_path)}); });
     }catch(e){}
   }
-  // 스타일별 색상 수 (skus 활성 색 distinct)
+  // 스타일별 색상 수 — 상품페이지와 동일하게 "표시되는 색"만 셈
+  //  (COLOR_RULES 숨김 + style_settings 숨김 제외, 이름 통일(rename)로 중복 합침)
   async function loadColorCounts(){
     try{
       const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/skus?select=style_number,color&is_active=eq.true&limit=100000',{headers:_anonH()});
       if(!r.ok) return;
-      const d=await r.json(); const m={};
-      (d||[]).forEach(row=>{ const no=String(row.style_number); (m[no]=m[no]||new Set()).add(String(row.color||'').toUpperCase().trim()); });
-      Object.keys(m).forEach(no=>colorCount[no]=m[no].size);
+      const d=await r.json(); const raw={};
+      (d||[]).forEach(row=>{ const no=String(row.style_number); (raw[no]=raw[no]||new Set()).add(String(row.color||'').toUpperCase().trim()); });
+      const PD=window.PacificData||{};
+      const isHidden=(no,c)=> (PD.isHiddenColor?PD.isHiddenColor(no,c):false) || (styleHiddenColors[no]||[]).includes(String(c).toUpperCase());
+      const disp=(no,c)=> PD.displayColorName?PD.displayColorName(no,c):c;
+      Object.keys(raw).forEach(no=>{ const shown=new Set();
+        raw[no].forEach(c=>{ if(!isHidden(no,c)) shown.add(disp(no,c)); });
+        colorCount[no]=shown.size; });
     }catch(e){}
   }
   // ★메인색을 카테고리 대표 사진(썸네일)에 반영

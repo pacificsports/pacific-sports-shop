@@ -268,7 +268,16 @@
 <script>
   const colors=['#f1ece0','#2c2c2c','#6b7b5e','#8a9aa8','#b0383a','#33414f','#6e6e6e','#c9a87c','#9c5a3c'];
   const grid=document.getElementById('grid');
-  let allStyles=[], activeCat='All', thumbs={};
+  let allStyles=[], activeCat='All', thumbs={}, fabricKey='';
+  // 원단(Collection) 필터: 스타일 설명(desc)으로 매칭
+  const FABRIC_MATCH={
+    cotton:{label:'100% Cotton', re:/100%\s*Cotton/i},
+    cvc:{label:'CVC Blend', re:/\bCVC\b/i},
+    tri:{label:'Tri-Blend', re:/Tri[\s-]?Color|Tri[\s-]?blend/i},
+    htr:{label:'Color & Snow Heather', re:/\bHtr\b|Heather|Snow/i},
+    pfd:{label:'PFD & Pigment Dye', re:/\bPFD\b/i},
+    perf:{label:'Performance Poly', re:/Performance/i}
+  };
   let hiddenStyles=new Set();   // 숨긴 스타일 번호
   let editOn=false, isStaff=false;
   const _SBcfg=window.PACIFIC_CONFIG||{};
@@ -294,7 +303,9 @@
   }
 
   function renderGrid(){
-    let list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat);
+    let list;
+    if(fabricKey && FABRIC_MATCH[fabricKey]){ const re=FABRIC_MATCH[fabricKey].re; list = allStyles.filter(s=>re.test(String(s.desc||''))); }
+    else { list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat); }
     // 손님(또는 Edit 꺼짐)에겐 숨긴 스타일 제외. 직원 Edit 모드면 전부 표시(숨긴 건 흐리게)
     if(!(isStaff && editOn)) list = list.filter(s=>!hiddenStyles.has(String(s.no)));
     grid.innerHTML='';
@@ -370,8 +381,13 @@
       await loadHiddenStyles();                       // 숨긴 스타일 로드
       try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }
       setupStaffBar();
-      const q=new URLSearchParams(location.search).get('cat');
-      if(q) activeCat=q;
+      const params=new URLSearchParams(location.search);
+      const q=params.get('cat'); if(q) activeCat=q;
+      const fb=params.get('fabric'); if(fb && FABRIC_MATCH[fb]){ fabricKey=fb;
+        const h1=document.querySelector('h1.rise'); if(h1) h1.textContent=FABRIC_MATCH[fb].label;
+        const cr=document.querySelector('.crumb'); if(cr) cr.innerHTML='<a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html">Shop All</a><span>/</span>'+FABRIC_MATCH[fb].label;
+        const sub=document.querySelector('h1.rise + p.rise'); if(sub) sub.textContent='All '+FABRIC_MATCH[fb].label+' styles.';
+      }
       buildCategoryFilter();
       renderGrid();
     }catch(e){

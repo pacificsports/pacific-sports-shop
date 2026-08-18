@@ -102,7 +102,8 @@
   .pcount{font-size:13px;color:var(--soft-ink);font-weight:400;margin-bottom:4px}
   body.editmode .card.editable{cursor:grab}
   body.editmode .card.dragging{opacity:.45}
-  body.editmode .card.drag-over{outline:2px dashed var(--accent,#6b7b5e);outline-offset:3px;border-radius:14px}
+  body.editmode .card.drag-over-top{box-shadow:0 -4px 0 -1px var(--accent,#6b7b5e)}
+  body.editmode .card.drag-over-bottom{box-shadow:0 4px 0 -1px var(--accent,#6b7b5e)}
   .drag-hint{font-size:11px;color:var(--faint);margin-top:6px;font-style:italic}
   .style-no{font-size:12px;color:var(--faint);font-weight:500;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
@@ -360,16 +361,26 @@
   }
 
   let dragNo=null, lastRenderList=[];
-  // 드래그로 놓았을 때: dragged 를 target 바로 앞에 오도록 rank 재계산 후 저장
-  async function handleReorder(draggedNo, targetNo){
-    const arr=lastRenderList.map(p=>String(p.no));
+  // 드래그로 놓았을 때: target 기준 before/after 로 rank 재계산 후 저장 (맨위/맨아래 포함)
+  async function handleReorder(draggedNo, targetNo, side){
+    const arr=lastRenderList.map(p=>String(p.no)).filter(n=>n!==draggedNo);  // dragged 제외
     const ti=arr.indexOf(targetNo); if(ti<0) return;
-    let prevNo=null; for(let i=ti-1;i>=0;i--){ if(arr[i]!==draggedNo){ prevNo=arr[i]; break; } }
-    const tr=effRank(targetNo); const pr=(prevNo!=null)?effRank(prevNo):(tr-1);
-    const newRank=(pr+tr)/2;
+    let prevNo, nextNo;
+    if(side==='after'){ prevNo=targetNo; nextNo=arr[ti+1]||null; }
+    else { prevNo=arr[ti-1]||null; nextNo=targetNo; }
+    const pr=(prevNo!=null)?effRank(prevNo):(effRank(nextNo)-1);
+    const nr=(nextNo!=null)?effRank(nextNo):(effRank(prevNo)+1);
+    const newRank=(pr+nr)/2;
     rankMap[String(draggedNo)]=newRank;
     sortStylesByRank(); renderGrid();
     const ok=await saveRank(draggedNo,newRank); if(!ok) alert('Could not save order.');
+  }
+  // 드래그 중 화면 가장자리에서 자동 스크롤 (한 번만 바인딩)
+  function bindDragAutoScroll(){
+    if(window.__dragScrollBound) return; window.__dragScrollBound=true;
+    document.addEventListener('dragover',e=>{ if(!dragNo)return; const y=e.clientY, h=window.innerHeight;
+      if(y<100) window.scrollBy(0,-Math.ceil((100-y)/5));
+      else if(y>h-100) window.scrollBy(0,Math.ceil((y-(h-100))/5)); });
   }
 
   function renderGrid(){
@@ -419,12 +430,14 @@
           const ok=await saveStyleHidden(no, willHide);
           if(!ok){ alert('Could not save.'); }
         });
-        // 드래그로 진열 순서 변경
+        // 드래그로 진열 순서 변경 (커서 위치로 위/아래 삽입 판단)
         card.addEventListener('dragstart',e=>{ dragNo=no; card.classList.add('dragging'); try{e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',no);}catch(_){} });
-        card.addEventListener('dragend',()=>{ dragNo=null; document.querySelectorAll('.card.dragging,.card.drag-over').forEach(c=>c.classList.remove('dragging','drag-over')); });
-        card.addEventListener('dragover',e=>{ if(dragNo&&dragNo!==no){ e.preventDefault(); card.classList.add('drag-over'); } });
-        card.addEventListener('dragleave',()=>card.classList.remove('drag-over'));
-        card.addEventListener('drop',async e=>{ e.preventDefault(); card.classList.remove('drag-over'); if(!dragNo||dragNo===no)return; await handleReorder(dragNo,no); });
+        card.addEventListener('dragend',()=>{ dragNo=null; document.querySelectorAll('.card').forEach(c=>c.classList.remove('dragging','drag-over-top','drag-over-bottom')); });
+        card.addEventListener('dragover',e=>{ if(dragNo&&dragNo!==no){ e.preventDefault();
+          const r=card.getBoundingClientRect(); const after=(e.clientY-r.top)>r.height/2; card._after=after;
+          card.classList.toggle('drag-over-bottom',after); card.classList.toggle('drag-over-top',!after); } });
+        card.addEventListener('dragleave',()=>card.classList.remove('drag-over-top','drag-over-bottom'));
+        card.addEventListener('drop',async e=>{ e.preventDefault(); const after=card._after; card.classList.remove('drag-over-top','drag-over-bottom'); if(!dragNo||dragNo===no)return; await handleReorder(dragNo,no,after?'after':'before'); });
       }
       card.addEventListener('click',(e)=>{ if(editing && e.target.closest('.hide-toggle'))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
       grid.appendChild(card);
@@ -465,6 +478,7 @@
       applyDefaultThumbs();                            // ★메인색을 대표 사진에 반영
       allStyles.forEach((s,i)=>{ defaultRank[String(s.no)]=i; });  // 기본 순서 인덱스
       sortStylesByRank();                              // 저장된 진열 순서 반영
+      bindDragAutoScroll();                            // 드래그 중 가장자리 자동 스크롤
       try{ isStaff = !!(window.PacificAuth && await PacificAuth.currentStaff()); }catch(e){ isStaff=false; }
       setupStaffBar();
       const params=new URLSearchParams(location.search);

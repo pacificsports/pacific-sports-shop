@@ -336,9 +336,13 @@
     }catch(e){}
   }
   // ★메인색을 카테고리 대표 사진(썸네일)에 반영
+  // default_color(예:"CHARCOAL (HT)")와 사진 색이름(예:"CHARCOAL")이 달라도 매칭되게 괄호 접미사 무시
+  function _normC(s){ return String(s||'').toUpperCase().replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim(); }
   function applyDefaultThumbs(){
     Object.keys(defaultColorMap).forEach(no=>{ const dc=defaultColorMap[no]; const list=styleColors[no]||[];
-      const hit=list.find(c=>c.color===dc); if(hit&&hit.url) thumbs[no]=hit.url; });
+      let hit=list.find(c=>c.color===dc);                 // 정확 매칭 우선
+      if(!hit){ const dn=_normC(dc); hit=list.find(c=>_normC(c.color)===dn); }  // 괄호 접미사 무시 매칭
+      if(hit&&hit.url) thumbs[no]=hit.url; });
   }
   // 진열 순서(rank) 저장 (color_names 안 예약 키에 병합 upsert)
   async function saveRank(styleNo, rank){

@@ -55,12 +55,11 @@ window.PacificData = (function () {
       hide: ['CHARCOAL (DS)'],
       rename: { 'CHARCOAL (HT)': 'Charcoal' }
     },
-    // 1390 PFD: 1급 로트 (J)/(L) 은 'PFD' 하나로 합쳐 보이고, 세컨(S) 및 (L) 중복은 숨김.
-    //  재고는 'PFD (J)' 행에 (J)+(L) 합산으로 적재되어 있고, 표시명은 'PFD' 로 통일됨.
-    '1390': {
-      hide: ['PFD (L)', 'PFD (S)'],
-      rename: { 'PFD (J)': 'PFD' }
-    }
+    // PFD 스타일: 실번수 붙인 이름으로 통일 표시
+    '1290': { hide: [], rename: { 'PFD (F)': '20/1 PFD' } },
+    // 1390: 1급 로트 (J)+(L) 합쳐 '30/1 PFD' 하나로 표시(재고는 'PFD (J)' 행에 합산). 세컨(S)/중복(L)은 숨김.
+    '1390': { hide: ['PFD (L)', 'PFD (S)'], rename: { 'PFD (J)': '30/1 PFD' } },
+    '1690': { hide: [], rename: { 'PFD': '16/1 PFD' } }
   };
   function colorRules(style){ return COLOR_RULES[style] || { hide:[], rename:{} }; }
   function isHiddenColor(style, raw){

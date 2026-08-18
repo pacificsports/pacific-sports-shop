@@ -329,11 +329,15 @@ window.PacificData = (function () {
     // 전체 스타일 목록 (제품 목록/카테고리 화면용)
     getStyles: async function () {
       if (SOURCE === 'supabase') {
-        const rows = await _sb('styles?select=style_number,description,category,brand,size_range&order=style_number');
-        return rows.map(r => ({
-          no: r.style_number, desc: r.description || '', cat: r.category || '',
-          sr: r.size_range || '', brand: r.brand || null
-        }));
+        try {
+          const rows = await _sb('styles?select=style_number,description,category,brand,size_range&order=style_number');
+          if (rows && rows.length) return rows.map(r => ({
+            no: r.style_number, desc: r.description || '', cat: r.category || '',
+            sr: r.size_range || '', brand: r.brand || null
+          }));
+        } catch (e) { /* styles 조회 실패 → 아래 내장 카탈로그로 폴백 */ }
+        // styles 테이블이 비었거나 실패하면 내장 카탈로그(STYLE_LIST)로 대체 → 브라우징 항상 동작
+        return STYLE_LIST.map(s => Object.assign({}, s));
       }
       return STYLE_LIST.map(s => Object.assign({}, s));
     },

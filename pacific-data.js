@@ -305,12 +305,14 @@ window.PacificData = (function () {
   }
 
   async function _supabaseInventory(styleNo) {
-    const whMap = await _warehouseMap();
-    const rows = await _sb('inventory?style_number=eq.'+encodeURIComponent(styleNo)
-                          +'&select=color,size,warehouse_id,qty_on_hand');
+    // 2026-08-26: inventory 테이블 → inventory_live 뷰로 교체.
+    //   inventory 는 버린 IMS 가 쓰던 테이블이라 2026-08-18 에 갱신이 멈춰 있었다(270만장 차이).
+    //   inventory_live = pr_boxes(풀박스) + pr_pcroom(낱장) − 예약분, 창고는 SC/CA 로 바로 나온다.
+    const rows = await _sb('inventory_live?style_number=eq.'+encodeURIComponent(styleNo)
+                          +'&select=color,size,wh,qty_on_hand');
     const out = {};   // 화면색상명 → { SC:{size:qty}, CA:{size:qty} }
     rows.forEach(r=>{
-      const wh = whMap[r.warehouse_id]; if (!wh) return;          // SC/CA/PCR만
+      const wh = (String(r.wh||'').toUpperCase() === 'CA') ? 'CA' : 'SC';
       if (isHiddenColor(styleNo, r.color)) return;                // 숨긴 색(예: DS)의 재고는 제외
       const color = displayColorName(styleNo, r.color); const size = r.size;  // 화면 이름으로(Charcoal=HT만)
       if (!out[color]) out[color] = { SC:{}, CA:{} };

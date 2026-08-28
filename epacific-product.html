@@ -567,7 +567,11 @@
       inp.addEventListener('input',()=>{
         const avail=stIdx>=0 ? (st[stIdx]||0) : 0;
         let q=parseInt(inp.value)||0;
-        if(q>avail){ q=avail; inp.value=avail||''; }
+        // 재고 3,000 이상인 칸은 서버가 구간값(3000/5000/7500)만 내려준다 — 진짜 재고는 이보다 많다.
+        // 그래서 여기서 막으면 팔 수 있는 물건을 못 팔게 된다. 그런 칸은 막지 않고 놔두고,
+        // 진짜 상한은 주문이 들어갈 때 DB 트리거(web_orders_stock_guard)가 본다.
+        // 3,000 미만은 정확한 숫자이므로 여기서 막는 게 맞다 — 손님이 그 자리에서 알 수 있으니까.
+        if(avail < 3000 && q > avail){ q=avail; inp.value=avail||''; }
         inp.classList.toggle('has',q>0);
         tr.classList.toggle('active-row',[...tr.querySelectorAll('input')].some(i=>(parseInt(i.value)||0)>0));
         recalc();

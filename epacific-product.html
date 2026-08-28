@@ -159,8 +159,13 @@
   .cellwrap{display:flex;flex-direction:column;align-items:center;gap:3px}
   .stock{font-size:10px;color:var(--faint);line-height:1.1;white-space:nowrap}
   .stock.low{color:#c0853b}
-  .stock.out{color:#b06a3b;font-weight:600;font-size:9px;line-height:1.15;white-space:normal;text-align:center}
-  td.is-out input{background:#f4f3f0;border-color:var(--line);color:#bbb}
+  /* 재고 0 은 다른 칸 숫자와 똑같이 "0" 으로만 적는다.
+     "Out of stock" 을 두 줄로 크게 쓰면 칸이 높아져 입력창이 위로 뜨고,
+     갈색 굵은 글씨라 없는 것만 눈에 띈다. 우리가 광고할 일이 아니다. */
+  .stock.out{color:var(--faint);font-weight:400;font-size:10px;line-height:1.1;white-space:nowrap}
+  /* 대체 스타일 버튼 자리는 모든 칸에 똑같이 비워둔다 → 줄이 흔들리지 않는다 */
+  .altslot{min-height:15px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  td.is-out input{background:#fafafa;border-color:var(--line);color:#c8c8c8}
   .otable-scroll{max-height:560px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
@@ -240,9 +245,9 @@
   .rel-cat{font-size:11.5px;color:var(--soft-ink)}
 
   /* 품절 칸 → 대체 스타일 배지 (수량 없이 짧게) */
-  .subhint{display:inline-block;margin-top:4px;font-size:9.5px;font-weight:700;line-height:1;letter-spacing:.02em;
-    color:var(--accent);background:var(--accent-soft);border:1px solid #dbe3da;border-radius:6px;
-    padding:3px 6px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+  .subhint{display:inline-block;margin-top:0;font-size:9.5px;font-weight:700;line-height:1;letter-spacing:.02em;
+    color:var(--accent);background:var(--accent-soft);border:1px solid #dbe3da;border-radius:20px;
+    padding:3px 7px;text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
   .subhint:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style>
 </head>
@@ -553,12 +558,14 @@
           subHtml = `<a class="subhint" href="epacific-product.html?style=${subStyle}#${anchor}" title="Same color &amp; size is in stock on style #${subStyle}">${subStyle} \u2197</a>`;
         }
       }
+      // 재고 0 은 다른 칸과 똑같이 숫자 자리에 "0" 만. 대체 스타일 버튼은 그 아래 고정 자리에.
+      // 버튼 자리(.altslot)는 재고가 있든 없든 모든 칸에 두어야 줄 높이가 흔들리지 않는다.
       const stockHtml = out
-        ? `<span class="stock out">Out of<br>stock</span>`+subHtml
+        ? `<span class="stock out">0</span>`
         : `<span class="stock ${fmtStock(avail).cls}">${fmtStock(avail).t}</span>`;
       return `<td data-si="${stIdx}" data-size="${s}" class="szcol${isHidden?' size-hidden':''} ${out?'is-out':''}"><div class="cellwrap">`+
         `<input type="number" min="0" placeholder="0" inputmode="numeric" ${out?'disabled':''} title="${out?'Out of stock':''}">`+
-        stockHtml+`</div></td>`;
+        stockHtml+`<div class="altslot">${subHtml}</div></div></td>`;
     }).join('');
     tr.innerHTML=colorCell+whCell+cells+`<td><span class="rowtotal">0</span></td>`;
     rowsBody.appendChild(tr);

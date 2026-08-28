@@ -148,7 +148,12 @@
   /* WH 두 줄 방식 */
   .otable th.whcol{width:42px}
   .otable th.szh{padding:13px 6px}
-  .whcell{text-align:center}
+  /* SC / CA 표는 입력창과 같은 높이 안에서 가운데를 잡는다.
+     그냥 두면 칸 전체(입력창 + 재고숫자 + 버튼자리)를 기준으로 가운데가 잡혀서
+     입력창보다 18px 아래로 내려간다 — 나란히 안 보인다.
+     38px = 입력창 높이(글자 15px + 위아래 padding 8px + 테두리 1.5px). */
+  .whcell{text-align:center;vertical-align:top}
+  .whwrap{display:flex;align-items:center;justify-content:center;height:38px}
   .whbadge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 8px;border-radius:6px}
   .whbadge.wh-SC{background:#e7eef3;color:#2f5b7a}
   .whbadge.wh-CA{background:#f1ece0;color:#8a6a3a}
@@ -535,7 +540,7 @@
         `<span class="cn-star${(styleSettings.default_color===(c._raw||c.raw||c.name))?' on':''}" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Set as main photo">★</span>`+
         `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span></div></td>`
       : '';
-    const whCell=`<td class="whcell"><span class="whbadge wh-${wh}">${wh}</span></td>`;
+    const whCell=`<td class="whcell"><div class="whwrap"><span class="whbadge wh-${wh}">${wh}</span></div></td>`;
     // 항상 전체 사이즈를 그려두고, 숨김/표시는 CSS로 (Edit 토글 시 재생성 안 함 → 빠름)
     const cells=allSizes.map((s)=>{
       const stIdx=allSizes.indexOf(s);

@@ -334,8 +334,103 @@ window.PacificData = (function () {
   }
 
 
+  /* ═══ 가격 (2026-08-29) ═══════════════════════════════════════════════
+     테이블은 이미 있었는데(style_prices · customer_prices · sale_prices) 사이트가
+     한 번도 읽지 않아서 장바구니 금액이 늘 '—' 였다. 여기서 한 곳에 모아 읽는다.
+
+       style_prices    스타일 기본가 + 2XL~5XL 할증
+       customer_prices 거래처별 가격 (2T~5XL, Youth/Juvy/Toddler 까지)
+       sale_prices     스타일 + 색 + 사이즈 (각각 비우면 '전체') → 세일가 또는 %할인
+
+     우선순위: 거래처가 > 기본가 → 그 위에 세일 적용.
+     로그인 안 했으면 아무것도 안 가져온다 (가격은 승인된 거래처만 본다). */
+  function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
+  async function _authGet(path){
+    const ss=_sess(); if(!ss||!ss.token) return null;
+    try{
+      const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,
+        {headers:{apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+ss.token}});
+      if(!r.ok) return null;
+      return await r.json();
+    }catch(e){ return null; }
+  }
+  let _myCustomerId; // undefined=아직 안 봄, null=없음
+  async function _customerId(){
+    if(_myCustomerId!==undefined) return _myCustomerId;
+    const ss=_sess();
+    if(!ss||!ss.userId){ _myCustomerId=null; return null; }
+    const rows=await _authGet('customer_applications?user_id=eq.'+encodeURIComponent(ss.userId)+'&select=customer_id,status');
+    const ok=(rows||[]).find(x=>x.status==='approved'&&x.customer_id);
+    _myCustomerId = ok ? ok.customer_id : null;
+    return _myCustomerId;
+  }
+
+  const _BIGSZ={'2XL':'price_2xl','3XL':'price_3xl','4XL':'price_4xl','5XL':'price_5xl'};
+  const _TOTSZ={'2T':'price_2t','3T':'price_3t','4T':'price_4t','5T':'price_5t'};
+
+  async function _pricing(styleNo, category){
+    const cid=await _customerId();
+    const [sp, cp, sale] = await Promise.all([
+      _authGet('style_prices?style_number=eq.'+encodeURIComponent(styleNo)+'&select=*'),
+      cid ? _authGet('customer_prices?customer_id=eq.'+encodeURIComponent(cid)
+                     +'&style_number=eq.'+encodeURIComponent(styleNo)+'&select=*') : Promise.resolve(null),
+      _authGet('sale_prices?style_number=eq.'+encodeURIComponent(styleNo)+'&select=*')
+    ]);
+    return { base:(sp&&sp[0])||null, cust:(cp&&cp[0])||null, sales:sale||[], cat:String(category||'') };
+  }
+
+  /* 정가 (세일 적용 전) — 사이즈에 따라 다르다 */
+  function _listPrice(P, size){
+    const sz=String(size||'').toUpperCase();
+    const c=P.cust;
+    if(c){
+      if(_TOTSZ[sz] && c[_TOTSZ[sz]]!=null) return Number(c[_TOTSZ[sz]]);
+      if(_BIGSZ[sz] && c[_BIGSZ[sz]]!=null) return Number(c[_BIGSZ[sz]]);
+      if(/youth/i.test(P.cat)   && c.price_youth!=null)   return Number(c.price_youth);
+      if(/juvy/i.test(P.cat)    && c.price_juvy!=null)    return Number(c.price_juvy);
+      if(/toddler/i.test(P.cat) && c.price_toddler!=null) return Number(c.price_toddler);
+      if(c.base_price!=null) return Number(c.base_price);
+    }
+    const b=P.base;
+    if(b){
+      if(_BIGSZ[sz] && b[_BIGSZ[sz]]!=null) return Number(b[_BIGSZ[sz]]);
+      if(b.base_price!=null) return Number(b.base_price);
+    }
+    return null;
+  }
+
+  /* 이 색·사이즈에 걸린 세일 중 제일 구체적인 것 하나 */
+  function _saleFor(P, color, size){
+    const c=String(color||'').toUpperCase(), z=String(size||'').toUpperCase();
+    const hit=(P.sales||[]).filter(s=>{
+      const sc=s.color?String(s.color).toUpperCase():null;
+      const sz=s.size ?String(s.size ).toUpperCase():null;
+      return (!sc||sc===c) && (!sz||sz===z);
+    });
+    if(!hit.length) return null;
+    // 색+사이즈 둘 다 지정한 게 제일 구체적 → 그 다음 하나만 → 전체
+    hit.sort((a,b)=>((b.color?1:0)+(b.size?1:0))-((a.color?1:0)+(a.size?1:0)));
+    return hit[0];
+  }
+
+  /* 최종 단가 — { list, price, onSale } */
+  function _priceOf(P, color, size){
+    const list=_listPrice(P, size);
+    if(list==null) return {list:null, price:null, onSale:false};
+    const s=_saleFor(P, color, size);
+    if(!s) return {list:list, price:list, onSale:false};
+    let v = (s.sale_price!=null) ? Number(s.sale_price)
+          : (s.percent_off!=null) ? (list*(1-Number(s.percent_off)/100)) : list;
+    v = Math.round(v*100)/100;
+    return {list:list, price:v, onSale:(v<list)};
+  }
+
   /* ===== ⑥ 공개 API =================================================== */
   return {
+    /* 가격: getPricing() 으로 한 번 받아서 priceOf() 로 칸마다 계산한다 */
+    getPricing: function(styleNo, category){ return _pricing(styleNo, category); },
+    priceOf: function(P, color, size){ return _priceOf(P, color, size); },
+    listPrice: function(P, size){ return _listPrice(P, size); },
     config: {
       sizeOrder: SIZE_ORDER, casePer: CASE_PER,
       warehouses: WAREHOUSES, source: SOURCE

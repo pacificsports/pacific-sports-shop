@@ -452,7 +452,7 @@
         </div>
         <div class="style-no">Style #${no}</div>
         <div class="pname">${p.desc}</div>
-        <div class="pmeta">${p.cat} · ${p.sr}</div>
+        <div class="pmeta">${catLabel(p.cat)} · ${p.sr}</div>
         ${colorLine?`<div class="pcount">${colorLine}</div>`:''}
         <div class="pcolors">View colors &amp; stock</div>
         ${dragHint}
@@ -499,6 +499,10 @@
   }
 
   // 사이드 카테고리 필터를 IMS 카테고리로 동적 생성
+  /* 화면에 쓰는 카테고리 이름. 저장된 값은 'Adult Performance' 그대로 두고
+     보이는 글자만 Outdoor 로 바꾼다 — 배송무게표·재고가 카테고리 값으로 물려 있다 */
+  function catLabel(c){ return String(c||'').replace(/Performance/i,'Outdoor'); }
+
   function buildCategoryFilter(){
     // 논리적 순서: 반팔 → 긴팔 → 후디 → 탱크 → V넥 → 라글란 → 퍼포먼스 → 유스/키즈
     const ORDER=['Adult S/S','Adult L/S','Adult Hoodie L/S','Adult Tank Top','Adult V-Neck S/S','Adult Raglan','Adult Performance',
@@ -509,7 +513,7 @@
     const box=document.getElementById('catFilter');
     if(!box) return;
     box.innerHTML=cats.map(c=>
-      `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${c}</label>`
+      `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${catLabel(c)}</label>`
     ).join('');
     box.querySelectorAll('input[name=cat]').forEach(r=>r.addEventListener('change',()=>{
       activeCat=r.value; renderGrid();

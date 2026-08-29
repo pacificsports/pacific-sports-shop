@@ -160,10 +160,10 @@ window.PacificData = (function () {
     {no:'5310',desc:'Toddler 30/1 100% Cotton Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-4T'},
     {no:'5350',desc:'Toddler Snow Htr Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-4T'},
     {no:'6535',desc:'Adult Galaxy Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
-    {no:'8110',desc:'Adult Polyester Performance Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
-    {no:'8150',desc:'Adult Cationic Performance Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
-    {no:'8155',desc:'Adult Spacedye Performance Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
-    {no:'8180',desc:'Adult Mesh Performance Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
+    {no:'8110',desc:'Adult Polyester Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
+    {no:'8150',desc:'Adult Cationic Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
+    {no:'8155',desc:'Adult Spacedye Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
+    {no:'8180',desc:'Adult Mesh Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
     {no:'8368',desc:'Adult 30/1 CVC Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'9307',desc:'Adult Infinite Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'}
   ];

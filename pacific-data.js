@@ -316,8 +316,11 @@ window.PacificData = (function () {
   async function _supabaseInventory(styleNo) {
     // 2026-08-26: inventory 테이블 → inventory_live 뷰로 교체.
     //   inventory 는 버린 IMS 가 쓰던 테이블이라 2026-08-18 에 갱신이 멈춰 있었다(270만장 차이).
-    //   inventory_live = pr_boxes(풀박스) + pr_pcroom(낱장) − 예약분, 창고는 SC/CA 로 바로 나온다.
-    const rows = await _sb('inventory_live?style_number=eq.'+encodeURIComponent(styleNo)
+    // 2026-08-29: inventory_live → inventory_web 으로 교체.
+    //   inventory_live = pr_boxes(풀박스) + pr_pcroom(낱장) − 예약분 이라 웹에 낱장까지
+    //   섞여 나왔다(409·523 처럼 박스 배수가 아닌 숫자). 웹은 psflowx 풀박스만 판다.
+    //   inventory_web = pr_boxes(status='IN') − 예약분. 색 이름 정규화·7,500 자르기는 동일.
+    const rows = await _sb('inventory_web?style_number=eq.'+encodeURIComponent(styleNo)
                           +'&select=color,size,wh,qty_on_hand');
     const out = {};   // 화면색상명 → { SC:{size:qty}, CA:{size:qty} }
     rows.forEach(r=>{

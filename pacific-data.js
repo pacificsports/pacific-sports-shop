@@ -296,10 +296,19 @@ window.PacificData = (function () {
         };
       });
 
+    /* styles 테이블이 비어 있으면 내장 카탈로그(STYLE_LIST)로 채운다.
+       2026-08-29: styles 는 지금 0행이라 filter 조회가 늘 빈 배열을 준다.
+       그래서 category 가 '' 로 내려가고, 제품 페이지의 빵부스러기가 스타일과
+       상관없이 전부 'Short Sleeve' 로, Kids 스타일(2388)도 "Men's" 로 나왔다.
+       getStyles() 는 이미 같은 폴백을 쓰고 있었는데 여기만 빠져 있었다. */
+    const _fb   = STYLE_LIST.find(s => String(s.no) === String(styleNo)) || null;
+    const _desc = (meta[0] && meta[0].description) || (_fb && _fb.desc) || '';
+    const _cat  = (meta[0] && meta[0].category)    || (_fb && _fb.cat)  || '';
+
     return {
       styleNo,
-      name: (meta[0] && meta[0].description) ? (styleNo+' '+meta[0].description) : styleNo,
-      category: (meta[0] && meta[0].category) || '',
+      name: _desc ? (styleNo+' '+_desc) : styleNo,
+      category: _cat,
       sizes, colors, casePer: CASE_PER
     };
   }

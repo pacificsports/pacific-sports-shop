@@ -1535,7 +1535,7 @@
   const FAMILIES=[
     ['8368','1368','1362','1348','1364','2388'],
     ['1315','1322','1314','2316','2310','3310','5310'],
-    ['1210','1212','1214','2216','2210','3210','5210']
+    ['1210','1212','1214','2210','3210','5210']
   ];
   function famFor(no){ no=String(no); for(const g of FAMILIES){ if(g.map(String).indexOf(no)>-1) return g.map(String); } return null; }
   async function boot(){
@@ -1545,13 +1545,16 @@
     const others=fam.filter(n=>n!==cur); if(!others.length) return;
     let styles=[]; try{ styles=await PacificData.getStyles(); }catch(e){}
     const byNo={}; styles.forEach(s=>{ byNo[String(s.no)]=s; });
-    const cards=others.map(n=>{
+    /* 카탈로그에 없는 번호는 아예 안 보여준다 — 눌러도 빈 페이지가 나오는 죽은 카드가 된다
+       (2026-08-29: 여기 '2216' 이 그런 카드였다. 그런 스타일은 존재하지 않는다.) */
+    const cards=others.filter(n=>byNo[n]).map(n=>{
       const s=byNo[n]; const desc=s?(s.desc||''):''; const cat=s?(s.cat||''):'';
       return '<a class="rel-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+
              '<span class="rel-no">#'+n+'</span>'+
              (desc?'<span class="rel-nm">'+desc+'</span>':'')+
              (cat?'<span class="rel-cat">'+cat+'</span>':'')+'</a>';
     }).join('');
+    if(!cards) return;
     box.innerHTML='<div class="rel-h">Complete the collection with more styles</div><div class="rel-row">'+cards+'</div>';
     box.style.display='';
   }

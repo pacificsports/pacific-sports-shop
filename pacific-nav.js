@@ -243,15 +243,12 @@
      10개만 저장해도 줄이 넘쳐서 잘렸다. 칩에서 사람을 구분하는 건 결국 번호이므로
      번호를 크게 두고 옷 종류만 한두 글자 붙인다. 전체 이름은 마우스 올리면 나온다. */
   function favShort(cat) {
-    var c = String(cat || '');
-    if (/Hood/i.test(c))        return 'Hoodie';
-    if (/Tank/i.test(c))        return 'Tank';
-    if (/V-?Neck/i.test(c))     return 'V-Neck';
-    if (/Raglan/i.test(c))      return 'Raglan';
-    if (/Performance/i.test(c)) return 'Outdoor';
-    if (/L\/S/i.test(c))        return 'L/S';
-    if (/S\/S/i.test(c))        return 'S/S';
-    return '';
+    // 카테고리를 그대로 쓴다. 'Hoodie' 로만 줄였더니 후드 티인지 후드 집업인지
+    // 헷갈린다고 해서, 'Hoodie L/S' 처럼 소매까지 붙인다.
+    var c = String(cat || '').trim();
+    if (/Performance/i.test(c)) c = c.replace(/Performance/i, 'Outdoor');
+    // Adult 는 기본이라 뗀다. Youth·Kids·Juvy·Toddler 는 남겨야 구분이 된다.
+    return c.replace(/^Adult\s+/i, '').trim();
   }
   function favNames(nos) {
     if (!window.PacificData || !PacificData.getStyles || !nos.length) return Promise.resolve({});
@@ -259,8 +256,7 @@
       var m = {};
       (list || []).forEach(function (s) {
         if (nos.indexOf(String(s.no)) < 0) return;
-        var kid = /youth|kid|juvy|toddler/i.test(String(s.cat || '')) ? 'Y ' : '';
-        m[String(s.no)] = { s: kid + favShort(s.cat), full: String(s.desc || '') };
+        m[String(s.no)] = { s: favShort(s.cat), full: String(s.desc || '') };
       });
       return m;
     }).catch(function () { return {}; });

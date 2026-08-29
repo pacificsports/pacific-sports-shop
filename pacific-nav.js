@@ -225,6 +225,19 @@
     return favHas(style).then(function (on) { return (on ? favRemove(style) : favAdd(style)).then(function () { return !on; }); });
   }
 
+  /* 드래그로 바꾼 순서를 저장한다. 화면은 이미 바뀌어 있으므로 실패해도 조용히 두고,
+     다음에 페이지를 열면 서버 순서로 돌아온다 (틀린 순서가 남는 것보다 낫다) */
+  function favSaveOrder(order) {
+    var h = favH({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' });
+    if (!h) return Promise.resolve(false);
+    var rows = order.map(function (n, i) { return { style_number: String(n), sort_order: i }; });
+    _favCache = rows.map(function (r) { return { style_number: r.style_number, sort_order: r.sort_order }; });
+    return fetch(FAV_URL + '?on_conflict=user_id,style_number', {
+      method: 'POST', headers: h, body: JSON.stringify(rows)
+    }).then(function (r) { if (!r.ok) _favCache = null; return r.ok; })
+      .catch(function () { _favCache = null; return false; });
+  }
+
   /* 스타일 번호 → 아주 짧은 꼬리표.
      원래는 설명 전체를 붙였는데 ("16/1 100% Cotton Heavyweight Short Sleeve")
      10개만 저장해도 줄이 넘쳐서 잘렸다. 칩에서 사람을 구분하는 건 결국 번호이므로
@@ -266,8 +279,60 @@
       '#favbar a.fc:hover{border-color:#3d5a40;color:#3d5a40}' +
       '#favbar a.fc .no{font-weight:700}' +
       '#favbar a.fc .nm{color:#8e8e85;font-size:11.5px}' +
-      '#favbar a.fc:hover .nm{color:#3d5a40}';
+      '#favbar a.fc:hover .nm{color:#3d5a40}' +
+      '#favbar a.fc{cursor:grab;user-select:none}' +
+      '#favbar a.fc.dragging{opacity:.4}' +
+      '#favbar a.fc.ins-l{box-shadow:-3px 0 0 -1px #3d5a40}' +
+      '#favbar a.fc.ins-r{box-shadow:3px 0 0 -1px #3d5a40}';
     document.head.appendChild(st);
+  }
+
+  /* 칩 드래그로 순서 바꾸기 (2026-08-29).
+     거래처마다 자주 쓰는 순서가 다르다 — 제일 많이 시키는 걸 왼쪽에 두게 한다.
+     드래그가 끝난 직후의 click 은 무시한다. 안 그러면 놓자마자 그 스타일로 넘어가버린다. */
+  var _favDragNo = null, _favJustDragged = false;
+  function favWireDrag(bar) {
+    var chips = bar.querySelectorAll('a.fc');
+    function order() {
+      return Array.prototype.map.call(bar.querySelectorAll('a.fc'), function (c) { return c.getAttribute('data-no'); });
+    }
+    Array.prototype.forEach.call(chips, function (c) {
+      c.addEventListener('dragstart', function (e) {
+        _favDragNo = c.getAttribute('data-no');
+        c.classList.add('dragging');
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', _favDragNo); } catch (_) {}
+      });
+      c.addEventListener('dragend', function () {
+        c.classList.remove('dragging');
+        Array.prototype.forEach.call(bar.querySelectorAll('a.fc'), function (x) { x.classList.remove('ins-l', 'ins-r'); });
+        _favDragNo = null;
+      });
+      c.addEventListener('dragover', function (e) {
+        if (!_favDragNo || _favDragNo === c.getAttribute('data-no')) return;
+        e.preventDefault();
+        var r = c.getBoundingClientRect();
+        var after = (e.clientX - r.left) > r.width / 2;
+        c._after = after;
+        c.classList.toggle('ins-r', after);
+        c.classList.toggle('ins-l', !after);
+      });
+      c.addEventListener('dragleave', function () { c.classList.remove('ins-l', 'ins-r'); });
+      c.addEventListener('drop', function (e) {
+        e.preventDefault(); e.stopPropagation();
+        var from = _favDragNo, to = c.getAttribute('data-no');
+        c.classList.remove('ins-l', 'ins-r');
+        if (!from || from === to) return;
+        var arr = order();
+        var fi = arr.indexOf(from);
+        if (fi > -1) arr.splice(fi, 1);
+        var ti = arr.indexOf(to);
+        arr.splice(c._after ? ti + 1 : ti, 0, from);
+        _favJustDragged = true;
+        setTimeout(function () { _favJustDragged = false; }, 250);
+        favSaveOrder(arr).then(function () { _favCache = null; renderFavBar(); });
+      });
+      c.addEventListener('click', function (e) { if (_favJustDragged) { e.preventDefault(); } });
+    });
   }
 
   function renderFavBar() {
@@ -289,9 +354,10 @@
             var e = nm[n] || {};
             var t = e.s ? '<span class="nm">' + String(e.s).replace(/</g, '&lt;') + '</span>' : '';
             var ti = e.full ? ' title="' + String(e.full).replace(/"/g, '&quot;') + '"' : '';
-            return '<a class="fc" href="epacific-product.html?style=' + encodeURIComponent(n) + '"' + ti + '>' +
+            return '<a class="fc" draggable="true" data-no="' + n + '" href="epacific-product.html?style=' + encodeURIComponent(n) + '"' + ti + '>' +
                    '<span class="no">#' + n + '</span>' + t + '</a>';
           }).join('') + '</div>';
+        favWireDrag(bar);
       });
     });
   }

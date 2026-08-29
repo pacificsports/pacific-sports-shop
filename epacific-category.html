@@ -85,6 +85,14 @@
   /* product grid */
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px 22px}
   .card{cursor:pointer;animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
+  /* ★ My Styles — 목록에서 바로 저장 (2026-08-29). 브라우징하다 눈에 띌 때 담는 게 자연스럽다 */
+  .card .thumb{position:relative}
+  .fav-star{position:absolute;top:8px;right:8px;z-index:3;width:30px;height:30px;border:1px solid var(--line,#e8e7e1);
+    border-radius:50%;background:rgba(255,255,255,.92);color:#b9b7ad;font-size:15px;line-height:28px;text-align:center;
+    cursor:pointer;padding:0;transition:.14s;display:block}
+  /* 항상 보이게 둔다 — 폰·태블릿에는 hover 가 없어서 숨기면 아무도 못 찾는다 */
+  .fav-star:hover{border-color:var(--accent,#3d5a40);color:var(--accent,#3d5a40);transform:scale(1.08)}
+  .fav-star.on{color:var(--accent,#3d5a40);border-color:var(--accent,#3d5a40);background:#fff}
   /* 직원 Edit: 숨긴 스타일 흐리게 + 숨김 토글 배지 */
   .card.style-hidden{opacity:.5}
   .editmode .card .thumb{position:relative}
@@ -395,6 +403,20 @@
       else if(y>h-100) window.scrollBy(0,Math.ceil((y-(h-100))/5)); });
   }
 
+  /* ★ My Styles — 저장한 스타일 번호. pacific-nav.js 가 늦게 로드되므로 준비되면 다시 그린다 */
+  let _favSet=new Set(), _favReady=false;
+  function favBoot(tries){
+    if(!(window.PacificFav && PacificFav.available())){
+      if((tries||0)<10) setTimeout(()=>favBoot((tries||0)+1),400);
+      return;
+    }
+    PacificFav.list().then(rows=>{
+      _favSet=new Set((rows||[]).map(r=>String(r.style_number)));
+      _favReady=true;
+      renderGrid();
+    }).catch(()=>{});
+  }
+
   function renderGrid(){
     let list;
     if(fabricKey && FABRIC_MATCH[fabricKey]){ const re=FABRIC_MATCH[fabricKey].re; list = allStyles.filter(s=>re.test(String(s.desc||''))); }
@@ -410,6 +432,7 @@
       const cc=colorCount[no];
       const colorLine = cc ? (cc+' color'+(cc>1?'s':'')) : '';
       const hidden=hiddenStyles.has(no);
+      const favOn = _favSet.has(no);
       const card=document.createElement('div');
       card.className='card'+(hidden?' style-hidden':'')+(editing?' editable':'');
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
@@ -423,6 +446,8 @@
         <div class="thumb">
           ${thumbs[no] ? `<img src="${thumbs[no]}" alt="Style ${no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${no}</div>`}
           <div class="quick">View &amp; order →</div>
+          ${favOn ? '<button class="fav-star on" type="button" data-fav="'+no+'" title="Saved — click to remove">\u2605</button>'
+                  : '<button class="fav-star" type="button" data-fav="'+no+'" title="Save to My Styles">\u2606</button>'}
           ${editBadge}
         </div>
         <div class="style-no">Style #${no}</div>
@@ -432,6 +457,21 @@
         <div class="pcolors">View colors &amp; stock</div>
         ${dragHint}
       `;
+      const _st=card.querySelector('.fav-star');
+      if(_st){
+        if(!_favReady) _st.style.display='none';
+        _st.addEventListener('click',async e=>{
+          e.stopPropagation(); e.preventDefault();
+          if(!(window.PacificFav && PacificFav.available())) return;
+          _st.disabled=true;
+          const on = await PacificFav.toggle(no);
+          if(on) _favSet.add(no); else _favSet.delete(no);
+          _st.classList.toggle('on', on);
+          _st.textContent = on ? '\u2605' : '\u2606';
+          _st.title = on ? 'Saved — click to remove' : 'Save to My Styles';
+          _st.disabled=false;
+        });
+      }
       if(editing){
         const tg=card.querySelector('.hide-toggle');
         if(tg) tg.addEventListener('click',async(e)=>{
@@ -502,6 +542,7 @@
       }
       buildCategoryFilter();
       renderGrid();
+      favBoot();
     }catch(e){
       console.error(e);
       grid.innerHTML='<div style="grid-column:1/-1;padding:40px;color:#b04">Could not load the style list.</div>';

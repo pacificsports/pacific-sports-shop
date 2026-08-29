@@ -195,7 +195,7 @@ window.PacificData = (function () {
       if (a !== -1 && b !== -1) sz = order.slice(a, b + 1);
     }
     return {
-      styleNo: sNo, name, category: meta ? meta.cat : "Men's / Short Sleeve",
+      styleNo: sNo, name, category: meta ? meta.cat : 'Adult / Short Sleeve',
       sizes: sz,
       colors: MOCK_COLORS.map(c => ({ name:prettyColor(c), raw:c, hex:colorHex(c), img:'', sizes: sz.slice() })),
       casePer: CASE_PER

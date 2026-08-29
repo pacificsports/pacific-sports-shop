@@ -271,9 +271,9 @@
   <div class="header-in">
     <a href="epacific-timeless.html" class="logo"><img src="logo-pacific.png" alt="Pacific Sports" class="logo-img"></a>
     <nav class="main">
-      <div class="nav-item"><a>Men's</a>
+      <div class="nav-item"><a>Adult</a>
         <div class="mega">
-          <div><h4>Categories</h4><a href="epacific-category.html?cat=Adult%20S%2FS">Short Sleeve</a><a href="epacific-category.html?cat=Adult%20L%2FS">Long Sleeve</a><a href="epacific-category.html?cat=Adult%20Hoodie%20L%2FS">Hoodies</a><a href="epacific-category.html?cat=Adult%20Tank%20Top">Tank Tops</a><a href="epacific-category.html?cat=Adult%20V-Neck%20S%2FS">V-Neck</a><a href="epacific-category.html?cat=Adult%20Raglan">Raglan</a><a href="epacific-category.html?cat=Adult%20Performance">Performance</a><a href="epacific-category.html">View All</a></div>
+          <div><h4>Categories</h4><a href="epacific-category.html?cat=Adult%20S%2FS">Short Sleeve</a><a href="epacific-category.html?cat=Adult%20L%2FS">Long Sleeve</a><a href="epacific-category.html?cat=Adult%20Hoodie%20L%2FS">Hoodies</a><a href="epacific-category.html?cat=Adult%20Tank%20Top">Tank Tops</a><a href="epacific-category.html?cat=Adult%20Raglan">Raglan</a><a href="epacific-category.html?cat=Adult%20Performance">Outdoor</a><a href="epacific-category.html">View All</a></div>
           <div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a><a href="epacific-category.html">Best Sellers</a></div>
         </div>
       </div>
@@ -322,7 +322,7 @@
   <div id="bulkLog" style="line-height:1.7"></div>
 </div>
 
-<div class="crumb"><a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html" id="crumbCat1">Men's</a><span>/</span><a href="epacific-category.html" id="crumbCat2"></a><span>/</span><span id="pCrumb"></span></div>
+<div class="crumb"><a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html" id="crumbCat1">Adult</a><span>/</span><a href="epacific-category.html" id="crumbCat2"></a><span>/</span><span id="pCrumb"></span></div>
 
 <div class="product">
   <!-- GALLERY -->
@@ -411,7 +411,7 @@
       <div class="logo"><img src="logo-pacific-white.png" alt="Pacific Sports" class="logo-img"></div>
       <p>Headquartered in Sumter, South Carolina. Founded 1992. Proprietary dyeing and finishing technology, delivering premium cotton blanks nationwide.</p>
     </div>
-    <div><h4>Shop</h4><a href="#">Men's</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
+    <div><h4>Shop</h4><a href="#">Adult</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
     <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
     <div><h4>Account</h4><a href="epacific-login.html?pane=reg">Register (Reseller)</a><a href="epacific-login.html">Login</a><a href="#">How to Order</a><a href="#">Shipping</a></div>
   </div>
@@ -1227,14 +1227,14 @@
       // 빵부스러기 중간 단계도 카테고리에 맞게 (Men's/Kids, Short Sleeve/Long Sleeve/Tank Top 등)
       (function(){
         const rawCat = product.category || '';
-        const seg1 = /youth|kid|juvy|toddler/i.test(rawCat) ? 'Kids & Youth' : "Men's";
+        const seg1 = /youth|kid|juvy|toddler/i.test(rawCat) ? 'Kids & Youth' : 'Adult';
         let seg2 = 'Short Sleeve';
         if(/L\/S|Long/i.test(rawCat)) seg2='Long Sleeve';
         if(/Tank/i.test(rawCat)) seg2='Tank Top';
         if(/V-?Neck/i.test(rawCat)) seg2='V-Neck';
         if(/Hood/i.test(rawCat)) seg2='Hoodie';
         if(/Raglan/i.test(rawCat)) seg2='Raglan';
-        if(/Performance/i.test(rawCat)) seg2='Performance';
+        if(/Performance/i.test(rawCat)) seg2='Outdoor';
         const c1=document.getElementById('crumbCat1'); if(c1) c1.textContent=seg1;
         const c2=document.getElementById('crumbCat2');
         if(c2){
@@ -1246,8 +1246,8 @@
       const kick=document.getElementById('pKicker');
       if(kick){
         const rawCat = product.category || '';
-        // "Adult S/S" → "Men's", "Youth" 계열은 그대로
-        const cat = /youth|kid/i.test(rawCat) ? 'Youth' : "Men's";
+        // "Adult S/S" → "Adult", "Youth" 계열은 그대로
+        const cat = /youth|kid/i.test(rawCat) ? 'Youth' : 'Adult';
         // 설명에서 원단 부분 추출: "1390 Adult 30/1 100% Cotton PFD Short Sleeve Tee" → "30/1 100% Cotton PFD"
         let fabric = String(niceName)
           .replace(/^\d+[A-Za-z]?\s*/,'')              // 앞 스타일번호 제거

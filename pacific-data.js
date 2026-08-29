@@ -143,7 +143,7 @@ window.PacificData = (function () {
     {no:'1615',desc:'Adult 16/1 100% Cotton Heavyweight Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'1650',desc:'Adult Siro Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'1652',desc:'Adult Siro Long Sleeve Tee',cat:'Adult L/S',sr:'XS-5XL'},
-    {no:'1690',desc:'Adult 16/1 100% Cotton Heavyweight Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
+    {no:'1690',desc:'Adult 16/1 100% Cotton Heavyweight PFD Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'2210',desc:'Youth 22/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2212',desc:'Youth 22/1 100% Cotton Long Sleeve Tee',cat:'Youth L/S',sr:'XS-XL'},
     {no:'2310',desc:'Youth 30/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},

@@ -198,42 +198,11 @@
     </div>
     <div class="fgroup">
       <h4>Fabric</h4>
-      <label class="fopt"><input type="checkbox"> 100% Cotton <span class="count">22</span></label>
-      <label class="fopt"><input type="checkbox"> 60/40 CVC Blend <span class="count">11</span></label>
-      <label class="fopt"><input type="checkbox"> Tri-Blend <span class="count">7</span></label>
-      <label class="fopt"><input type="checkbox"> Color / Snow Heather <span class="count">14</span></label>
-      <label class="fopt"><input type="checkbox"> PFD <span class="count">6</span></label>
-      <label class="fopt"><input type="checkbox"> 100% Polyester <span class="count">8</span></label>
-      <label class="fopt"><input type="checkbox"> Special Blend <span class="count">5</span></label>
-    </div>
-    <div class="fgroup">
-      <h4>Style</h4>
-      <label class="fopt"><input type="checkbox"> Crew <span class="count">31</span></label>
-      <label class="fopt"><input type="checkbox"> Tank Top <span class="count">9</span></label>
-      <label class="fopt"><input type="checkbox"> Long Sleeve <span class="count">12</span></label>
-      <label class="fopt"><input type="checkbox"> Hooded Long Sleeve <span class="count">2</span></label>
-      <label class="fopt"><input type="checkbox"> Raglan <span class="count">1</span></label>
-      <label class="fopt"><input type="checkbox"> V-Neck <span class="count">4</span></label>
+      <div id="fabFilter"></div>
     </div>
     <div class="fgroup">
       <h4>Yarn</h4>
-      <label class="fopt"><input type="checkbox"> 18/1 <span class="count">3</span></label>
-      <label class="fopt"><input type="checkbox"> 22/1 <span class="count">15</span></label>
-      <label class="fopt"><input type="checkbox"> 30/1 <span class="count">21</span></label>
-      <label class="fopt"><input type="checkbox"> 40/1 <span class="count">2</span></label>
-    </div>
-    <div class="fgroup">
-      <h4>Color</h4>
-      <div class="color-dots">
-        <span class="cdot active" style="background:#f1ece0"></span>
-        <span class="cdot" style="background:#2c2c2c"></span>
-        <span class="cdot" style="background:#6b7b5e"></span>
-        <span class="cdot" style="background:#8a9aa8"></span>
-        <span class="cdot" style="background:#b0383a"></span>
-        <span class="cdot" style="background:#33414f"></span>
-        <span class="cdot" style="background:#6e6e6e"></span>
-        <span class="cdot" style="background:#c9a87c"></span>
-      </div>
+      <div id="yarnFilter"></div>
     </div>
   </aside>
 
@@ -424,6 +393,7 @@
          빈 목록이 돼버렸다 — 카테고리(Adult Performance)에는 남아 있으므로 거기서 잡는다. */
       list = allStyles.filter(s=>re.test(String(s.desc||'')+' '+String(s.cat||''))); }
     else { list = activeCat==='All' ? allStyles : allStyles.filter(s=>s.cat===activeCat); }
+    if(yarnKey) list = list.filter(s=>yarnRe(yarnKey).test(String(s.desc||'')));
     // 손님(또는 Edit 꺼짐)에겐 숨긴 스타일 제외. 직원 Edit 모드면 전부 표시(숨긴 건 흐리게)
     if(!(isStaff && editOn)) list = list.filter(s=>!hiddenStyles.has(String(s.no)));
     grid.innerHTML='';
@@ -506,6 +476,45 @@
      보이는 글자만 Outdoor 로 바꾼다 — 배송무게표·재고가 카테고리 값으로 물려 있다 */
   function catLabel(c){ return String(c||'').replace(/Performance/i,'Outdoor'); }
 
+  /* 원단 필터. 예전에는 Fabric·Style·Yarn·Color 가 전부 체크박스 모양만 있고
+     아무 동작도 안 했다 (숫자도 손으로 적어둔 가짜였다). Style·Yarn·Color 는
+     위 Category 와 겹치거나 쓰지 않아 지웠고, Fabric 만 실제로 걸러지게 만들었다. */
+  function buildFabricFilter(){
+    const box=document.getElementById('fabFilter');
+    if(!box) return;
+    const keys=Object.keys(FABRIC_MATCH);
+    box.innerHTML = ['<label class="fopt"><input type="radio" name="fab" value=""'+(fabricKey?'':' checked')+'> All</label>']
+      .concat(keys.map(k=>{
+        const n=allStyles.filter(s=>FABRIC_MATCH[k].re.test(String(s.desc||'')+' '+String(s.cat||''))).length;
+        return '<label class="fopt"><input type="radio" name="fab" value="'+k+'"'+(fabricKey===k?' checked':'')+'> '
+             + FABRIC_MATCH[k].label + '<span class="count">'+n+'</span></label>';
+      })).join('');
+    box.querySelectorAll('input[name=fab]').forEach(r=>r.addEventListener('change',()=>{
+      fabricKey=r.value;
+      if(fabricKey){ activeCat='All'; buildCategoryFilter(); }   // 둘을 겹쳐 걸면 빈 목록이 나오기 쉽다
+      renderGrid();
+    }));
+  }
+
+  /* 원사(Yarn) 필터 — 설명에 적힌 16/1 · 22/1 · 30/1 로 거른다.
+     예전 목록(18/1·22/1·30/1·40/1)은 동작도 안 했고 숫자도 손으로 적은 가짜였다. */
+  const YARNS=['16/1','22/1','30/1'];
+  let yarnKey='';
+  function yarnRe(y){ return new RegExp('\\b'+y.replace('/','\\/')+'\\b'); }
+  function buildYarnFilter(){
+    const box=document.getElementById('yarnFilter');
+    if(!box) return;
+    box.innerHTML = ['<label class="fopt"><input type="radio" name="yarn" value=""'+(yarnKey?'':' checked')+'> All</label>']
+      .concat(YARNS.map(y=>{
+        const n=allStyles.filter(s=>yarnRe(y).test(String(s.desc||''))).length;
+        return '<label class="fopt"><input type="radio" name="yarn" value="'+y+'"'+(yarnKey===y?' checked':'')+'> '
+             + y + '<span class="count">'+n+'</span></label>';
+      })).join('');
+    box.querySelectorAll('input[name=yarn]').forEach(r=>r.addEventListener('change',()=>{
+      yarnKey=r.value; renderGrid();
+    }));
+  }
+
   function buildCategoryFilter(){
     // 논리적 순서: 반팔 → 긴팔 → 후디 → 탱크 → V넥 → 라글란 → 퍼포먼스 → 유스/키즈
     const ORDER=['Adult S/S','Adult L/S','Adult Hoodie L/S','Adult Tank Top','Adult Performance','Adult Raglan',
@@ -522,7 +531,7 @@
       `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${catLabel(c)}</label>`
     ).join('');
     box.querySelectorAll('input[name=cat]').forEach(r=>r.addEventListener('change',()=>{
-      activeCat=r.value; renderGrid();
+      activeCat=r.value; fabricKey=''; buildFabricFilter(); renderGrid();
     }));
   }
 
@@ -551,6 +560,8 @@
         const sub=document.querySelector('h1.rise + p.rise'); if(sub) sub.textContent='All '+FABRIC_MATCH[fb].label+' styles.';
       }
       buildCategoryFilter();
+      buildFabricFilter();
+      buildYarnFilter();
       renderGrid();
       favBoot();
     }catch(e){

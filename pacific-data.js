@@ -147,7 +147,7 @@ window.PacificData = (function () {
     {no:'2210',desc:'Youth 22/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2212',desc:'Youth 22/1 100% Cotton Long Sleeve Tee',cat:'Youth L/S',sr:'XS-XL'},
     {no:'2310',desc:'Youth 30/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
-    {no:'2312',desc:'Kids 30/1 CVC Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
+    {no:'2382',desc:'Kids 30/1 CVC Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
     {no:'2316',desc:'Kids 30/1 100% Cotton Short Sleeve Tee',cat:'Kids S/S',sr:'2T-XL'},
     {no:'2350',desc:'Youth Snow Htr Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2388',desc:'Kids 30/1 CVC Short Sleeve Tee',cat:'Kids S/S',sr:'2T-XL'},

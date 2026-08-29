@@ -508,9 +508,12 @@
 
   function buildCategoryFilter(){
     // 논리적 순서: 반팔 → 긴팔 → 후디 → 탱크 → V넥 → 라글란 → 퍼포먼스 → 유스/키즈
-    const ORDER=['Adult S/S','Adult L/S','Adult Hoodie L/S','Adult Tank Top','Adult V-Neck S/S','Adult Raglan','Adult Performance',
-                 'Youth S/S','Youth L/S','Kids S/S','Kids L/S','Juvy S/S','Juvy L/S','Toddler S/S','Toddler L/S'];
-    const found=[...new Set(allStyles.map(s=>s.cat))];
+    const ORDER=['Adult S/S','Adult L/S','Adult Hoodie L/S','Adult Tank Top','Adult Performance','Adult Raglan',
+                 'Kids S/S','Kids L/S','Youth S/S','Youth L/S','Juvy S/S','Juvy L/S','Toddler S/S','Toddler L/S'];
+    /* 목록에 안 내보내는 카테고리 — 안 올리기로 한 것들. ORDER 에서 빼는 것만으로는
+       안 되고(모르는 카테고리는 뒤에 그냥 붙는다) 여기에 적어야 사라진다. */
+    const HIDE_CATS=['Adult V-Neck S/S'];
+    const found=[...new Set(allStyles.map(s=>s.cat))].filter(c=>!HIDE_CATS.includes(c));
     const sorted=[...ORDER.filter(c=>found.includes(c)), ...found.filter(c=>!ORDER.includes(c))];
     const cats=['All',...sorted];
     const box=document.getElementById('catFilter');

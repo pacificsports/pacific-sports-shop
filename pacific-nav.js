@@ -225,16 +225,29 @@
     return favHas(style).then(function (on) { return (on ? favRemove(style) : favAdd(style)).then(function () { return !on; }); });
   }
 
-  /* 스타일 번호 → 짧은 이름. pacific-data.js 가 없는 화면에서는 번호만 보여준다 */
+  /* 스타일 번호 → 아주 짧은 꼬리표.
+     원래는 설명 전체를 붙였는데 ("16/1 100% Cotton Heavyweight Short Sleeve")
+     10개만 저장해도 줄이 넘쳐서 잘렸다. 칩에서 사람을 구분하는 건 결국 번호이므로
+     번호를 크게 두고 옷 종류만 한두 글자 붙인다. 전체 이름은 마우스 올리면 나온다. */
+  function favShort(cat) {
+    var c = String(cat || '');
+    if (/Hood/i.test(c))        return 'Hoodie';
+    if (/Tank/i.test(c))        return 'Tank';
+    if (/V-?Neck/i.test(c))     return 'V-Neck';
+    if (/Raglan/i.test(c))      return 'Raglan';
+    if (/Performance/i.test(c)) return 'Outdoor';
+    if (/L\/S/i.test(c))        return 'L/S';
+    if (/S\/S/i.test(c))        return 'S/S';
+    return '';
+  }
   function favNames(nos) {
     if (!window.PacificData || !PacificData.getStyles || !nos.length) return Promise.resolve({});
     return PacificData.getStyles().then(function (list) {
       var m = {};
       (list || []).forEach(function (s) {
         if (nos.indexOf(String(s.no)) < 0) return;
-        m[String(s.no)] = String(s.desc || '')
-          .replace(/^(Adult|Youth|Kids|Juvy|Toddler)\s*/i, '')
-          .replace(/\s*Tee$/i, '').trim();
+        var kid = /youth|kid|juvy|toddler/i.test(String(s.cat || '')) ? 'Y ' : '';
+        m[String(s.no)] = { s: kid + favShort(s.cat), full: String(s.desc || '') };
       });
       return m;
     }).catch(function () { return {}; });
@@ -246,8 +259,7 @@
     st.id = 'favbar-css';
     st.textContent =
       '#favbar{border-bottom:1px solid #e8e7e1;background:#fbfbf9}' +
-      '#favbar .in{max-width:1240px;margin:0 auto;padding:7px 30px;display:flex;align-items:center;gap:9px;overflow-x:auto;scrollbar-width:none}' +
-      '#favbar .in::-webkit-scrollbar{display:none}' +
+      '#favbar .in{max-width:1240px;margin:0 auto;padding:6px 30px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}' +
       '#favbar .lbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8e8e85;flex:none}' +
       '#favbar a.fc{flex:none;display:inline-flex;align-items:baseline;gap:6px;padding:4px 11px;border:1px solid #e3e2db;border-radius:99px;' +
         'background:#fff;text-decoration:none;color:#1c1c1a;font-size:12.5px;line-height:1.5;white-space:nowrap}' +
@@ -274,8 +286,10 @@
         }
         bar.innerHTML = '<div class="in"><span class="lbl">★ My Styles</span>' +
           nos.map(function (n) {
-            var t = nm[n] ? '<span class="nm">' + String(nm[n]).replace(/</g, '&lt;') + '</span>' : '';
-            return '<a class="fc" href="epacific-product.html?style=' + encodeURIComponent(n) + '">' +
+            var e = nm[n] || {};
+            var t = e.s ? '<span class="nm">' + String(e.s).replace(/</g, '&lt;') + '</span>' : '';
+            var ti = e.full ? ' title="' + String(e.full).replace(/"/g, '&quot;') + '"' : '';
+            return '<a class="fc" href="epacific-product.html?style=' + encodeURIComponent(n) + '"' + ti + '>' +
                    '<span class="no">#' + n + '</span>' + t + '</a>';
           }).join('') + '</div>';
       });

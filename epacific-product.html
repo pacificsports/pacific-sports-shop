@@ -337,7 +337,12 @@
   <!-- INFO -->
   <div class="info rise">
     <div class="ct" id="pKicker"></div>
-    <h1 id="pTitle"></h1>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h1 id="pTitle" style="margin:0;"></h1>
+      <button id="favBtn" type="button" onclick="favToggleThis()" style="display:none;align-items:center;gap:6px;
+        font:inherit;font-size:12.5px;font-weight:600;padding:5px 12px;border:1px solid var(--line-2,#e3e2db);
+        border-radius:99px;background:var(--paper,#fff);color:var(--soft-ink,#56564f);cursor:pointer;line-height:1.5;"></button>
+    </div>
     <div class="style-no" id="pStyleNo"></div>
     <div class="specs" id="specsRow">
       <span id="specChips"></span>
@@ -1148,6 +1153,30 @@
   }
   async function saveHiddenSizes(style,hidden){ return saveSettings(style,{hidden_sizes:hidden}); }
 
+  /* ★ My Styles — 이 스타일을 거래처 즐겨찾기에 넣고 뺀다 (2026-08-29).
+     저장은 거래처 계정에 붙으므로 헤더 아래 바에서 어느 기기에서나 보인다.
+     로그인 전이거나 테이블이 아직 없으면 버튼 자체를 숨긴다. */
+  function favBtnPaint(on){
+    const b=document.getElementById('favBtn'); if(!b) return;
+    b.innerHTML = (on?'\u2605':'\u2606') + ' <span>' + (on?'Saved':'Save style') + '</span>';
+    b.style.borderColor = on ? 'var(--accent,#3d5a40)' : 'var(--line-2,#e3e2db)';
+    b.style.color       = on ? 'var(--accent,#3d5a40)' : 'var(--soft-ink,#56564f)';
+    b.title = on ? 'Remove from My Styles' : 'Save to My Styles — shows in the bar under the menu';
+  }
+  function favBtnSync(tries){
+    const b=document.getElementById('favBtn'); if(!b) return;
+    // pacific-nav.js 는 페이지 맨 끝에서 로드된다 — 아직이면 잠깐 기다렸다 다시 본다
+    if(!window.PacificFav){ if((tries||0)<10) setTimeout(()=>favBtnSync((tries||0)+1),400); else b.style.display='none'; return; }
+    if(!PacificFav.available()){ b.style.display='none'; return; }
+    PacificFav.has(currentStyle).then(on=>{ b.style.display='inline-flex'; favBtnPaint(on); })
+      .catch(()=>{ b.style.display='none'; });
+  }
+  function favToggleThis(){
+    if(!(window.PacificFav && PacificFav.available())) return;
+    const b=document.getElementById('favBtn'); if(b) b.disabled=true;
+    PacificFav.toggle(currentStyle).then(on=>{ favBtnPaint(on); }).finally(()=>{ if(b) b.disabled=false; });
+  }
+
   async function init(){
     try{
       if(typeof PacificData==='undefined'){
@@ -1276,6 +1305,7 @@
           if(!wasOpen) tg.scrollIntoView({behavior:'smooth',block:'center'});  // 열 때만 스크롤
         }); }
       recalc();
+      favBtnSync();
     }catch(e){
       console.error('Data load failed:', e);
       const rb=document.getElementById('rows');

@@ -166,7 +166,126 @@
     }).catch(function () { _refreshing = false; });
   }
 
-  function boot() { wireCartButtons(); wireLinks(); applyAuthState(); refreshBadge(); refreshSession(); setInterval(refreshSession, 5 * 60 * 1000); }
+
+  /* ═══ ★ My Styles — 거래처별 즐겨찾기 (2026-08-29) ═══════════════════
+     거래처가 자주 쓰는 스타일을 저장해두고 헤더 바로 아래 줄에서 한 번에 간다.
+     · 저장 단위는 스타일 하나 (색은 저장하지 않는다 — 칩이 금방 길어진다)
+     · 저장 위치는 customer_favorites 테이블. RLS 로 본인 것만 보인다 →
+       폰에서 저장해도 사무실 PC 에서 보이고, 다른 거래처 것은 절대 안 보인다
+     · 테이블이 아직 없거나(=SQL 미실행) 로그인 전이면 바도 ★ 도 아예 안 뜬다 */
+  var FAV_URL = null, _favCache = null, _favDead = false;
+  function favCfg() {
+    var c = window.PACIFIC_CONFIG || {};
+    if (!c.SUPABASE_URL || !c.SUPABASE_ANON_KEY) return null;
+    if (!FAV_URL) FAV_URL = c.SUPABASE_URL + '/rest/v1/customer_favorites';
+    return c;
+  }
+  function favH(extra) {
+    var c = favCfg(), s = getSession();
+    if (!c || !s || !s.token) return null;
+    var h = { apikey: c.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + s.token };
+    if (extra) for (var k in extra) h[k] = extra[k];
+    return h;
+  }
+  function favList() {
+    if (_favDead) return Promise.resolve([]);
+    var h = favH();
+    if (!h) return Promise.resolve([]);
+    if (_favCache) return Promise.resolve(_favCache);
+    return fetch(FAV_URL + '?select=style_number,sort_order&order=sort_order.asc,created_at.asc', { headers: h })
+      .then(function (r) {
+        if (r.status === 404 || r.status === 401 || r.status === 403) { _favDead = true; return []; }
+        return r.ok ? r.json() : [];
+      })
+      .then(function (rows) { _favCache = Array.isArray(rows) ? rows : []; return _favCache; })
+      .catch(function () { return []; });
+  }
+  function favHas(style) {
+    return favList().then(function (rows) {
+      return rows.some(function (r) { return String(r.style_number) === String(style); });
+    });
+  }
+  function favAdd(style) {
+    var h = favH({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' });
+    if (!h) return Promise.resolve(false);
+    return fetch(FAV_URL + '?on_conflict=user_id,style_number', {
+      method: 'POST', headers: h,
+      body: JSON.stringify([{ style_number: String(style), sort_order: Date.now() % 100000 }])
+    }).then(function (r) { if (r.ok) { _favCache = null; renderFavBar(); } return r.ok; })
+      .catch(function () { return false; });
+  }
+  function favRemove(style) {
+    var h = favH({ Prefer: 'return=minimal' });
+    if (!h) return Promise.resolve(false);
+    return fetch(FAV_URL + '?style_number=eq.' + encodeURIComponent(style), { method: 'DELETE', headers: h })
+      .then(function (r) { if (r.ok) { _favCache = null; renderFavBar(); } return r.ok; })
+      .catch(function () { return false; });
+  }
+  function favToggle(style) {
+    return favHas(style).then(function (on) { return (on ? favRemove(style) : favAdd(style)).then(function () { return !on; }); });
+  }
+
+  /* 스타일 번호 → 짧은 이름. pacific-data.js 가 없는 화면에서는 번호만 보여준다 */
+  function favNames(nos) {
+    if (!window.PacificData || !PacificData.getStyles || !nos.length) return Promise.resolve({});
+    return PacificData.getStyles().then(function (list) {
+      var m = {};
+      (list || []).forEach(function (s) {
+        if (nos.indexOf(String(s.no)) < 0) return;
+        m[String(s.no)] = String(s.desc || '')
+          .replace(/^(Adult|Youth|Kids|Juvy|Toddler)\s*/i, '')
+          .replace(/\s*Tee$/i, '').trim();
+      });
+      return m;
+    }).catch(function () { return {}; });
+  }
+
+  function favBarCss() {
+    if (document.getElementById('favbar-css')) return;
+    var st = document.createElement('style');
+    st.id = 'favbar-css';
+    st.textContent =
+      '#favbar{border-bottom:1px solid #e8e7e1;background:#fbfbf9}' +
+      '#favbar .in{max-width:1240px;margin:0 auto;padding:7px 30px;display:flex;align-items:center;gap:9px;overflow-x:auto;scrollbar-width:none}' +
+      '#favbar .in::-webkit-scrollbar{display:none}' +
+      '#favbar .lbl{font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#8e8e85;flex:none}' +
+      '#favbar a.fc{flex:none;display:inline-flex;align-items:baseline;gap:6px;padding:4px 11px;border:1px solid #e3e2db;border-radius:99px;' +
+        'background:#fff;text-decoration:none;color:#1c1c1a;font-size:12.5px;line-height:1.5;white-space:nowrap}' +
+      '#favbar a.fc:hover{border-color:#3d5a40;color:#3d5a40}' +
+      '#favbar a.fc .no{font-weight:700}' +
+      '#favbar a.fc .nm{color:#8e8e85;font-size:11.5px}' +
+      '#favbar a.fc:hover .nm{color:#3d5a40}';
+    document.head.appendChild(st);
+  }
+
+  function renderFavBar() {
+    var hd = document.querySelector('header');
+    if (!hd) return;
+    favList().then(function (rows) {
+      var bar = document.getElementById('favbar');
+      if (!rows.length) { if (bar) bar.remove(); return; }
+      var nos = rows.map(function (r) { return String(r.style_number); });
+      favNames(nos).then(function (nm) {
+        favBarCss();
+        if (!bar) {
+          bar = document.createElement('div');
+          bar.id = 'favbar';
+          hd.parentNode.insertBefore(bar, hd.nextSibling);
+        }
+        bar.innerHTML = '<div class="in"><span class="lbl">★ My Styles</span>' +
+          nos.map(function (n) {
+            var t = nm[n] ? '<span class="nm">' + String(nm[n]).replace(/</g, '&lt;') + '</span>' : '';
+            return '<a class="fc" href="epacific-product.html?style=' + encodeURIComponent(n) + '">' +
+                   '<span class="no">#' + n + '</span>' + t + '</a>';
+          }).join('') + '</div>';
+      });
+    });
+  }
+
+  window.PacificFav = { list: favList, has: favHas, add: favAdd, remove: favRemove, toggle: favToggle, render: renderFavBar,
+                        available: function () { return !!favH() && !_favDead; } };
+
+  function boot() { wireCartButtons(); wireLinks(); applyAuthState(); refreshBadge(); refreshSession(); renderFavBar(); setInterval(refreshSession, 5 * 60 * 1000); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();

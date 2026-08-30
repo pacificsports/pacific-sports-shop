@@ -384,10 +384,20 @@ window.PacificData = (function () {
      빈 칸은 바로 아래 사이즈의 할증을 그대로 물려받게 한다. (2026-08-30) */
   const _BIGORDER=['2XL','3XL','4XL','5XL'];
   const _TOTORDER=['2T','3T','4T','5T'];
-  function _stepUp(row, order, map, sz){
+  /* 빈 칸을 채울 때 한 단계 올라갈 때마다 붙는 금액 (2026-08-30, 사장님 규칙)
+       4XL = 3XL + 0.80
+       5XL = 4XL + 1.20   (→ 3XL 만 있으면 5XL = 3XL + 2.00)
+     값이 직접 들어 있으면 그 값이 먼저다. 규칙이 없는 단계는 아래 값을 그대로 쓴다. */
+  const _BIGSTEP={'4XL':0.80,'5XL':1.20};
+  function _stepUp(row, order, map, sz, steps){
     const i=order.indexOf(sz);
     if(i<0) return undefined;
-    for(let k=i;k>=0;k--){ const col=map[order[k]]; if(row[col]!=null) return Number(row[col]); }
+    let add=0;
+    for(let k=i;k>=0;k--){
+      const col=map[order[k]];
+      if(row[col]!=null) return Math.round((Number(row[col])+add)*100)/100;
+      if(steps && steps[order[k]]!=null) add+=steps[order[k]];   // 이 단계는 못 찾았으니 아래로 가면서 값을 더한다
+    }
     return undefined;   // 아래로 내려가도 값이 없으면 기본가로
   }
 
@@ -396,8 +406,8 @@ window.PacificData = (function () {
     const sz=String(size||'').toUpperCase();
     const c=P.cust;
     if(c){
-      let v=_stepUp(c,_TOTORDER,_TOTSZ,sz); if(v!==undefined) return v;
-      v=_stepUp(c,_BIGORDER,_BIGSZ,sz);     if(v!==undefined) return v;
+      let v=_stepUp(c,_TOTORDER,_TOTSZ,sz,null);   if(v!==undefined) return v;
+      v=_stepUp(c,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
       if(/youth/i.test(P.cat)   && c.price_youth!=null)   return Number(c.price_youth);
       if(/juvy/i.test(P.cat)    && c.price_juvy!=null)    return Number(c.price_juvy);
       if(/toddler/i.test(P.cat) && c.price_toddler!=null) return Number(c.price_toddler);
@@ -405,7 +415,7 @@ window.PacificData = (function () {
     }
     const b=P.base;
     if(b){
-      const v=_stepUp(b,_BIGORDER,_BIGSZ,sz); if(v!==undefined) return v;
+      const v=_stepUp(b,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
       if(b.base_price!=null) return Number(b.base_price);
     }
     return null;

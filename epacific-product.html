@@ -393,12 +393,6 @@
               <!-- 사이즈 헤더는 JS가 채움 -->
               <th>Pieces</th>
             </tr>
-            <tr class="prow" id="priceRow" style="display:none;">
-              <th class="colcol">Price</th>
-              <th class="whcol"></th>
-              <!-- 사이즈별 가격도 JS가 채움 -->
-              <th></th>
-            </tr>
           </thead>
           <tbody id="rows"></tbody>
         </table>
@@ -449,12 +443,13 @@
   .editmode .cimg .editov{display:flex}
   /* 숨긴 사이즈 열: 손님에겐 완전히 숨김 */
   .size-hidden{display:none}
-  /* 가격 줄 — 사이즈 제목 바로 아래 (2026-08-29) */
-  .otable thead tr.prow th{font-weight:600;font-size:12px;color:var(--soft-ink,#56564f);
-    padding-top:0;padding-bottom:7px;border-bottom:1px solid var(--line,#e8e7e1);background:inherit;text-align:center}
-  .otable thead tr.prow th.colcol{text-transform:uppercase;letter-spacing:.07em;font-size:10.5px;color:var(--faint,#8e8e85);text-align:left}
-  .otable thead tr.prow th .was{display:block;font-size:10px;color:var(--faint,#8e8e85);text-decoration:line-through;font-weight:500}
-  .otable thead tr.prow th.on-sale{color:#c0392b;font-weight:700}
+  /* 가격은 사이즈 제목 '위' 에 같은 칸 안에서 (2026-08-30).
+     따로 줄을 만들었더니 sticky 헤더가 두 겹이 되면서 표와 겹쳤다. 한 칸에 넣으면 그 문제가 없다. */
+  .otable thead th .szp{display:block;font-size:12.5px;font-weight:700;color:var(--ink,#1c1c1a);
+    letter-spacing:0;text-transform:none;line-height:1.25;margin-bottom:1px}
+  .otable thead th .szp .was{display:block;font-size:9.5px;font-weight:500;color:var(--faint,#8e8e85);text-decoration:line-through}
+  .otable thead th.on-sale .szp{color:#c0392b}
+  .otable thead th .szn{display:block}
   .cellprice{display:block;font-size:9.5px;line-height:1.3;color:#c0392b;font-weight:700;margin-top:1px}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
   .editmode .size-hidden{display:table-cell;opacity:.35}
@@ -621,7 +616,7 @@
       const isHidden=hiddenSizes.includes(s);
       th.className='szh szcol'+(isHidden?' size-hidden':'');
       th.dataset.size=s;
-      th.textContent=s;
+      th.innerHTML=sizeHeadHtml(s);
       th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
@@ -643,43 +638,36 @@
     if(!(window.PacificData && PacificData.getPricing)) return;
     try{ PRICING = await PacificData.getPricing(currentStyle, (product&&product.category)||''); }
     catch(e){ PRICING=null; }
-    renderPriceRow();
+    paintSizePrices();
     markCellSales();
   }
-  function renderPriceRow(){
-    const row=document.getElementById('priceRow');
-    if(!row) return;
-    row.querySelectorAll('th.szh').forEach(th=>th.remove());
-    if(!PRICING){ row.style.display='none'; return; }
-    // 색을 지정하지 않은 '이 사이즈의 값' — 색별 세일은 칸에 따로 표시한다
-    let any=false;
-    const last=row.querySelector('th:last-child');
-    allSizes.forEach(sz=>{
-      const th=document.createElement('th');
-      th.className='szh szcol'+(hiddenSizes.includes(sz)?' size-hidden':'');
-      th.dataset.size=sz;
+  /* 사이즈 칸 하나의 내용: 가격(있으면) 위 · 사이즈 이름 아래 */
+  function sizeHeadHtml(sz){
+    let top='';
+    if(PRICING && window.PacificData && PacificData.priceOf){
       const p=PacificData.priceOf(PRICING, null, sz);
-      if(p.price==null){ th.textContent='—'; }
-      else{
-        any=true;
-        if(p.onSale){ th.className+=' on-sale'; th.innerHTML='<span class="was">'+fmtUSD(p.list)+'</span>'+fmtUSD(p.price); }
-        else th.textContent=fmtUSD(p.price);
+      if(p.price!=null){
+        top = '<span class="szp">'
+            + (p.onSale ? '<span class="was">'+fmtUSD(p.list)+'</span>' : '')
+            + fmtUSD(p.price) + '</span>';
       }
-      row.insertBefore(th, last);
+    }
+    return top + '<span class="szn">' + sz + '</span>';
+  }
+  /* 가격을 받은 뒤 사이즈 칸만 다시 칠한다 (표 전체를 다시 그리지 않는다) */
+  function paintSizePrices(){
+    document.querySelectorAll('.otable thead th.szh').forEach(th=>{
+      const sz=th.dataset.size; if(!sz) return;
+      th.innerHTML=sizeHeadHtml(sz);
+      let on=false;
+      if(PRICING && window.PacificData && PacificData.priceOf){
+        const p=PacificData.priceOf(PRICING, null, sz);
+        on = !!p.onSale;
+      }
+      th.classList.toggle('on-sale', on);
     });
-    row.style.display = any ? '' : 'none';
-    syncStickyRows();
   }
-  /* thead 의 th 는 전부 sticky top:0 이라, 줄을 하나 더 붙이면 두 줄이 같은 자리에
-     겹쳐 붙는다. 가격 줄만 사이즈 줄 높이만큼 내려 고정한다. (2026-08-30) */
-  function syncStickyRows(){
-    const head=document.querySelector('.otable thead tr:first-child');
-    const row=document.getElementById('priceRow');
-    if(!head||!row||row.style.display==='none') return;
-    const h=Math.round(head.getBoundingClientRect().height);
-    row.querySelectorAll('th').forEach(th=>{ th.style.top=h+'px'; th.style.zIndex='1'; });
-  }
-  window.addEventListener('resize',()=>{ try{ syncStickyRows(); }catch(e){} });
+
   /* 색까지 지정된 세일이 걸린 칸에만 빨간 단가를 붙인다 */
   function markCellSales(){
     if(!rowsBody) return;

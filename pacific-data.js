@@ -379,13 +379,25 @@ window.PacificData = (function () {
     return { base:(sp&&sp[0])||null, cust:(cp&&cp[0])||null, sales:sale||[], cat:String(category||'') };
   }
 
+  /* 큰 사이즈 할증은 위로 올라갈수록 비싸진다. 4XL·5XL 칸이 비어 있다고 기본가로
+     떨어뜨리면 3XL($4.95)보다 4XL($3.75)이 싸지는 이상한 표가 된다.
+     빈 칸은 바로 아래 사이즈의 할증을 그대로 물려받게 한다. (2026-08-30) */
+  const _BIGORDER=['2XL','3XL','4XL','5XL'];
+  const _TOTORDER=['2T','3T','4T','5T'];
+  function _stepUp(row, order, map, sz){
+    const i=order.indexOf(sz);
+    if(i<0) return undefined;
+    for(let k=i;k>=0;k--){ const col=map[order[k]]; if(row[col]!=null) return Number(row[col]); }
+    return undefined;   // 아래로 내려가도 값이 없으면 기본가로
+  }
+
   /* 정가 (세일 적용 전) — 사이즈에 따라 다르다 */
   function _listPrice(P, size){
     const sz=String(size||'').toUpperCase();
     const c=P.cust;
     if(c){
-      if(_TOTSZ[sz] && c[_TOTSZ[sz]]!=null) return Number(c[_TOTSZ[sz]]);
-      if(_BIGSZ[sz] && c[_BIGSZ[sz]]!=null) return Number(c[_BIGSZ[sz]]);
+      let v=_stepUp(c,_TOTORDER,_TOTSZ,sz); if(v!==undefined) return v;
+      v=_stepUp(c,_BIGORDER,_BIGSZ,sz);     if(v!==undefined) return v;
       if(/youth/i.test(P.cat)   && c.price_youth!=null)   return Number(c.price_youth);
       if(/juvy/i.test(P.cat)    && c.price_juvy!=null)    return Number(c.price_juvy);
       if(/toddler/i.test(P.cat) && c.price_toddler!=null) return Number(c.price_toddler);
@@ -393,7 +405,7 @@ window.PacificData = (function () {
     }
     const b=P.base;
     if(b){
-      if(_BIGSZ[sz] && b[_BIGSZ[sz]]!=null) return Number(b[_BIGSZ[sz]]);
+      const v=_stepUp(b,_BIGORDER,_BIGSZ,sz); if(v!==undefined) return v;
       if(b.base_price!=null) return Number(b.base_price);
     }
     return null;

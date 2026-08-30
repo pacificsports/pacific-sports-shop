@@ -668,7 +668,18 @@
       row.insertBefore(th, last);
     });
     row.style.display = any ? '' : 'none';
+    syncStickyRows();
   }
+  /* thead 의 th 는 전부 sticky top:0 이라, 줄을 하나 더 붙이면 두 줄이 같은 자리에
+     겹쳐 붙는다. 가격 줄만 사이즈 줄 높이만큼 내려 고정한다. (2026-08-30) */
+  function syncStickyRows(){
+    const head=document.querySelector('.otable thead tr:first-child');
+    const row=document.getElementById('priceRow');
+    if(!head||!row||row.style.display==='none') return;
+    const h=Math.round(head.getBoundingClientRect().height);
+    row.querySelectorAll('th').forEach(th=>{ th.style.top=h+'px'; th.style.zIndex='1'; });
+  }
+  window.addEventListener('resize',()=>{ try{ syncStickyRows(); }catch(e){} });
   /* 색까지 지정된 세일이 걸린 칸에만 빨간 단가를 붙인다 */
   function markCellSales(){
     if(!rowsBody) return;

@@ -389,6 +389,17 @@ window.PacificData = (function () {
        5XL = 4XL + 1.20   (→ 3XL 만 있으면 5XL = 3XL + 2.00)
      값이 직접 들어 있으면 그 값이 먼저다. 규칙이 없는 단계는 아래 값을 그대로 쓴다. */
   const _BIGSTEP={'4XL':0.80,'5XL':1.20};
+  /* 웹사이트 큰사이즈 가격 — 기본가(XS~XL)에서 한 단계씩 올린다 (2026-09-01, 사장님 규칙)
+       2XL = XS~XL + 0.60
+       3XL = 2XL   + 1.00
+       4XL = 3XL   + 1.50
+       5XL = 4XL   + 2.50
+     웹 표시 전용이다. 거래처 협상가(customer_prices)는 _listPrice 위쪽에서 먼저 처리되므로
+     이 규칙의 영향을 받지 않는다. style_prices 의 2XL~5XL 칸은 웹에서는 더 이상 읽지 않는다
+     (그 값들은 예전 +0.60 기준으로 채워져 있어서 새 규칙과 어긋난다). */
+  const _WEBSTEP={'2XL':0.60,'3XL':1.00,'4XL':1.50,'5XL':2.50};
+  const _WEBBIG=(function(){ const o={}; let a=0; _BIGORDER.forEach(z=>{ a+=_WEBSTEP[z]; o[z]=Math.round(a*100)/100; }); return o; })();
+  /* => 2XL +0.60 · 3XL +1.60 · 4XL +3.10 · 5XL +5.60 */
   function _stepUp(row, order, map, sz, steps){
     const i=order.indexOf(sz);
     if(i<0) return undefined;
@@ -415,8 +426,9 @@ window.PacificData = (function () {
     }
     const b=P.base;
     if(b){
+      /* 기본가가 있으면 큰사이즈는 위 _WEBBIG 규칙으로 계산한다. 표에 적힌 2XL~5XL 값보다 규칙이 먼저다. */
+      if(b.base_price!=null) return Math.round((Number(b.base_price)+(_WEBBIG[sz]||0))*100)/100;
       const v=_stepUp(b,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
-      if(b.base_price!=null) return Number(b.base_price);
     }
     return null;
   }

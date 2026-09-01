@@ -185,6 +185,9 @@
   .colcell .cimg svg{display:block}
   .colcell .cn{font-size:14px;font-weight:500;white-space:nowrap}
   .cn-wrap{display:flex;align-items:center;gap:8px}
+  /* 색 단위 담은 수량 — 색 이름과 WH 배지 사이 빈 자리에, 수량을 넣은 색에만 */
+  .coltotal{margin-left:auto;padding-right:14px;font-family:var(--display);font-size:15px;font-weight:600;
+    color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
   /* Edit 모드: 색 이름 옆 체크(켜기/끄기) */
   .cn-check{display:none}
   .editmode .cn-check{display:inline-flex;width:18px;height:18px;border:1.5px solid var(--accent);border-radius:5px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:var(--accent)}
@@ -551,7 +554,8 @@
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span>`+
         `<span class="cn-wrap"><span class="cn-check" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Show/hide this color"></span>`+
         `<span class="cn-star${(styleSettings.default_color===(c._raw||c.raw||c.name))?' on':''}" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Set as main photo">★</span>`+
-        `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span></div></td>`
+        `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span>`+
+        `<span class="coltotal" data-coltot="${String(c.name).replace(/"/g,'&quot;')}" hidden></span></div></td>`
       : '';
     const whCell=`<td class="whcell"><div class="whwrap"><span class="whbadge wh-${wh}">${wh}</span></div></td>`;
     // 항상 전체 사이즈를 그려두고, 숨김/표시는 CSS로 (Edit 토글 시 재생성 안 함 → 빠름)
@@ -733,7 +737,7 @@
   }
 
   function recalc(){
-    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0; const byColor={};
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       let rt=0;
       tr.querySelectorAll('input').forEach((inp)=>{
@@ -747,7 +751,15 @@
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
       if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
+      byColor[tr.dataset.color] = (byColor[tr.dataset.color]||0) + rt;
       total+=rt;
+    });
+    /* 색 칸 오른쪽 끝(WH 배지 앞)에 그 색의 총 수량 — 창고가 두 줄이라 눈으로 더하지 않아도 되게.
+       색 이름 옆에 붙이면 이름이 지저분해져서 빈 공간 쪽으로 밀었다. (2026-09-01) */
+    rowsBody.querySelectorAll('.coltotal').forEach(el=>{
+      const n = byColor[el.dataset.coltot] || 0;
+      el.textContent = n ? n.toLocaleString() : '';
+      el.hidden = !n;
     });
     totalUnitsEl.textContent=total;
     if(total===0){

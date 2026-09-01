@@ -762,6 +762,23 @@
       buildWHRow(c,'CA',false,hidden);
       buildTotalRow(c,hidden);
     });
+    fitJumpTail();
+  }
+
+  /* 마지막 색들도 칩을 누르면 맨 위로 올라오게 — 표 끝에 딱 그만큼만 여유를 준다.
+     이게 없으면 표가 끝까지 내려가 버려서 마지막 두세 색은 가운데에 걸린다. */
+  function fitJumpTail(){
+    const scroller=document.querySelector('.otable-scroll');
+    if(!scroller) return;
+    const rows=[...rowsBody.querySelectorAll('tr[data-color]')];
+    if(!rows.length){ scroller.style.paddingBottom=''; return; }
+    const lastColor=rows[rows.length-1].dataset.color;
+    const tail=rows.filter(r=>r.dataset.color===lastColor);
+    const tailH=tail.reduce((s,r)=>s+r.offsetHeight,0);
+    const thead=scroller.querySelector('thead');
+    const headH=thead?thead.offsetHeight:44;
+    const pad=Math.max(0, scroller.clientHeight - headH - 6 - tailH);
+    scroller.style.paddingBottom=pad+'px';
   }
 
   function fmtCase(pcs,per){

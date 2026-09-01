@@ -211,7 +211,7 @@
   .otable tbody tr.stock-total .stock{font-size:12px;font-weight:700;color:var(--ink,#1c1c1a);opacity:.75}
   .otable tbody tr.stock-total .stock.out{opacity:.3;font-weight:500}
   .otable tbody tr.stock-total .stock.low{color:#c0392b;opacity:1}
-  .whbadge.wh-ALL{background:#e8e8e2;color:#6b6b63}
+  .whbadge.wh-ALL{background:#e8e8e2;color:#6b6b63;font-size:9.5px;letter-spacing:.02em;padding-left:6px;padding-right:6px}
   .stockgrand{font-family:var(--display);font-size:13px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
 
   .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
@@ -734,7 +734,7 @@
     const raw=c._raw||c.raw||c.name;
     const sm = stockMap[c.name] || stockMap[raw] || stockMap[c.rawName] || null;
     const sc = (sm && sm.SC) ? sm.SC : [], ca = (sm && sm.CA) ? sm.CA : [];
-    const lbl = `<td class="whcell"><div class="whwrap"><span class="whbadge wh-ALL" title="SC + CA — total stock for this colour">ALL</span></div></td>`;
+    const lbl = `<td class="whcell"><div class="whwrap"><span class="whbadge wh-ALL" title="SC + CA — total stock for this colour, both warehouses">SC+CA</span></div></td>`;
     let grand = 0;
     const cells = allSizes.map((sz,i)=>{
       const isHidden = hiddenSizes.includes(sz);

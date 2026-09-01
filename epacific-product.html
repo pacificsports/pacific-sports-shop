@@ -848,16 +848,28 @@
     const scroller=document.querySelector('.otable-scroll');
     const thead=scroller.querySelector('thead');
     const headH=thead?thead.offsetHeight:44;
-    // 스크롤 컨테이너 안에서 해당 행이 sticky 헤더 바로 아래 오도록
-    const top=row.offsetTop - headH - 6;
+    /* 그 색이 sticky 헤더(사이즈·가격) 바로 밑에 오도록.
+       offsetTop 은 offsetParent 가 무엇이냐에 따라 값이 달라져서 표 안에서는 못 믿는다.
+       화면 좌표 차이로 스크롤러 기준 위치를 직접 구한다. (2026-09-01) */
+    const delta = row.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+    const top = scroller.scrollTop + delta - headH - 6;
     scroller.scrollTo({top:Math.max(0,top),behavior:'smooth'});
-    // 두 줄(SC+CA) 다 잠깐 강조
-    const rows=[row, row.nextElementSibling].filter(Boolean);
+    // 그 색에 딸린 줄 전부 강조 (SC · CA · SC+CA 합계)
+    const rows=[row];
+    for(let n=row.nextElementSibling; n && n.dataset && n.dataset.color===row.dataset.color; n=n.nextElementSibling) rows.push(n);
     rows.forEach(r=>r.classList.add('jump-hl'));
     setTimeout(()=>rows.forEach(r=>r.classList.remove('jump-hl')),1400);
-    // 첫 입력칸에 포커스
+    /* 첫 입력칸에 포커스 — preventScroll 없이 부르면 브라우저가 스크롤을 다시 잡아서
+       방금 맞춰놓은 위치를 흐트러뜨린다. 그래서 색이 표 가운데에 걸쳐 보였다. */
     const firstInput=row.querySelector('input:not([disabled])');
-    if(firstInput) setTimeout(()=>firstInput.focus(),350);
+    if(firstInput) setTimeout(()=>{ try{ firstInput.focus({preventScroll:true}); }catch(e){} },350);
+    /* 표가 화면 밖이면 표부터 보이게 — 칩은 왼쪽에 세로로 길어서 표가 밀려 있을 수 있다 */
+    try{
+      const sr=scroller.getBoundingClientRect();
+      if(sr.top < 0 || sr.top > window.innerHeight*0.6){
+        window.scrollBy({top: sr.top - 120, behavior:'smooth'});
+      }
+    }catch(e){}
     sugBox.classList.remove('show');
     searchInput.value=name;
   }

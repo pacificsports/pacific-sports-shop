@@ -21,12 +21,14 @@
   .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
 
   .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
-  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
+  /* 헤더·브레드크럼·푸터를 본문(.product 1560px/40px)과 같은 폭으로 — 예전엔 1240px 라
+     Cart·Search 가 주문표 오른쪽 끝보다 120px 안쪽에서 끝나 줄이 안 맞았다. (2026-09-01) */
+  .utility-in{max-width:1560px;margin:0 auto;padding:10px 40px;display:flex;justify-content:space-between;align-items:center}
   .utility-in .left{display:flex;gap:20px}
   .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
 
   header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
-  .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
+  .header-in{max-width:1560px;margin:0 auto;padding:20px 40px;display:flex;align-items:center;gap:46px}
   .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
   .logo-img{height:40px;width:auto;display:block}
   .fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
@@ -49,7 +51,7 @@
   .h-icons .primary:hover{background:var(--accent);color:#fff}
   .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
 
-  .crumb{max-width:1240px;margin:0 auto;padding:26px 30px 0;font-size:13px;color:var(--faint)}
+  .crumb{max-width:1560px;margin:0 auto;padding:26px 40px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
   .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.75fr 1fr;gap:48px;align-items:start}
@@ -234,13 +236,13 @@
   .toast.show{transform:translateX(-50%) translateY(0)}
 
   footer{background:var(--ink);color:#9c9c92;padding:70px 30px 32px}
-  .f-in{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:44px}
+  .f-in{max-width:1560px;margin:0 auto;display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:44px}
   footer h4{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--bg);margin-bottom:18px;font-weight:600}
   footer a{display:block;padding:6px 0;font-size:14px;color:#9c9c92;font-weight:350;transition:color .2s}
   footer a:hover{color:var(--bg)}
   .fb .logo{color:var(--bg);margin-bottom:18px}.fb .logo i{color:var(--warm)}
   .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
-  .f-bot{max-width:1240px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .f-bot{max-width:1560px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
   .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
 
   @media(max-width:1000px){

@@ -771,7 +771,7 @@
   }
 
   function recalc(){
-    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0; const colorsOn=new Set();
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       if(tr.dataset.wh==='ALL') return;   // 재고 합계 줄 — 주문 수량과 무관
       let rt=0;
@@ -786,6 +786,7 @@
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
       if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
+      if(rt>0) colorsOn.add(tr.dataset.color);   // 몇 가지 색을 담았는지 — 프린트 셋업·포장에 필요
       total+=rt;
     });
     totalUnitsEl.textContent=total;
@@ -800,6 +801,8 @@
       if(scPcs>0) whline.push('SC '+scPcs);
       if(caPcs>0) whline.push('CA '+caPcs);
       if(whline.length) parts.push(`<span class="cl">By WH</span> ${whline.join(' · ')}`);
+      const nc = colorsOn.size;
+      if(nc) parts.push(`<span class="cl">Colors</span> ${nc} color${nc>1?'s':''}`);
       caseConvEl.innerHTML=parts.join('<br>');
     }
     addBtn.disabled=total===0;

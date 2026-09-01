@@ -652,6 +652,7 @@
     catch(e){ PRICING=null; }
     paintSizePrices();
     markCellSales();
+    try{ recalc(); }catch(e){}   // 가격이 늦게 도착해도 Subtotal 이 채워지도록
   }
   /* 사이즈 칸 하나의 내용: 가격(있으면) 위 · 사이즈 이름 아래 */
   function sizeHeadHtml(sz){
@@ -772,6 +773,7 @@
 
   function recalc(){
     let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0; const colorsOn=new Set();
+    let amount=0, priceKnown=true;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       if(tr.dataset.wh==='ALL') return;   // 재고 합계 줄 — 주문 수량과 무관
       let rt=0;
@@ -782,6 +784,12 @@
         rt+=q;
         const sname=td?td.getAttribute('data-size'):null;
         if(casePer[sname]===48) bigPcs+=q; else stdPcs+=q;
+        /* 금액도 같은 자리에서 — 단가는 사이즈마다 다르고 색별 세일도 걸리므로 칸마다 조회한다.
+           가격을 아직 못 받았거나(비로그인) 단가가 없는 칸이 하나라도 있으면 합계를 숨긴다. (2026-09-01) */
+        if(q>0 && sname){
+          const up = (typeof unitPriceFor==='function') ? unitPriceFor(tr.dataset.color, sname) : null;
+          if(up==null) priceKnown=false; else amount += up*q;
+        }
       });
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
@@ -804,6 +812,15 @@
       const nc = colorsOn.size;
       if(nc) parts.push(`<span class="cl">Colors</span> ${nc} color${nc>1?'s':''}`);
       caseConvEl.innerHTML=parts.join('<br>');
+    }
+    /* Subtotal — 예전엔 HTML 에 '— login' 이 박혀만 있고 값을 넣는 코드가 없어서
+       로그인해도 그대로였다. 이제 실제로 계산한다. */
+    const stEl=document.getElementById('subtotal');
+    if(stEl){
+      if(!canOrder) stEl.textContent='— login';
+      else if(total===0) stEl.textContent='—';
+      else if(!priceKnown || !PRICING) stEl.textContent='—';
+      else stEl.textContent=fmtUSD(Math.round(amount*100)/100);
     }
     addBtn.disabled=total===0;
   }

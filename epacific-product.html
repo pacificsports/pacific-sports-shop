@@ -206,6 +206,8 @@
   .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
   .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
   .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
+  /* 색 단위 합계 — 수량을 넣은 색에만 나타난다 */
+  .coltotal{display:block;margin-top:3px;font-family:var(--display);font-size:12.5px;font-weight:700;color:var(--accent);letter-spacing:.01em}
 
   .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
   .case-note::before{content:"📦"}
@@ -551,7 +553,9 @@
       ? `<td class="colcell-td" rowspan="2"><div class="colcell"><span class="cimg">${colorThumb(c,false,true)}</span>`+
         `<span class="cn-wrap"><span class="cn-check" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Show/hide this color"></span>`+
         `<span class="cn-star${(styleSettings.default_color===(c._raw||c.raw||c.name))?' on':''}" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}" title="Set as main photo">★</span>`+
-        `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span></span></div></td>`
+        `<span class="cn" data-raw="${String(c._raw||c.raw||c.name).replace(/"/g,'&quot;')}">${c.name}</span>`+
+        `<span class="coltotal" data-coltot="${String(c.name).replace(/"/g,'&quot;')}" hidden></span>`+
+        `</span></div></td>`
       : '';
     const whCell=`<td class="whcell"><div class="whwrap"><span class="whbadge wh-${wh}">${wh}</span></div></td>`;
     // 항상 전체 사이즈를 그려두고, 숨김/표시는 CSS로 (Edit 토글 시 재생성 안 함 → 빠름)
@@ -733,7 +737,7 @@
   }
 
   function recalc(){
-    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0;
+    let total=0, stdPcs=0, bigPcs=0, scPcs=0, caPcs=0; const byColor={};
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       let rt=0;
       tr.querySelectorAll('input').forEach((inp)=>{
@@ -747,7 +751,14 @@
       tr.querySelector('.rowtotal').textContent=rt;
       tr.querySelector('.rowtotal').style.color=rt>0?'var(--accent)':'';
       if(tr.dataset.wh==='SC') scPcs+=rt; else caPcs+=rt;
+      byColor[tr.dataset.color] = (byColor[tr.dataset.color]||0) + rt;   // 색 단위 합계 (창고 줄을 합친다)
       total+=rt;
+    });
+    /* 색 이름 밑에 그 색의 총 수량 — 창고가 두 줄이라 눈으로 더하지 않아도 되게 (2026-09-01) */
+    rowsBody.querySelectorAll('.coltotal').forEach(el=>{
+      const n = byColor[el.dataset.coltot] || 0;
+      el.textContent = n ? (n.toLocaleString()+' pcs') : '';
+      el.hidden = !n;
     });
     totalUnitsEl.textContent=total;
     if(total===0){

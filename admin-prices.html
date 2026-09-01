@@ -52,6 +52,7 @@
     <select id="custSel" style="display:none"><option value="">— 거래처 선택 —</option></select>
   </div>
   <div class="legend" id="legend" style="display:none">초록 칸 = 이 거래처 전용가 · 빈 칸/회색 = 기본가 적용 · 4XL/5XL이 비어 있으면 그 아래 단계 가격이 적용됩니다</div>
+  <div class="legend" id="ruleLegend">여기 적힌 금액이 웹사이트에서 실제로 받는 금액입니다. Base 를 고치면 2XL~5XL 이 규칙대로 자동으로 따라옵니다 &mdash; <b>2XL = Base + 0.60 · 3XL = 2XL + 1.00 · 4XL = 3XL + 1.50 · 5XL = 4XL + 2.50</b>. 규칙과 다르게 받고 싶으면 그 칸만 직접 고치면 되고, 그 값이 우선합니다. <span id="ruleOff" style="color:#b45309"></span></div>
 
   <div class="panel" style="display:none" id="panel">
     <table>
@@ -144,6 +145,7 @@
     const salePanel=document.getElementById('salePanel');
     document.getElementById('custSel').style.display = view==='cust' ? '' : 'none';
     legend.style.display = view==='cust' ? '' : 'none';
+    const rl=document.getElementById('ruleLegend'); if(rl) rl.style.display = view==='base' ? '' : 'none';
     if(view==='sale'){ panel.style.display='none'; msg.style.display='none'; salePanel.style.display=''; renderSale(); return; }
     salePanel.style.display='none';
     if(view==='cust' && !custId){ panel.style.display='none'; msg.style.display='block'; msg.textContent='위에서 거래처를 선택하세요.'; return; }
@@ -172,10 +174,56 @@
         inp.classList.add('dirty');
         const btn=body.querySelector('button[data-save="'+inp.dataset.no+'"]');
         if(btn) btn.disabled=false;
+        /* Base 를 고치면 큰사이즈를 규칙대로 다시 채운다. 손으로 고쳐둔 칸(off-rule)은 건드리지 않는다. */
+        if(inp.dataset.col==='base_price') applyLadder(inp.dataset.no, inp.value);
       });
     });
+    markOffRule();
     body.querySelectorAll('button[data-save]').forEach(b=>b.addEventListener('click',()=>saveRow(b.dataset.save,b)));
     body.querySelectorAll('button[data-clear]').forEach(b=>b.addEventListener('click',()=>clearRow(b.dataset.clear,b)));
+  }
+
+  /* 웹사이트 큰사이즈 규칙 (2026-09-01) — 기본가 대비 누적 할증.
+     pacific-data.js 의 _WEBSTEP 과 같은 값이어야 한다. */
+  const LADDER={price_2xl:0.60, price_3xl:1.60, price_4xl:3.10, price_5xl:5.60};
+  function ladderFor(base){
+    const b=parseFloat(base); if(isNaN(b)) return null;
+    const o={}; Object.keys(LADDER).forEach(c=>{ o[c]=Math.round((b+LADDER[c])*100)/100; });
+    return o;
+  }
+  /* Base 가 바뀌면 규칙대로 다시 채운다. 규칙과 다른 값이 이미 들어 있는 칸은 그 사람의 뜻이므로 남겨둔다. */
+  function applyLadder(no, baseVal){
+    const want=ladderFor(baseVal); if(!want) return;
+    const prevBase=(basePrices[no]||{}).base_price;
+    const prev=prevBase!=null?ladderFor(prevBase):null;
+    Object.keys(LADDER).forEach(c=>{
+      const inp=document.querySelector('input[data-no="'+no+'"][data-col="'+c+'"]'); if(!inp) return;
+      const cur=inp.value.trim();
+      const wasOnRule = cur==='' || (prev && Math.abs(parseFloat(cur)-prev[c])<0.005);
+      if(wasOnRule) inp.value=want[c].toFixed(2);
+    });
+    markOffRule();
+  }
+  /* 규칙과 다른 칸은 주황으로 표시해서 "여긴 예외다"가 눈에 보이게 한다. */
+  function markOffRule(){
+    if(view!=='base') return;
+    let n=0;
+    document.querySelectorAll('#rows tr[data-row]').forEach(tr=>{
+      const no=tr.dataset.row;
+      const bi=tr.querySelector('input[data-col="base_price"]');
+      const want=bi?ladderFor(bi.value):null;
+      Object.keys(LADDER).forEach(c=>{
+        const inp=tr.querySelector('input[data-col="'+c+'"]'); if(!inp) return;
+        const v=inp.value.trim();
+        const off = want && v!=='' && Math.abs(parseFloat(v)-want[c])>=0.005;
+        inp.style.background = off ? '#fff7ed' : '';
+        inp.style.borderColor = off ? '#f59e0b' : '';
+        inp.title = off ? ('규칙값은 '+want[c].toFixed(2)+' — 직접 정한 예외 가격입니다') : '';
+        if(off) n++;
+      });
+    });
+    const el=document.getElementById('ruleOff');
+    if(el) el.textContent = n ? ('· 주황 칸 '+n+'개는 규칙과 다른 예외 가격입니다.') : '';
   }
 
   function rowValues(no){

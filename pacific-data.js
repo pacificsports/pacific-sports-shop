@@ -426,7 +426,10 @@ window.PacificData = (function () {
     }
     const b=P.base;
     if(b){
-      /* 기본가가 있으면 큰사이즈는 위 _WEBBIG 규칙으로 계산한다. 표에 적힌 2XL~5XL 값보다 규칙이 먼저다. */
+      /* 표(Price Management)에 값이 적혀 있으면 그 값이 먼저다 — 스타일별 예외를 손으로 넣을 수 있어야 한다.
+         비어 있으면 기본가에서 _WEBBIG 규칙으로 계산한다. */
+      const col=_BIGSZ[sz];
+      if(col && b[col]!=null) return Math.round(Number(b[col])*100)/100;
       if(b.base_price!=null) return Math.round((Number(b.base_price)+(_WEBBIG[sz]||0))*100)/100;
       const v=_stepUp(b,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
     }

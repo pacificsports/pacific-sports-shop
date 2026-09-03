@@ -767,6 +767,9 @@
       buildWHRow(c,'CA',false,hidden);
       buildTotalRow(c,hidden);
     });
+    /* 붙는 높이는 표를 그린 **뒤에** 다시 잰다 — 처음 그릴 때는 합계바가 아직 0 높이라
+       84px 로 잡혀 사이즈·가격 줄이 합계바에 가려진다 (2026-09-03) */
+    applyStick();
     fitJumpTail();
   }
 

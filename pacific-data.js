@@ -251,8 +251,12 @@ window.PacificData = (function () {
 
   // product_images 에서 한 스타일의 색상별 사진 읽기 → { 색상(예쁜표기): URL }
   async function _supabaseImages(styleNo) {
+    /* ⚠ 한 색에 줄이 여러 개일 수 있다 — 대소문자만 다른 옛 줄(Charcoal / CHARCOAL)이 대표적이다.
+       예전에는 sort_order 만 보고 정렬해서, 같은 순위 안에서는 **가장 먼저 들어간 줄**,
+       즉 제일 오래된 사진이 이겼다. 그래서 새로 올린 사진이 화면에 영영 안 나왔다
+       (2026-09-03, 1314 CHARCOAL). 이제 같은 sort_order 안에서는 최신이 이긴다. */
     const rows = await _sb('product_images?style_number=eq.'+encodeURIComponent(styleNo)
-                          +'&select=color,image_path,sort_order&order=sort_order');
+                          +'&select=color,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
     const out = {};
     rows.forEach(r => {
       const key = r.color ? prettyColor(r.color) : '_default';
@@ -523,7 +527,7 @@ window.PacificData = (function () {
     getStyleThumbs: async function () {
       if (SOURCE !== 'supabase') return {};
       try {
-        const rows = await _sb('product_images?select=style_number,image_path,sort_order&order=sort_order');
+        const rows = await _sb('product_images?select=style_number,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
         const out = {};
         rows.forEach(r => { if (!out[r.style_number]) out[r.style_number] = _imageUrl(r.image_path); });
         return out;

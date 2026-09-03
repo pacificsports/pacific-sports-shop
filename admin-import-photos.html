@@ -112,7 +112,18 @@
       const {style, colorText}=parsed;
       try{
         const byNorm=await imsColors(style);
-        const matched=byNorm[norm(colorText)] || colorText; // IMS 색상명으로 맞춤
+        /* ⚠ 예전에는 못 찾으면 파일명의 글자를 그대로 색상으로 썼다(|| colorText).
+           그래서 'chacoal' 같은 오타가 그대로 새 줄이 되고, 화면에는 "✓ 성공" 이라고 떴다.
+           그 줄은 어떤 SKU 색과도 안 맞아서 사이트에 영영 안 나온다 — 조용한 실패다.
+           이제 못 찾으면 올리지 않고, 쓸 수 있는 색 이름을 같이 알려준다. (2026-09-03) */
+        const matched=byNorm[norm(colorText)];
+        if(!matched){
+          skip++;
+          const opts=Object.values(byNorm).slice(0,12).join(', ');
+          log('<span class="er">✗ '+file.name+' — #'+style+' 에 "'+colorText+'" 색이 없습니다 (건너뜀)'
+              + (opts?'<br><span class="sk">&nbsp;&nbsp;&nbsp;쓸 수 있는 색: '+opts+'</span>':'') + '</span>');
+          continue;
+        }
         const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
         const path=style+'/'+norm(matched).toLowerCase()+'.'+ext;
         const H={apikey:KEY,Authorization:'Bearer '+tk};  // 직원 토큰으로 업로드

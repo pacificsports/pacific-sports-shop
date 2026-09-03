@@ -768,8 +768,34 @@
       buildWHRow(c,'CA',false,hidden);
       buildTotalRow(c,hidden);
     });
+    fitTable();
     fitJumpTail();
   }
+
+  /* ═══ 위에 붙어 있는 것들의 실제 높이를 잰다 (2026-09-03) ═══
+     칩을 누르면 표가 위로 올라오는데, 지금까지는 "위에서 120px" 이라고 숫자를 박아놨다.
+     그런데 실제로는 상단 바(84) + 합계 바(86) = 170px 이라서, 표 머리 30px 이 합계 바
+     뒤에 가려졌다 — 가려진 30px 이 바로 **가격 줄**이다. 사이즈 글자만 보이고 가격이
+     안 보인 이유가 이것이다. 숫자를 박지 말고 매번 재서 그 밑에 세운다.
+     합계 바의 top:64px 도 상단 바(84px)보다 작아서 20px 이 상단 바 뒤에 숨어 있었다 —
+     여기서 상단 바 높이에 맞춰 내려놓는다. */
+  function stickyNeed(){
+    const hd=document.querySelector('header');
+    const sm=document.querySelector('.summary');
+    const hh=hd?Math.round(hd.getBoundingClientRect().height):64;
+    const sh=sm?Math.round(sm.getBoundingClientRect().height):0;
+    if(sm) sm.style.top=hh+'px';
+    return hh+sh;
+  }
+  /* 표 높이도 같은 값에서 뽑는다 — 화면 크기가 바뀌어도 표 아래가 잘리지 않게 */
+  function fitTable(){
+    const sc=document.querySelector('.otable-scroll');
+    if(!sc) return;
+    const h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
+    sc.style.maxHeight=h+'px';
+    sc.style.minHeight=Math.min(420,h)+'px';
+  }
+  window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); }catch(e){} });
 
   /* 마지막 색들도 칩을 누르면 맨 위로 올라오게 — 표 끝에 딱 그만큼만 여유를 준다.
      이게 없으면 표가 끝까지 내려가 버려서 마지막 두세 색은 가운데에 걸린다. */
@@ -887,9 +913,10 @@
     /* 표가 화면 밖이면 표부터 보이게 — 칩은 왼쪽에 세로로 길어서 표가 밀려 있을 수 있다.
        페이지 스크롤을 먼저(즉시) 끝내야 표 안쪽 부드러운 스크롤과 안 싸운다. */
     try{
+      const need = stickyNeed() + 6;           // 상단 바 + 합계 바 바로 밑
       const sr=scroller.getBoundingClientRect();
-      if(sr.top < 0 || sr.top > window.innerHeight*0.6){
-        window.scrollTo({top: Math.max(0, window.scrollY + sr.top - 120), behavior:'auto'});
+      if(sr.top < need - 1 || sr.top > window.innerHeight*0.6){
+        window.scrollTo({top: Math.max(0, window.scrollY + sr.top - need), behavior:'auto'});
       }
     }catch(e){}
 

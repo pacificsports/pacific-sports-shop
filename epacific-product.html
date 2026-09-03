@@ -173,7 +173,13 @@
   /* 대체 스타일 버튼 자리는 모든 칸에 똑같이 비워둔다 → 줄이 흔들리지 않는다 */
   .altslot{min-height:15px;display:flex;align-items:center;justify-content:center;margin-top:1px}
   td.is-out input{background:#fafafa;border-color:var(--line);color:#c8c8c8}
-  .otable-scroll{max-height:560px;overflow-y:auto}
+  /* 표 상자를 화면 높이에 맞춘다 (2026-09-03).
+     560px 로 고정돼 있으면 페이지를 조금만 내려도 상자가 화면 위로 밀려 나가고,
+     헤더(사이즈·가격)는 그 상자에 붙어 있으니 같이 사라져서 색깔 줄만 남았다.
+     상자가 화면을 거의 채우면 페이지는 조금만 움직이고 표가 자기 안에서 스크롤한다 —
+     붙어 있는 헤더가 계속 보인다. 구조는 그대로라 점프·꼬리여백 계산도 손댈 게 없다.
+     (210px = 상단바 + 합계바 + 여유) */
+  .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
   .otable thead th.colcol{text-align:left;padding-left:18px;min-width:130px}

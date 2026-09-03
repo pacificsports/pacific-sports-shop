@@ -173,14 +173,9 @@
   /* 대체 스타일 버튼 자리는 모든 칸에 똑같이 비워둔다 → 줄이 흔들리지 않는다 */
   .altslot{min-height:15px;display:flex;align-items:center;justify-content:center;margin-top:1px}
   td.is-out input{background:#fafafa;border-color:var(--line);color:#c8c8c8}
-  /* 사이즈·가격 줄은 **아래로 아무리 내려가도 계속 보여야 한다** (2026-09-03).
-     예전에는 표가 자기 상자(560px) 안에서 스크롤했고 헤더는 그 상자에 붙어 있었다.
-     그래서 페이지를 내려 상자가 화면 위로 밀려 나가면 헤더도 같이 사라지고 색깔 줄만 남았다.
-     이제 상자는 스크롤하지 않고 **페이지가** 스크롤한다 — 헤더는 상단바+합계바 높이(--stick)
-     아래에 화면 기준으로 붙는다. 그 높이는 창 크기에 따라 달라지므로 JS 가 재서 넣는다. */
-  .otable-scroll{max-height:none;overflow:visible}
+  .otable-scroll{max-height:560px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
-  .otable thead th{position:sticky;top:var(--stick,150px);z-index:4;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
+  .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
   .otable thead th.colcol{text-align:left;padding-left:18px;min-width:130px}
   .otable tbody td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--line)}
   .otable tbody tr:last-child td{border-bottom:none}
@@ -227,7 +222,7 @@
      계속 보이게. 예전엔 표 맨 아래라 끝까지 내려가야 보였다. (2026-09-01) */
   .summary{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 16px;
     border-top:1.5px solid var(--ink);border-bottom:1px solid var(--line);margin:14px 0 0;flex-wrap:wrap;
-    position:sticky;top:var(--hdr,64px);z-index:6;background:var(--bg,#fbfbf9)}
+    position:sticky;top:64px;z-index:6;background:var(--bg,#fbfbf9)}
   .summary .blk b{line-height:1.05}
   .summary .blk small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);font-weight:500}
   .summary .blk b{font-family:var(--display);font-weight:400;font-size:27px}
@@ -767,9 +762,6 @@
       buildWHRow(c,'CA',false,hidden);
       buildTotalRow(c,hidden);
     });
-    /* 붙는 높이는 표를 그린 **뒤에** 다시 잰다 — 처음 그릴 때는 합계바가 아직 0 높이라
-       84px 로 잡혀 사이즈·가격 줄이 합계바에 가려진다 (2026-09-03) */
-    applyStick();
     fitJumpTail();
   }
 
@@ -783,9 +775,9 @@
     const lastColor=rows[rows.length-1].dataset.color;
     const tail=rows.filter(r=>r.dataset.color===lastColor);
     const tailH=tail.reduce((s,r)=>s+r.offsetHeight,0);
-    /* 페이지가 스크롤하므로 기준은 표 상자가 아니라 **화면 높이**다.
-       마지막 색도 사이즈·가격 줄 바로 밑까지 올라올 수 있게 그만큼 여유를 둔다. */
-    const pad=Math.max(0, window.innerHeight - stickTop() - 6 - tailH);
+    const thead=scroller.querySelector('thead');
+    const headH=thead?thead.offsetHeight:44;
+    const pad=Math.max(0, scroller.clientHeight - headH - 6 - tailH);
     scroller.style.paddingBottom=pad+'px';
   }
 
@@ -860,27 +852,6 @@
     sgPanel.classList.toggle('open');
   });
 
-  /* ── 화면에 붙는 것들의 높이 ──
-     상단바 높이와 합계바 높이를 더한 값이 사이즈·가격 줄이 붙어야 할 자리다.
-     합계바는 글자가 줄바꿈되면 높이가 달라져서(창 폭·담은 수량에 따라) 고정값을 쓰면 어긋난다. */
-  function stickTop(){
-    const h=document.querySelector('header'), su=document.querySelector('.summary');
-    return (h?h.offsetHeight:64) + (su?su.offsetHeight:0);
-  }
-  function applyStick(){
-    const h=document.querySelector('header');
-    const r=document.documentElement.style;
-    r.setProperty('--hdr', (h?h.offsetHeight:64)+'px');
-    r.setProperty('--stick', stickTop()+'px');
-  }
-  applyStick();
-  window.addEventListener('resize', applyStick);
-  window.addEventListener('load', applyStick);
-  try{
-    const su=document.querySelector('.summary');
-    if(su && window.ResizeObserver) new ResizeObserver(()=>{ applyStick(); fitJumpTail(); }).observe(su);
-  }catch(e){}
-
   // ── 색상 검색 → 해당 색상 줄로 점프 ──
   const searchInput=document.getElementById('colorSearch');
   const sugBox=document.getElementById('searchSug');
@@ -892,25 +863,35 @@
      offsetTop 은 offsetParent 가 무엇이냐에 따라 값이 달라져서 표 안에서는 못 믿는다.
      그래서 화면 좌표 차이(delta)로 스크롤러 기준 위치를 직접 구한다. (2026-09-01) */
   const JUMP_PAD = 6;
-  /* 이제 스크롤하는 건 페이지다. 색 줄이 붙어 있는 사이즈·가격 줄 **바로 밑**에 오게 맞춘다. */
-  function _jumpOffset(row){
-    return row.getBoundingClientRect().top - stickTop() - JUMP_PAD;
+  function _jumpOffset(scroller, row, headH){
+    return row.getBoundingClientRect().top - scroller.getBoundingClientRect().top - headH - JUMP_PAD;
   }
-  function _jumpAlign(row, smooth){
-    const top = window.scrollY + _jumpOffset(row);
-    window.scrollTo({top:Math.max(0,top), behavior: smooth?'smooth':'auto'});
+  function _jumpAlign(scroller, row, headH, smooth){
+    const top = scroller.scrollTop + _jumpOffset(scroller, row, headH);
+    scroller.scrollTo({top:Math.max(0,top), behavior: smooth?'smooth':'auto'});
   }
 
   function jumpTo(name){
     const row=document.getElementById(colorId(name));
     if(!row)return;
-    applyStick();
+    const scroller=document.querySelector('.otable-scroll');
+    const thead=scroller.querySelector('thead');
+    const headH=thead?thead.offsetHeight:44;
 
-    _jumpAlign(row, true);
+    /* 표가 화면 밖이면 표부터 보이게 — 칩은 왼쪽에 세로로 길어서 표가 밀려 있을 수 있다.
+       페이지 스크롤을 먼저(즉시) 끝내야 표 안쪽 부드러운 스크롤과 안 싸운다. */
+    try{
+      const sr=scroller.getBoundingClientRect();
+      if(sr.top < 0 || sr.top > window.innerHeight*0.6){
+        window.scrollTo({top: Math.max(0, window.scrollY + sr.top - 120), behavior:'auto'});
+      }
+    }catch(e){}
+
+    _jumpAlign(scroller, row, headH, true);
     /* 부드러운 스크롤이 끝날 때쯤 다시 재서 어긋나 있으면 조용히 맞춘다.
-       (스크롤 도중 줄 높이가 바뀌거나 애니메이션이 중간에 끊기면 색이 화면 가운데 걸린다) */
+       (스크롤 도중 줄 높이가 바뀌거나 애니메이션이 중간에 끊기면 색이 표 가운데 걸린다) */
     [420, 760, 1100].forEach(ms=>setTimeout(()=>{
-      try{ if(Math.abs(_jumpOffset(row)) > 2) _jumpAlign(row, false); }catch(e){}
+      try{ if(Math.abs(_jumpOffset(scroller, row, headH)) > 2) _jumpAlign(scroller, row, headH, false); }catch(e){}
     }, ms));
 
     // 그 색에 딸린 줄 전부 강조 (SC · CA · SC+CA 합계)

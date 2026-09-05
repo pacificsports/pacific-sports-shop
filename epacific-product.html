@@ -262,6 +262,8 @@
   .f-bot{max-width:1560px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
   /* 색 사진 확대 보기 */
   .zoombox{position:fixed;inset:0;z-index:90;background:rgba(28,28,26,.82);display:flex;align-items:center;justify-content:center;padding:40px;cursor:zoom-out}
+  /* display:flex 는 브라우저 기본 [hidden]{display:none} 을 이긴다 — 안 적으면 확대창이 처음부터 떠 있다 */
+  .zoombox[hidden]{display:none}
   .zoombox figure{margin:0;max-width:min(760px,86vw);width:100%;text-align:center;cursor:default}
   .zoombox #zoomImg{background:#fff;border-radius:18px;overflow:hidden;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
   .zoombox #zoomImg img{width:100%;height:100%;object-fit:contain;padding:10px}

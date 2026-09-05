@@ -875,12 +875,17 @@
     return hh+ch+sh;
   }
   /* 표 높이도 같은 값에서 뽑는다 — 화면 크기가 바뀌어도 표 아래가 잘리지 않게 */
+  /* 마지막 색으로 점프했을 때 줄여둔 상자 높이. 0 이면 평소대로 화면 높이에 맞춘다.
+     ⚠ 그냥 스타일만 줄여두면 안 된다 — 그 뒤에 fitTable 이 한 번만 더 불려도(ResizeObserver,
+     창 크기 변경 등) 원래 높이로 되돌아가 색이 표 한가운데 걸린다. 그래서 상태로 기억한다. */
+  let _tailFit=0;
   function fitTable(){
     const sc=document.querySelector('.otable-scroll');
     if(!sc) return;
-    const h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
+    let h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
+    if(_tailFit) h=Math.max(240, Math.min(h, _tailFit));
     sc.style.maxHeight=h+'px';
-    sc.style.minHeight=Math.min(420,h)+'px';
+    sc.style.minHeight=(_tailFit?h:Math.min(420,h))+'px';
     try{
       const ob=document.querySelector('.order-block');
       if(ob) ob.style.top=stickyNeed()+'px';
@@ -1009,14 +1014,10 @@
      그 색에서 딱 끝난다 — 빈칸이 없다. 다음 점프 때 fitTable() 이 원래 높이로 되돌린다. */
   function jumpFitTail(scroller, row, headH){
     try{
-      fitTable();
+      _tailFit=0; fitTable();                     // 먼저 원래 높이로
       const off = scroller.scrollTop + (row.getBoundingClientRect().top - scroller.getBoundingClientRect().top) - headH - JUMP_PAD;
       const over = off - (scroller.scrollHeight - scroller.clientHeight);
-      if(over > 0){
-        const h = Math.max(240, Math.round(scroller.clientHeight - over));
-        scroller.style.maxHeight = h+'px';
-        scroller.style.minHeight = h+'px';
-      }
+      if(over > 0){ _tailFit = Math.max(240, Math.round(scroller.clientHeight - over)); fitTable(); }
     }catch(e){}
   }
 

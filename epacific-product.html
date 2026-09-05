@@ -480,6 +480,11 @@
         </table>
       </div>
     </div>
+    <!-- 표가 붙어 있을 자리. 상자가 #orderSection 의 마지막 요소면 sticky 가 움직일 여지가
+         0 이라 아예 안 붙는다(실측: css top 327 인데 실제 274 = 그냥 흘러감).
+         ⚠ padding 으로는 안 된다 — 브라우저는 sticky 범위를 content box 로 잡는다. 실제 요소여야 한다.
+         높이는 푸터 높이만큼. 이 구간은 붙어 있는 표가 덮고 있어서 빈 화면으로 안 보인다. -->
+    <div class="order-tail" aria-hidden="true"></div>
   </div><!-- /orderSection -->
 </div>
 
@@ -882,6 +887,9 @@
     try{
       const ob=document.querySelector('.order-block');
       if(ob) ob.style.top=_need+'px';
+      const tail=document.querySelector('.order-tail');
+      const ft=document.querySelector('footer');
+      if(tail) tail.style.height=(ft?Math.round(ft.getBoundingClientRect().height):380)+'px';
     }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });

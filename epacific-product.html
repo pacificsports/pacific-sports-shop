@@ -165,10 +165,9 @@
 
   /* multi-color order rows */
   /* 표 상자를 합계 바 밑에 붙여 둔다. top 은 fitTable 이 실측해 넣는다.
-     ⚠ 안내문(.case-note)까지 한 덩어리로 묶어서 붙이면 안 된다 — 묶음 높이가 부모(#orderSection)
-     와 같아져 sticky 가 움직일 여지가 0 이 되고, 상자가 안 붙어서 사이즈·가격 헤더가
-     색칩 줄 뒤로 숨어버린다. 상자만 붙이되, 위로 밀려 올라오는 안내문은 z-index 로 뒤에 보낸다. */
-  .orderpin{position:relative}
+     ⚠ 이 상자를 다른 div 로 감싸지 말 것. 감싸는 순간 그 div 가 containing block 이 돼서
+     sticky 가 그 안에서만 움직인다 — 높이가 같으면 여지가 0 이라 아예 안 붙는다.
+     #orderSection 이 바로 부모여야 하고, 그 아래 여백(padding-bottom)이 버틸 거리가 된다. */
   .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
   /* 안내문도 붙어 있는 줄의 일부 — 합계 바 바로 밑, 표 머리 바로 위.
      top 값은 fitTable 이 실측해 넣는다(상단바+색칩줄+합계바 높이). */
@@ -473,7 +472,6 @@
     <!-- 안내문은 표 "위" 붙어 있는 줄에 둔다 — 아래에 두면 맨 끝까지 내렸을 때
          사라지거나(뒤로 숨김) 마지막 줄을 덮는다. 위에 두면 항상 보이고 절대 안 겹친다. -->
     <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
-    <div class="orderpin">
     <div class="order-block">
       <div class="otable-scroll">
         <table class="otable">
@@ -489,7 +487,6 @@
         </table>
       </div>
     </div>
-    </div><!-- /orderpin -->
   </div><!-- /orderSection -->
 </div>
 

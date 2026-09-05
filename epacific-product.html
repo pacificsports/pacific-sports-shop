@@ -58,8 +58,14 @@
      1.75fr / 1fr 은 사실 minmax(auto,1fr) 이라서 표가 넓어지면(5XL 까지 있는 스타일)
      오른쪽 칸이 억지로 커지고 사진이 그만큼 줄었다 — 스타일마다 사진 크기가 달라 보였다.
      그리고 로그인 전에는 표가 아예 없으니 사진이 900px 가까이 부풀었다.
-     이제 사진 칸은 화면 크기만 보고 정해지고(최대 560px), 표는 남는 자리를 쓴다. */
-  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:minmax(0,clamp(300px,36vw,560px)) minmax(0,1fr);gap:48px;align-items:start}
+     이제 사진 칸은 화면 크기만 보고 정해지고(최대 520px), 표는 남는 자리를 쓴다.
+
+     ★ 오른쪽 칸은 minmax(auto,1fr) 이다 — minmax(0,1fr) 로 잠갔더니 표가
+     칸보다 넓어져서 옆으로 스크롤이 생겼다(2026-09-05, 바로 되돌림).
+     min 을 auto 로 두면 표가 필요한 최소 너비 아래로는 절대 안 줄어든다 →
+     옆 스크롤이 안 생긴다. 그러면서도 사진 칸은 vw 로만 정해지니
+     3XL 이든 5XL 이든 사진 크기는 그대로다. 둘 다 만족한다. */
+  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:clamp(300px,32vw,520px) minmax(auto,1fr);gap:48px;align-items:start}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   .gallery{width:100%;min-width:0;position:sticky;top:86px;align-self:start}
@@ -188,7 +194,8 @@
      한 색이 SC/CA 두 줄이라 그냥 굴리면 색 중간에 걸려서 어디를 보고 있는지 흐려졌다.
      색의 첫 줄(color-start)만 멈춤점으로 잡고, 멈출 때 sticky 헤더 밑에 오도록
      scroll-padding-top 을 헤더 높이에 맞춘다(값은 fitTable 이 실제로 재서 넣는다). */
-  .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto;overflow-x:auto;scroll-snap-type:y mandatory;scroll-padding-top:50px}
+  /* 옆(가로) 스크롤은 만들지 않는다 — 칸이 표보다 작아지지 않게 위 grid 에서 막았다 */
+  .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto;scroll-snap-type:y mandatory;scroll-padding-top:50px}
   tr.color-start{scroll-snap-align:start;scroll-snap-stop:always}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}

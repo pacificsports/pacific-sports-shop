@@ -167,12 +167,13 @@
   .swatch:hover .nm{opacity:1}
 
   /* multi-color order rows */
-  /* 표 상자를 합계 바 밑에 붙여 둔다 — 안 붙이면 상자가 화면 위로 밀리면서
-     상자에 매달린 사이즈·가격 헤더까지 같이 사라진다. top 은 fitTable 이 실측해 넣는다.
-     ⚠ 상자만 붙이면 안 된다: 붙어 있는 동안 그 아래 안내문(.case-note)이 위로 밀려 올라와
-     표 마지막 줄을 덮는다(뒤에 오는 형제라 위에 그려짐). 상자+안내문을 한 덩어리로 붙인다 */
-  .orderpin{position:sticky;top:170px}
-  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px}
+  /* 표 상자를 합계 바 밑에 붙여 둔다. top 은 fitTable 이 실측해 넣는다.
+     ⚠ 안내문(.case-note)까지 한 덩어리로 묶어서 붙이면 안 된다 — 묶음 높이가 부모(#orderSection)
+     와 같아져 sticky 가 움직일 여지가 0 이 되고, 상자가 안 붙어서 사이즈·가격 헤더가
+     색칩 줄 뒤로 숨어버린다. 상자만 붙이되, 위로 밀려 올라오는 안내문은 z-index 로 뒤에 보낸다. */
+  .orderpin{position:relative}
+  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
+  .case-note{position:relative;z-index:0}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -884,7 +885,7 @@
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=Math.min(420,h)+'px';
     try{
-      const ob=document.querySelector('.orderpin');
+      const ob=document.querySelector('.order-block');
       if(ob) ob.style.top=stickyNeed()+'px';
     }catch(e){}
   }

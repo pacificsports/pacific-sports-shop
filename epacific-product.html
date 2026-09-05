@@ -54,10 +54,16 @@
   .crumb{max-width:1560px;margin:0 auto;padding:26px 40px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
-  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.75fr 1fr;gap:48px;align-items:start}
+  /* 위 줄: 사진 + 상품정보 / 아래 줄: 주문표 전체 폭.
+     사진 칸은 화면 폭(vw)으로만 정해진다 — 표가 3XL 이든 5XL 이든 사진이 안 움직인다 */
+  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:clamp(300px,32vw,520px) minmax(0,1fr);gap:34px 48px;align-items:start}
+  #orderSection{grid-column:1 / -1;min-width:0}
+  /* 표 위 색칩 — 누르면 위 큰 사진이 바뀌고 표가 그 색으로 이동한다 */
+  #orderSection .swatches{margin:10px 0 16px}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
-  .gallery{width:100%;min-width:0;position:sticky;top:86px;align-self:start}
+  /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */
+  .gallery{width:100%;min-width:0;align-self:start}
   .main-img{width:100%;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
   .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:4px}
@@ -133,7 +139,9 @@
   .swatch:hover .nm{opacity:1}
 
   /* multi-color order rows */
-  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px}
+  /* 표 상자를 합계 바 밑에 붙여 둔다 — 안 붙이면 상자가 화면 위로 밀리면서
+     상자에 매달린 사이즈·가격 헤더까지 같이 사라진다. top 은 fitTable 이 실측해 넣는다 */
+  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -252,6 +260,15 @@
   .fb .logo{color:var(--bg);margin-bottom:18px}.fb .logo i{color:var(--warm)}
   .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
   .f-bot{max-width:1560px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  /* 색 사진 확대 보기 */
+  .zoombox{position:fixed;inset:0;z-index:90;background:rgba(28,28,26,.82);display:flex;align-items:center;justify-content:center;padding:40px;cursor:zoom-out}
+  .zoombox figure{margin:0;max-width:min(760px,86vw);width:100%;text-align:center;cursor:default}
+  .zoombox #zoomImg{background:#fff;border-radius:18px;overflow:hidden;aspect-ratio:1/1;display:flex;align-items:center;justify-content:center}
+  .zoombox #zoomImg img{width:100%;height:100%;object-fit:contain;padding:10px}
+  .zoombox #zoomImg svg{width:74%;height:74%}
+  .zoombox figcaption{margin-top:14px;color:#fff;font-size:17px;font-weight:600;letter-spacing:.01em}
+  .zoomx{position:absolute;top:18px;right:22px;background:none;border:0;color:#fff;font-size:26px;line-height:1;cursor:pointer;padding:6px 10px}
+  .colcell .cimg{cursor:zoom-in}
   .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
 
   @media(max-width:1000px){
@@ -354,7 +371,6 @@
       <div id="mainImg"></div>
     </div>
     <div class="sw-label" id="swLabel"></div>
-    <div class="swatches" id="thumbs"></div>
   </div>
 
   <!-- INFO -->
@@ -398,10 +414,15 @@
     </div>
 
     <div class="login-note" id="loginNote">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
+  </div><!-- /info -->
 
-    <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력. 권한 없으면 통째로 숨김 -->
-    <div id="orderSection" style="display:none">
+  <!-- ORDER GRID — 사진 아래 전체 폭 (2026-09-05).
+       옆에 두면 표 너비가 사진 크기를 끌고 다녀서 스타일마다 사진이 달라 보였다.
+       아래로 내리는 대신 "오더 넣는 동안 옷을 못 본다" 는 문제가 생기는데,
+       그건 ① 칩을 표 바로 위로 옮기고 ② 표 안 색 사진을 크게 키워서 해결했다. -->
+  <div id="orderSection" style="display:none">
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
+    <div class="swatches" id="thumbs"></div>
     <div class="color-search">
       <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
       <div class="search-sug" id="searchSug"></div>
@@ -428,10 +449,11 @@
       </div>
     </div>
     <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
-
-    </div><!-- /orderSection -->
-  </div>
+  </div><!-- /orderSection -->
 </div>
+
+<!-- 색 사진 확대 -->
+<div id="zoomBox" class="zoombox" hidden><button class="zoomx" type="button" aria-label="Close">✕</button><figure><div id="zoomImg"></div><figcaption id="zoomCap"></figcaption></figure></div>
 
 <footer>
   <div class="f-in">
@@ -815,6 +837,10 @@
     const h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=Math.min(420,h)+'px';
+    try{
+      const ob=document.querySelector('.order-block');
+      if(ob) ob.style.top=stickyNeed()+'px';
+    }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });
 
@@ -1304,7 +1330,10 @@
     const cell=e.target.closest('.colcell'); if(!cell) return;
     const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
     const c=colors.find(x=>x.name===name);
-    if(c) setMain(c);
+    if(!c) return;
+    setMain(c);
+    /* 사진을 누르면 크게 — 색은 작게 보면 못 고른다 */
+    if(e.target.closest('.cimg')) zoomOpen(c);
   });
   // 이름 더블클릭 → 그 자리에서 바로 수정
   if(rb) rb.addEventListener('dblclick',e=>{
@@ -1313,6 +1342,25 @@
     if(nm){ e.preventDefault(); inlineEditName(nm); }
   });
   }
+
+  // ── 색 사진 확대 ──
+  function zoomOpen(c){
+    const box=document.getElementById('zoomBox');
+    const img=document.getElementById('zoomImg');
+    const cap=document.getElementById('zoomCap');
+    if(!box||!img) return;
+    img.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
+    if(cap) cap.textContent=c.name;
+    box.hidden=false;
+  }
+  function zoomClose(){ const box=document.getElementById('zoomBox'); if(box) box.hidden=true; }
+  (function(){
+    const box=document.getElementById('zoomBox');
+    if(!box) return;
+    /* 사진 바깥(어두운 곳)이나 ✕ 를 누르면 닫힌다. 사진 자체를 눌러도 안 닫히게 */
+    box.addEventListener('click',e=>{ if(e.target===box || e.target.closest('.zoomx')) zoomClose(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape') zoomClose(); });
+  })();
 
   // ── 진짜 카트 (localStorage) ──
   function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }

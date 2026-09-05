@@ -59,7 +59,13 @@
   .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:clamp(300px,32vw,520px) minmax(0,1fr);gap:34px 48px;align-items:start}
   #orderSection{grid-column:1 / -1;min-width:0}
   /* 표 위 색칩 — 누르면 위 큰 사진이 바뀌고 표가 그 색으로 이동한다 */
-  #orderSection .swatches{margin:10px 0 16px}
+  /* 색칩 줄도 가격·사이즈와 같이 화면에 붙어 있어야 한다 (2026-09-05).
+     거래처가 표를 내려가면서 언제든 다른 색으로 건너뛸 수 있게 — 위로 되돌아갈 일이 없다.
+     붙는 순서: 상단바 → 색칩 → 합계바 → 표 머리. top 값은 stickyNeed() 가 실측해 넣는다.
+     칩이 많은 스타일(57색)은 두 줄까지만 보이고 그 안에서 스크롤한다 — 안 그러면 화면을 다 먹는다 */
+  .chipbar{position:sticky;top:84px;z-index:7;background:var(--bg,#fbfbf9);padding:9px 0 10px;margin:2px 0 0;border-bottom:1px solid var(--line)}
+  .chipbar .swatches{grid-template-columns:repeat(auto-fill,minmax(30px,1fr));gap:7px;max-height:74px;overflow-y:auto;padding-right:2px}
+  .chipbar .sw{width:30px;height:30px}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */
@@ -426,7 +432,7 @@
        그건 ① 칩을 표 바로 위로 옮기고 ② 표 안 색 사진을 크게 키워서 해결했다. -->
   <div id="orderSection" style="display:none">
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
-    <div class="swatches" id="thumbs"></div>
+    <div class="chipbar" id="chipBar"><div class="swatches" id="thumbs"></div></div>
     <div class="color-search">
       <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
       <div class="search-sug" id="searchSug"></div>
@@ -828,11 +834,14 @@
      여기서 상단 바 높이에 맞춰 내려놓는다. */
   function stickyNeed(){
     const hd=document.querySelector('header');
+    const cb=document.getElementById('chipBar');
     const sm=document.querySelector('.summary');
     const hh=hd?Math.round(hd.getBoundingClientRect().height):64;
+    const ch=(cb && cb.offsetParent!==null)?Math.round(cb.getBoundingClientRect().height):0;
     const sh=sm?Math.round(sm.getBoundingClientRect().height):0;
-    if(sm) sm.style.top=hh+'px';
-    return hh+sh;
+    if(cb) cb.style.top=hh+'px';
+    if(sm) sm.style.top=(hh+ch)+'px';
+    return hh+ch+sh;
   }
   /* 표 높이도 같은 값에서 뽑는다 — 화면 크기가 바뀌어도 표 아래가 잘리지 않게 */
   function fitTable(){

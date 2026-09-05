@@ -162,7 +162,7 @@
   /* 색상의 첫 줄(SC) 위에 구분선 */
   tr.color-start td{border-top:2px solid var(--line-2)}
   tr.color-start:first-child td{border-top:none}
-  .otable .colcell-td{vertical-align:middle;background:var(--paper)}
+  .otable .colcell-td{vertical-align:top;background:var(--paper);padding:0}
   .cellwrap{display:flex;flex-direction:column;align-items:center;gap:3px}
   .stock{font-size:10px;color:var(--faint);line-height:1.1;white-space:nowrap}
   .stock.low{color:#c0853b}
@@ -182,17 +182,20 @@
   .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
-  .otable thead th.colcol{text-align:left;padding-left:18px;min-width:130px}
+  .otable thead th.colcol{text-align:center;padding-left:8px;min-width:158px}
   .otable tbody td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--line)}
   .otable tbody tr:last-child td{border-bottom:none}
   .otable tbody tr{transition:background .15s}
   .otable tbody tr.active-row{background:var(--accent-soft)}
-  .colcell{display:flex;align-items:center;gap:11px;padding-left:12px;text-align:left;cursor:pointer;border-radius:8px;transition:background .12s}
+  /* 색상 칸: 사진을 크게, 이름은 사진 아래 (2026-09-05).
+     색 한 칸은 SC·CA·합계 3줄을 rowspan 으로 차지해서 세로로 200px 가까이 비어 있었다.
+     42px 짜리 썸네일을 옆에 붙여 놓으니 그 자리가 다 놀았고, 색을 눈으로 고르기엔 너무 작았다. */
+  .colcell{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:center;cursor:pointer;transition:background .12s}
   .colcell:hover{background:var(--accent-soft)}
-  .colcell .cimg{width:42px;height:42px;border-radius:8px;background:#ffffff;border:1px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  .colcell .cimg svg{display:block}
-  .colcell .cn{font-size:14px;font-weight:500;white-space:nowrap}
-  .cn-wrap{display:flex;align-items:center;gap:8px}
+  .colcell .cimg{flex:1 1 auto;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .colcell .cimg svg{display:block;width:100%;height:100%}
+  .colcell .cn{font-size:14px;font-weight:600;white-space:normal;line-height:1.2}
+  .cn-wrap{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:0 8px}
   /* Edit 모드: 색 이름 옆 체크(켜기/끄기) */
   .cn-check{display:none}
   .editmode .cn-check{display:inline-flex;width:18px;height:18px;border:1.5px solid var(--accent);border-radius:5px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:var(--accent)}
@@ -770,6 +773,24 @@
     });
     fitTable();
     fitJumpTail();
+    fitColorCells();
+  }
+
+  /* 색상 칸을 세로로 꽉 채운다 (2026-09-05).
+     한 색은 SC·CA·합계 3줄을 rowspan 으로 차지한다. 사진은 SC+CA 두 줄 높이만큼 키우고,
+     색 이름은 합계(SC+CA) 줄에 딱 맞춰 앉힌다 — 비어 있던 세로 공간을 다 쓰는 배치.
+     줄 높이는 사이즈 개수·재고 글자에 따라 달라져서 CSS 상수로는 못 맞춘다. 그래서 잰다. */
+  function fitColorCells(){
+    const trs=[...rowsBody.querySelectorAll('tr')];
+    trs.forEach((tr,i)=>{
+      const td=tr.querySelector('.colcell-td'); if(!td) return;
+      const cell=td.querySelector('.colcell'); if(!cell) return;
+      const h=td.offsetHeight; if(!h) return;
+      cell.style.height=h+'px';
+      const totalTr=trs[i+2];
+      const nw=cell.querySelector('.cn-wrap');
+      if(nw && totalTr) nw.style.height=totalTr.offsetHeight+'px';
+    });
   }
 
   /* ═══ 위에 붙어 있는 것들의 실제 높이를 잰다 (2026-09-03) ═══
@@ -795,7 +816,7 @@
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=Math.min(420,h)+'px';
   }
-  window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); }catch(e){} });
+  window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });
 
   /* 마지막 색들도 칩을 누르면 맨 위로 올라오게 — 표 끝에 딱 그만큼만 여유를 준다.
      이게 없으면 표가 끝까지 내려가 버려서 마지막 두세 색은 가운데에 걸린다. */

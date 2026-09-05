@@ -63,11 +63,13 @@
      거래처가 표를 내려가면서 언제든 다른 색으로 건너뛸 수 있게 — 위로 되돌아갈 일이 없다.
      붙는 순서: 상단바 → 색칩 → 합계바 → 표 머리. top 값은 stickyNeed() 가 실측해 넣는다.
      칩이 많은 스타일(57색)은 두 줄까지만 보이고 그 안에서 스크롤한다 — 안 그러면 화면을 다 먹는다 */
-  .chipbar{position:sticky;top:84px;z-index:7;background:var(--bg,#fbfbf9);padding:8px 0 9px;margin:2px 0 0;border-bottom:1px solid var(--line)}
+  .chipbar{position:sticky;top:84px;z-index:7;background:var(--bg,#fbfbf9);padding:10px 0 10px;margin:2px 0 0;border-bottom:1px solid var(--line)}
   /* overflow-y 만 주면 가로축도 auto 가 돼서 가로 스크롤바가 생긴다 — x 는 명시적으로 hidden */
-  /* grid-auto-rows 를 못박아야 줄 높이가 정확히 34 로 잡힌다 — 안 그러면 칩 줄이 제멋대로 커져
-     두 줄만 보이게 잘라놨는데 반 줄만 보이는 꼴이 된다. 색이 많은 스타일은 이 안에서 스크롤 */
-  .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start;max-height:76px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
+  /* ⚠ 여기에 overflow 를 주면 안 된다 (2026-09-05).
+     칩은 위로 삐져나가는 게 두 개 있다 — 선택된 칩의 확대 테두리, 마우스 올렸을 때 뜨는 이름표.
+     overflow 를 주는 순간 둘 다 잘린다(첫 줄이 잘려 보였던 이유가 이것). 높이는 grid-auto-rows
+     로만 고정하고 줄 수는 색 개수에 맡긴다 — 57색이면 두 줄이다. */
+  .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */

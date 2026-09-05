@@ -907,7 +907,11 @@
     const tailH=tail.reduce((s,r)=>s+r.offsetHeight,0);
     const thead=scroller.querySelector('thead');
     const headH=thead?thead.offsetHeight:44;
-    const pad=Math.max(0, scroller.clientHeight - headH - 6 - tailH);
+    /* 예전엔 "마지막 색도 맨 위까지 올라오게" 상자 높이만큼 여백을 줬는데,
+       상자가 화면 높이로 커지면서 그 여백이 통째로 빈 화면이 됐다 (2026-09-05).
+       색칩이 항상 붙어 있으니 마지막 색을 굳이 맨 위로 올릴 필요가 없다 — 보이기만 하면 된다.
+       여백은 한 뼘(96px)으로 자른다. 마지막 색은 상자 아래쪽에 걸리지만 다 보인다. */
+    const pad=Math.min(96, Math.max(0, scroller.clientHeight - headH - 6 - tailH));
     scroller.style.paddingBottom=pad+'px';
   }
 

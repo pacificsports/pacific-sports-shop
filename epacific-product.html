@@ -67,7 +67,10 @@
   #orderSection{grid-column:1 / -1;min-width:0}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
-  .gallery{width:100%;min-width:0;position:sticky;top:86px;align-self:start}
+  /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 (2026-09-05).
+     표가 옆에 있을 때는 색을 훑는 동안 사진이 붙어 있어서 좋았는데,
+     표가 아래로 가니까 사진이 따라 내려와 표를 덮어버렸다. */
+  .gallery{width:100%;min-width:0;align-self:start}
   .main-img{width:100%;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
   .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:4px}

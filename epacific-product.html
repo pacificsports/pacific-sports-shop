@@ -487,6 +487,9 @@
         </table>
       </div>
     </div>
+    <!-- 표가 화면에 붙어 있을 거리. padding 으로는 안 된다 — 브라우저는 sticky 범위를
+         부모의 padding 을 뺀 안쪽(content box)으로 잡는다. 실제 요소여야 한다. -->
+    <div class="order-tail" aria-hidden="true"></div>
   </div><!-- /orderSection -->
 </div>
 
@@ -894,8 +897,8 @@
        페이지 끝에서 상자가 위로 밀려 한 줄만 남는다 — 부모 아래에 상자 높이만큼 여지를 준다.
        그 구간에서는 표가 화면에 그대로 붙어 있고, 그다음에 푸터가 올라온다. */
     try{
-      const os=document.getElementById('orderSection');
-      if(os) os.style.paddingBottom=(h+24)+'px';
+      const tail=document.querySelector('.order-tail');
+      if(tail) tail.style.height=(h+24)+'px';
     }catch(e){}
     try{
       const ob=document.querySelector('.order-block');

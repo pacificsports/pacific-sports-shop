@@ -190,7 +190,7 @@
   .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
-  .otable thead th.colcol{text-align:center;padding-left:8px;min-width:158px}
+  .otable thead th.colcol{text-align:center;padding-left:8px;width:200px;min-width:200px;max-width:200px}
   .otable tbody td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--line)}
   .otable tbody tr:last-child td{border-bottom:none}
   .otable tbody tr{transition:background .15s}
@@ -200,7 +200,9 @@
      42px 짜리 썸네일을 옆에 붙여 놓으니 그 자리가 다 놀았고, 색을 눈으로 고르기엔 너무 작았다. */
   .colcell{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:center;cursor:pointer;transition:background .12s}
   .colcell:hover{background:var(--accent-soft)}
-  .colcell .cimg{flex:1 1 auto;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  /* flex-basis 를 0 으로 둬야 사진이 "제 원래 크기" 로 칸을 밀지 않는다.
+     auto 로 두면 사진 크기 → 줄 높이 → 사진 크기 로 서로 밀어서 줄이 부푼다 */
+  .colcell .cimg{flex:1 1 0;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden}
   .colcell .cimg svg{display:block;width:100%;height:100%}
   .colcell .cn{font-size:14px;font-weight:600;white-space:normal;line-height:1.2}
   .cn-wrap{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:0 8px}

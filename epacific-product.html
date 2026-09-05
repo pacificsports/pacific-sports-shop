@@ -65,7 +65,9 @@
      칩이 많은 스타일(57색)은 두 줄까지만 보이고 그 안에서 스크롤한다 — 안 그러면 화면을 다 먹는다 */
   .chipbar{position:sticky;top:84px;z-index:7;background:var(--bg,#fbfbf9);padding:8px 0 9px;margin:2px 0 0;border-bottom:1px solid var(--line)}
   /* overflow-y 만 주면 가로축도 auto 가 돼서 가로 스크롤바가 생긴다 — x 는 명시적으로 hidden */
-  .chipbar .swatches{gap:8px;max-height:76px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
+  /* grid-auto-rows 를 못박아야 줄 높이가 정확히 34 로 잡힌다 — 안 그러면 칩 줄이 제멋대로 커져
+     두 줄만 보이게 잘라놨는데 반 줄만 보이는 꼴이 된다. 색이 많은 스타일은 이 안에서 스크롤 */
+  .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start;max-height:76px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */

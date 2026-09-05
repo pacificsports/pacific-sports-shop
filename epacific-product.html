@@ -170,7 +170,10 @@
      색칩 줄 뒤로 숨어버린다. 상자만 붙이되, 위로 밀려 올라오는 안내문은 z-index 로 뒤에 보낸다. */
   .orderpin{position:relative}
   .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
-  .case-note{position:relative;z-index:0}
+  /* 안내문은 화면 아래에 붙여둔다 — 표 상자 뒤로 숨기면 맨 아래로 내리는 순간 사라진다.
+     상자보다 위(z-index 3)에 두고, 대신 fitTable 이 상자 높이에서 이 줄 높이만큼 빼서
+     둘이 절대 안 겹치게 한다. */
+  .case-note{position:sticky;bottom:10px;z-index:3}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -882,7 +885,9 @@
   function fitTable(){
     const sc=document.querySelector('.otable-scroll');
     if(!sc) return;
-    let h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
+    const _cn=document.querySelector('.case-note');
+    const _cnH=(_cn && _cn.offsetParent!==null)?Math.round(_cn.getBoundingClientRect().height)+14:0;
+    let h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30 - _cnH));
     if(_tailFit) h=Math.max(240, Math.min(h, _tailFit));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=(_tailFit?h:Math.min(420,h))+'px';

@@ -893,6 +893,13 @@
     if(_tailFit) h=Math.max(240, Math.min(h, _tailFit));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=(_tailFit?h:Math.min(420,h))+'px';
+    /* 붙어 있는 상자는 부모(#orderSection) 안에서만 버틴다. 부모가 상자보다 안 크면
+       페이지 끝에서 상자가 위로 밀려 한 줄만 남는다 — 부모 아래에 상자 높이만큼 여지를 준다.
+       그 구간에서는 표가 화면에 그대로 붙어 있고, 그다음에 푸터가 올라온다. */
+    try{
+      const os=document.getElementById('orderSection');
+      if(os) os.style.paddingBottom=(h+24)+'px';
+    }catch(e){}
     try{
       const ob=document.querySelector('.order-block');
       if(ob) ob.style.top=(_need+_cnH)+'px';

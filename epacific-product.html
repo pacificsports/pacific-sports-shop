@@ -146,7 +146,12 @@
   .swatch:hover .nm{opacity:1}
 
   /* multi-color order rows */
-  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px}
+  /* 표 상자를 합계 바 바로 밑에 붙여 둔다 (2026-09-05).
+     표가 사진 아래로 내려오면서 페이지를 더 많이 내려야 표에 닿는데,
+     그러면 상자 자체가 화면 위로 밀려 나가고 상자에 붙어 있던 사이즈·가격 헤더까지
+     같이 사라졌다. 상자를 붙여 두면 헤더는 계속 보이고 표는 상자 안에서만 움직인다.
+     top 값(합계 바 아래)은 fitTable 이 실제로 재서 넣는다. */
+  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -823,6 +828,8 @@
     try{
       const th=sc.querySelector('thead');
       sc.style.scrollPaddingTop=((th?th.offsetHeight:44)+6)+'px';
+      const ob=document.querySelector('.order-block');
+      if(ob) ob.style.top=stickyNeed()+'px';
     }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); }catch(e){} });

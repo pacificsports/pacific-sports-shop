@@ -70,14 +70,11 @@
      overflow 를 주는 순간 둘 다 잘린다(첫 줄이 잘려 보였던 이유가 이것). 높이는 grid-auto-rows
      로만 고정하고 줄 수는 색 개수에 맡긴다 — 57색이면 두 줄이다. */
   .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start}
-  /* 색 이름을 sticky 안에 고정으로 적어둔다 (2026-09-05).
-     칩 위에 뜨는 이름표는 색칩 줄이 화면 맨 위에 붙어 있을 때 상단바 뒤로 넘어가 안 보인다.
-     그걸 보려고 페이지를 위로 되돌리는 건 말이 안 된다 — 이름은 붙어 있는 자리에 있어야 한다.
-     그래서 칩 줄 안쪽 이 라벨이 대신한다: 마우스 올린 색, 떼면 지금 고른 색. */
-  .chiplabel{font-size:13px;color:var(--faint);margin:0 0 7px;min-height:17px;line-height:17px;letter-spacing:.01em}
-  .chiplabel b{color:var(--ink);font-weight:600;font-size:13.5px}
-  /* 위로 뜨는 이름표는 여기선 끈다 — 잘려서 오히려 헷갈린다 */
-  .chipbar .sw:hover::after,.chipbar .sw:hover::before,.chipbar .sw::after,.chipbar .sw::before{display:none}
+  /* 색칩 줄에서는 이름표를 칩 "아래"로 뒤집는다 (2026-09-05).
+     이 줄은 화면 맨 위에 붙어 있어서, 이름표가 위로 뜨면 상단바(z-index:100) 뒤로 넘어가
+     이름이 나오긴 하는데 안 보인다. 아래로 뜨면 항상 화면 안이다. 꼬리 방향도 같이 뒤집는다. */
+  .chipbar .sw::after{bottom:auto;top:calc(100% + 9px)}
+  .chipbar .sw::before{bottom:auto;top:calc(100% + 4px);border-top-color:transparent;border-bottom-color:var(--ink)}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */
@@ -444,7 +441,7 @@
        그건 ① 칩을 표 바로 위로 옮기고 ② 표 안 색 사진을 크게 키워서 해결했다. -->
   <div id="orderSection" style="display:none">
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
-    <div class="chipbar" id="chipBar"><div class="chiplabel" id="chipLabel">Color: <b>&nbsp;</b></div><div class="swatches" id="thumbs"></div></div>
+    <div class="chipbar" id="chipBar"><div class="swatches" id="thumbs"></div></div>
     <div class="color-search">
       <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
       <div class="search-sug" id="searchSug"></div>

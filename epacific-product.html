@@ -889,6 +889,13 @@
     }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });
+  /* 색칩 줄 높이는 스타일마다 다르다(색 개수 → 2줄/3줄) 그리고 칩 그림이 늦게 들어온다.
+     한 번만 재면 합계바가 색칩 줄 뒤에 숨는다 — 실제로 8368(3줄)에서 그랬다.
+     높이가 바뀔 때마다 다시 재게 감시한다. */
+  try{
+    const _cb=document.getElementById('chipBar');
+    if(_cb && window.ResizeObserver) new ResizeObserver(()=>{ try{ fitTable(); }catch(e){} }).observe(_cb);
+  }catch(e){}
 
   /* 마지막 색들도 칩을 누르면 맨 위로 올라오게 — 표 끝에 딱 그만큼만 여유를 준다.
      이게 없으면 표가 끝까지 내려가 버려서 마지막 두세 색은 가운데에 걸린다. */

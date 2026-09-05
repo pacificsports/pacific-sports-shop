@@ -170,10 +170,9 @@
      색칩 줄 뒤로 숨어버린다. 상자만 붙이되, 위로 밀려 올라오는 안내문은 z-index 로 뒤에 보낸다. */
   .orderpin{position:relative}
   .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
-  /* 안내문은 화면 아래에 붙여둔다 — 표 상자 뒤로 숨기면 맨 아래로 내리는 순간 사라진다.
-     상자보다 위(z-index 3)에 두고, 대신 fitTable 이 상자 높이에서 이 줄 높이만큼 빼서
-     둘이 절대 안 겹치게 한다. */
-  .case-note{position:sticky;bottom:10px;z-index:3}
+  /* 안내문도 붙어 있는 줄의 일부 — 합계 바 바로 밑, 표 머리 바로 위.
+     top 값은 fitTable 이 실측해 넣는다(상단바+색칩줄+합계바 높이). */
+  .case-note{position:sticky;z-index:5;top:280px;margin:0 0 8px}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -471,7 +470,9 @@
       <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
       <button class="addbtn" id="addBtn" disabled>Add to Order</button>
     </div>
-    <!-- 표 상자와 아래 안내문은 같이 붙어야 한다 — 따로 두면 안내문이 위로 밀려 올라와 표를 덮는다 -->
+    <!-- 안내문은 표 "위" 붙어 있는 줄에 둔다 — 아래에 두면 맨 끝까지 내렸을 때
+         사라지거나(뒤로 숨김) 마지막 줄을 덮는다. 위에 두면 항상 보이고 절대 안 겹친다. -->
+    <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
     <div class="orderpin">
     <div class="order-block">
       <div class="otable-scroll">
@@ -488,7 +489,6 @@
         </table>
       </div>
     </div>
-    <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
     </div><!-- /orderpin -->
   </div><!-- /orderSection -->
 </div>
@@ -885,15 +885,17 @@
   function fitTable(){
     const sc=document.querySelector('.otable-scroll');
     if(!sc) return;
+    const _need=stickyNeed();
     const _cn=document.querySelector('.case-note');
-    const _cnH=(_cn && _cn.offsetParent!==null)?Math.round(_cn.getBoundingClientRect().height)+14:0;
-    let h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30 - _cnH));
+    const _cnH=(_cn && _cn.offsetParent!==null)?Math.round(_cn.getBoundingClientRect().height)+8:0;
+    if(_cn) _cn.style.top=_need+'px';
+    let h=Math.max(360, Math.round(window.innerHeight - _need - 30 - _cnH));
     if(_tailFit) h=Math.max(240, Math.min(h, _tailFit));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=(_tailFit?h:Math.min(420,h))+'px';
     try{
       const ob=document.querySelector('.order-block');
-      if(ob) ob.style.top=stickyNeed()+'px';
+      if(ob) ob.style.top=(_need+_cnH)+'px';
     }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });

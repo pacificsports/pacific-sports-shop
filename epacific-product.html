@@ -54,23 +54,10 @@
   .crumb{max-width:1560px;margin:0 auto;padding:26px 40px 0;font-size:13px;color:var(--faint)}
   .crumb a:hover{color:var(--ink)}.crumb span{margin:0 8px}
 
-  /* 사진 칸 너비를 표 내용과 끊어 놓는다 (2026-09-05).
-     1.75fr / 1fr 은 사실 minmax(auto,1fr) 이라서 표가 넓어지면(5XL 까지 있는 스타일)
-     오른쪽 칸이 억지로 커지고 사진이 그만큼 줄었다 — 스타일마다 사진 크기가 달라 보였다.
-     그리고 로그인 전에는 표가 아예 없으니 사진이 900px 가까이 부풀었다.
-     ★ 최종(2026-09-05): 주문표를 아예 아래 전체 폭으로 내렸다(#orderSection).
-     위 줄에는 사진 + 상품정보만 남으니 표 너비가 사진에 영향을 못 준다.
-     사진 칸은 화면 폭(vw)으로만 정해진다 → 3XL 이든 5XL 이든, 로그인 전이든 후든
-     사진 크기가 똑같다. 표는 아래에서 전체 폭을 쓰니 옆 스크롤도 없다. */
-  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:clamp(300px,32vw,520px) minmax(0,1fr);gap:40px 48px;align-items:start}
-  /* 주문표 줄 — 두 칸을 가로질러 전체 폭 */
-  #orderSection{grid-column:1 / -1;min-width:0}
+  .product{max-width:1560px;margin:0 auto;padding:24px 40px 70px;display:grid;grid-template-columns:1.75fr 1fr;gap:48px;align-items:start}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
-  /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 (2026-09-05).
-     표가 옆에 있을 때는 색을 훑는 동안 사진이 붙어 있어서 좋았는데,
-     표가 아래로 가니까 사진이 따라 내려와 표를 덮어버렸다. */
-  .gallery{width:100%;min-width:0;align-self:start}
+  .gallery{width:100%;min-width:0;position:sticky;top:86px;align-self:start}
   .main-img{width:100%;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:#fff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;position:relative;box-shadow:0 2px 14px -6px rgba(28,28,26,.12);border:1px solid var(--line)}
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
   .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:4px}
@@ -146,12 +133,7 @@
   .swatch:hover .nm{opacity:1}
 
   /* multi-color order rows */
-  /* 표 상자를 합계 바 바로 밑에 붙여 둔다 (2026-09-05).
-     표가 사진 아래로 내려오면서 페이지를 더 많이 내려야 표에 닿는데,
-     그러면 상자 자체가 화면 위로 밀려 나가고 상자에 붙어 있던 사이즈·가격 헤더까지
-     같이 사라졌다. 상자를 붙여 두면 헤더는 계속 보이고 표는 상자 안에서만 움직인다.
-     top 값(합계 바 아래)은 fitTable 이 실제로 재서 넣는다. */
-  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px}
+  .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -197,13 +179,7 @@
      상자가 화면을 거의 채우면 페이지는 조금만 움직이고 표가 자기 안에서 스크롤한다 —
      붙어 있는 헤더가 계속 보인다. 구조는 그대로라 점프·꼬리여백 계산도 손댈 게 없다.
      (210px = 상단바 + 합계바 + 여유) */
-  /* 스크롤은 한 색씩 끊어서 내려간다 (2026-09-05).
-     한 색이 SC/CA 두 줄이라 그냥 굴리면 색 중간에 걸려서 어디를 보고 있는지 흐려졌다.
-     색의 첫 줄(color-start)만 멈춤점으로 잡고, 멈출 때 sticky 헤더 밑에 오도록
-     scroll-padding-top 을 헤더 높이에 맞춘다(값은 fitTable 이 실제로 재서 넣는다). */
-  /* 옆(가로) 스크롤은 만들지 않는다 — 칸이 표보다 작아지지 않게 위 grid 에서 막았다 */
-  .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto;scroll-snap-type:y mandatory;scroll-padding-top:50px}
-  tr.color-start{scroll-snap-align:start;scroll-snap-stop:always}
+  .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto}
   .otable{width:100%;border-collapse:collapse}
   .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
   .otable thead th.colcol{text-align:left;padding-left:18px;min-width:130px}
@@ -419,16 +395,9 @@
     </div>
 
     <div class="login-note" id="loginNote">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
-  </div><!-- /info -->
 
-  <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력. 권한 없으면 통째로 숨김.
-       2026-09-05 — 사진 옆(오른쪽 칸)에 있던 표를 아래 전체 폭으로 내렸다.
-       옆에 있으면 표와 사진이 같은 가로 자리를 놓고 싸운다: 5XL 스타일은 표가 넓어
-       사진을 밀고, 3XL 은 안 밀어서 스타일마다 사진 크기가 달라 보였다.
-       사진 칸을 고정하면 이번엔 표가 좁아져 옆으로 스크롤이 생겼다 — 둘 다 못 잡는다.
-       표를 아래로 내리면 표는 화면 전체 폭을 쓰고 사진은 아무 영향을 안 받는다.
-       (Next Level 도 같은 구조다) -->
-  <div id="orderSection" style="display:none">
+    <!-- ORDER GRID: SC / CA 두 줄, 거래처는 수량만 입력. 권한 없으면 통째로 숨김 -->
+    <div id="orderSection" style="display:none">
     <label class="flabel">Enter quantities by warehouse <span class="hint">each color shows SC &amp; CA stock — just type pieces</span></label>
     <div class="color-search">
       <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
@@ -457,7 +426,8 @@
     </div>
     <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
 
-  </div><!-- /orderSection -->
+    </div><!-- /orderSection -->
+  </div>
 </div>
 
 <footer>
@@ -824,13 +794,6 @@
     const h=Math.max(360, Math.round(window.innerHeight - stickyNeed() - 30));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=Math.min(420,h)+'px';
-    /* 색 단위로 멈출 때 sticky 헤더에 가리지 않게 — 점프(jumpTo) 가 쓰는 값과 똑같이 맞춘다 */
-    try{
-      const th=sc.querySelector('thead');
-      sc.style.scrollPaddingTop=((th?th.offsetHeight:44)+6)+'px';
-      const ob=document.querySelector('.order-block');
-      if(ob) ob.style.top=stickyNeed()+'px';
-    }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); }catch(e){} });
 

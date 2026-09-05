@@ -170,9 +170,6 @@
      ⚠ 페이지 맨 끝(푸터 구간)에서는 표가 위로 밀리는데 이건 못 막는다 — 푸터(약 440px)가
      화면을 차지하는 동안 표까지 다 보일 자리가 없다. 억지로 여백을 넣으면 빈 화면만 생긴다. */
   .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
-  /* 안내문도 붙어 있는 줄의 일부 — 합계 바 바로 밑, 표 머리 바로 위.
-     top 값은 fitTable 이 실측해 넣는다(상단바+색칩줄+합계바 높이). */
-  .case-note{position:sticky;z-index:5;top:280px;margin:0 0 8px}
   /* color search */
   .color-search{position:relative;margin-bottom:12px}
   .color-search input{width:100%;font-family:var(--body);font-size:15px;padding:13px 16px;border:1.5px solid var(--line-2);border-radius:12px;background:var(--paper);transition:border .2s}
@@ -266,8 +263,6 @@
   .whbadge.wh-ALL{background:#e8e8e2;color:#6b6b63;font-size:9.5px;letter-spacing:.02em;padding-left:6px;padding-right:6px}
   .stockgrand{font-family:var(--display);font-size:13px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
 
-  .case-note{font-size:13px;color:var(--accent);background:var(--accent-soft);border:1px solid #dce4da;border-radius:10px;padding:11px 15px;margin-top:10px;display:flex;align-items:center;gap:8px}
-  .case-note::before{content:"📦"}
   /* 합계 바는 표 '위'에 두고 스크롤에 붙여둔다 — 색을 훑어 내려가면서 지금까지 몇 장 담았는지
      계속 보이게. 예전엔 표 맨 아래라 끝까지 내려가야 보였다. (2026-09-01) */
   .summary{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px 16px;
@@ -470,9 +465,6 @@
       <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">— login</b></div>
       <button class="addbtn" id="addBtn" disabled>Add to Order</button>
     </div>
-    <!-- 안내문은 표 "위" 붙어 있는 줄에 둔다 — 아래에 두면 맨 끝까지 내렸을 때
-         사라지거나(뒤로 숨김) 마지막 줄을 덮는다. 위에 두면 항상 보이고 절대 안 겹친다. -->
-    <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
     <div class="order-block">
       <div class="otable-scroll">
         <table class="otable">
@@ -707,10 +699,6 @@
       th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
-    const note=document.getElementById('caseNote');
-    if(note){
-      note.innerHTML=`Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL+ 1 case = 48 pcs · see <b>Size Guide</b> above for measurements`;
-    }
     const chip=document.getElementById('sizeChip');
     if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
   }
@@ -884,10 +872,7 @@
     const sc=document.querySelector('.otable-scroll');
     if(!sc) return;
     const _need=stickyNeed();
-    const _cn=document.querySelector('.case-note');
-    const _cnH=(_cn && _cn.offsetParent!==null)?Math.round(_cn.getBoundingClientRect().height)+8:0;
-    if(_cn) _cn.style.top=_need+'px';
-    let h=Math.max(360, Math.round(window.innerHeight - _need - 30 - _cnH));
+    let h=Math.max(360, Math.round(window.innerHeight - _need - 30));
     if(_tailFit) h=Math.max(240, Math.min(h, _tailFit));
     sc.style.maxHeight=h+'px';
     sc.style.minHeight=(_tailFit?h:Math.min(420,h))+'px';
@@ -896,7 +881,7 @@
        그 구간에서는 표가 화면에 그대로 붙어 있고, 그다음에 푸터가 올라온다. */
     try{
       const ob=document.querySelector('.order-block');
-      if(ob) ob.style.top=(_need+_cnH)+'px';
+      if(ob) ob.style.top=_need+'px';
     }catch(e){}
   }
   window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });

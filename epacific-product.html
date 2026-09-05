@@ -70,11 +70,18 @@
      overflow 를 주는 순간 둘 다 잘린다(첫 줄이 잘려 보였던 이유가 이것). 높이는 grid-auto-rows
      로만 고정하고 줄 수는 색 개수에 맡긴다 — 57색이면 두 줄이다. */
   .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start}
-  /* 색칩 줄에서는 이름표를 칩 "아래"로 뒤집는다 (2026-09-05).
-     이 줄은 화면 맨 위에 붙어 있어서, 이름표가 위로 뜨면 상단바(z-index:100) 뒤로 넘어가
-     이름이 나오긴 하는데 안 보인다. 아래로 뜨면 항상 화면 안이다. 꼬리 방향도 같이 뒤집는다. */
-  .chipbar .sw::after{bottom:auto;top:calc(100% + 9px)}
-  .chipbar .sw::before{bottom:auto;top:calc(100% + 4px);border-top-color:transparent;border-bottom-color:var(--ink)}
+  /* 색칩 이름표 (2026-09-05, 세 번째 시도가 정답).
+     ① 칩마다 ::after 로 두면 옆으로 훑을 때마다 새로 나타났다 사라지고, 옆 칩이 위로 겹쳐서
+        "뒤로 갔다 앞으로 나오는" 깜빡임이 된다 → 눈이 피로하다.
+     ② 위로 띄우면 상단바(z-index:100) 뒤로 넘어가 안 보인다.
+     그래서 **하나짜리 이름표를 body 에 두고 position:fixed 로 따라다니게** 한다.
+     fixed + z-index 200 이라 상단바보다 위에 그려진다 → 위로 띄워도 항상 보인다.
+     하나뿐이니 칩 사이를 옮길 때 사라지지 않고 스르륵 미끄러진다. */
+  .swtip{position:fixed;z-index:200;background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:600;letter-spacing:.01em;white-space:nowrap;padding:5px 10px;border-radius:6px;pointer-events:none;box-shadow:0 4px 14px rgba(28,28,26,.28);transform:translate(-50%,-100%);transition:left .1s ease,top .1s ease}
+  .swtip[hidden]{display:none}
+  .swtip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink)}
+  /* 칩에 붙어 있던 옛 이름표는 색칩 줄에서 끈다 — 위 하나짜리가 대신한다 */
+  .chipbar .sw::after,.chipbar .sw::before{display:none}
 
   /* gallery — 큰 메인 사진 + 아래 색상 칩 격자 */
   /* 주문표가 아래로 내려간 뒤에는 sticky 를 쓰면 안 된다 — 사진이 따라 내려와 표를 덮는다 */
@@ -470,6 +477,9 @@
     <div class="case-note" id="caseNote">Small number under each box = available stock · XS–2XL 1 case = 72 pcs · 3XL 1 case = 48 pcs · see <b>Size Guide</b> above for measurements</div>
   </div><!-- /orderSection -->
 </div>
+
+<!-- 색칩 이름표 — 칩마다 하나씩 두지 않고, 이거 하나가 따라다닌다 -->
+<div id="swTip" class="swtip" hidden></div>
 
 <!-- 색 사진 확대 -->
 <div id="zoomBox" class="zoombox" hidden><button class="zoomx" type="button" aria-label="Close">✕</button><figure><div id="zoomImg"></div><figcaption id="zoomCap"></figcaption></figure></div>
@@ -1270,13 +1280,9 @@
   const swEl=document.getElementById('thumbs');
   const swLabel=document.getElementById('swLabel');
 
-  let _selName='';
-  const chipLabel=document.getElementById('chipLabel');
-  function chipLabelSet(name){ if(chipLabel) chipLabel.innerHTML='Color: <b>'+name+'</b>'; }
   function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
-    _selName=c.name; chipLabelSet(c.name);
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
   }
   // 메인 사진 기본 색 선택: 직접 지정 > 대표색 우선순위 > 사진 있는 첫 색
@@ -1325,9 +1331,9 @@
         // 색 클릭: 사진 변경 + 주문표를 그 색으로 이동(사진 고정이라 보면서 주문 가능)
         sw.addEventListener('click',()=>{ setMain(c); jumpTo(c.name); });
       }
-      /* 마우스만 올려도 이름이 붙어 있는 라벨에 뜬다 — 누르지 않아도 뭔지 안다 */
-      sw.addEventListener('mouseenter',()=>chipLabelSet(c.name));
-      sw.addEventListener('mouseleave',()=>chipLabelSet(_selName||c.name));
+      /* 마우스만 올려도 이름이 뜬다 — 누르지 않아도 뭔지 안다 */
+      sw.addEventListener('mouseenter',()=>swTipShow(sw,c.name));
+      sw.addEventListener('mouseleave',swTipHide);
       swEl.appendChild(sw);
     });
     const ccChip=document.getElementById('colorCountChip');
@@ -1371,6 +1377,20 @@
     if(nm){ e.preventDefault(); inlineEditName(nm); }
   });
   }
+
+  // ── 색칩 이름표 (하나짜리가 따라다닌다) ──
+  const _swTip=document.getElementById('swTip');
+  function swTipShow(el,name){
+    if(!_swTip) return;
+    _swTip.textContent=name;
+    _swTip.hidden=false;
+    const r=el.getBoundingClientRect();
+    _swTip.style.left=Math.round(r.left+r.width/2)+'px';
+    _swTip.style.top=Math.round(r.top-8)+'px';
+  }
+  function swTipHide(){ if(_swTip) _swTip.hidden=true; }
+  /* 스크롤하면 칩이 움직이니 같이 지운다 — 안 그러면 엉뚱한 자리에 떠 있다 */
+  window.addEventListener('scroll',swTipHide,{passive:true});
 
   // ── 색 사진 확대 ──
   function zoomOpen(c){

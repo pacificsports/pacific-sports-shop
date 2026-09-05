@@ -69,13 +69,10 @@
      칩은 위로 삐져나가는 게 두 개 있다 — 선택된 칩의 확대 테두리, 마우스 올렸을 때 뜨는 이름표.
      overflow 를 주는 순간 둘 다 잘린다(첫 줄이 잘려 보였던 이유가 이것). 높이는 grid-auto-rows
      로만 고정하고 줄 수는 색 개수에 맡긴다 — 57색이면 두 줄이다. */
-  /* 검색창을 색칩 오른쪽에 나란히 둔다 (2026-09-05).
-     따로 아래에 두면 붙어 있는 색칩 줄에 가려서 안 보인다. 여기 넣으면 세로 높이는
-     하나도 더 안 먹으면서 검색창도 같이 붙어 있는다 — 색칩 두 줄 높이 안에 들어간다. */
-  .chipbar{display:flex;gap:18px;align-items:flex-start}
-  .chipbar .swatches{flex:1;min-width:0;gap:8px;grid-auto-rows:34px;align-content:start}
-  .chipbar .color-search{flex:0 0 262px;margin:0}
-  .chipbar .color-search input{width:100%}
+  /* 검색창은 색칩 아래 한 줄로 길게 — 원래 모양 그대로. 다만 색칩 줄 "안"에 넣어서
+     같이 붙어 있게 한다(밖에 두면 붙어 있는 색칩 줄에 가려서 안 보인다). */
+  .chipbar .swatches{gap:8px;grid-auto-rows:34px;align-content:start}
+  .chipbar .color-search{margin:12px 0 0}
   /* 색칩 이름표 (2026-09-05, 세 번째 시도가 정답).
      ① 칩마다 ::after 로 두면 옆으로 훑을 때마다 새로 나타났다 사라지고, 옆 칩이 위로 겹쳐서
         "뒤로 갔다 앞으로 나오는" 깜빡임이 된다 → 눈이 피로하다.
@@ -461,7 +458,7 @@
     <div class="chipbar" id="chipBar">
       <div class="swatches" id="thumbs"></div>
       <div class="color-search">
-        <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…" autocomplete="off">
+        <input type="text" id="colorSearch" placeholder="🔍  Jump to a color…  (e.g. Navy, Sand, Olive)" autocomplete="off">
         <div class="search-sug" id="searchSug"></div>
       </div>
     </div>

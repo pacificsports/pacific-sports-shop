@@ -167,7 +167,8 @@
   /* 표 상자를 합계 바 밑에 붙여 둔다. top 은 fitTable 이 실측해 넣는다.
      ⚠ 이 상자를 다른 div 로 감싸지 말 것. 감싸는 순간 그 div 가 containing block 이 돼서
      sticky 가 그 안에서만 움직인다 — 높이가 같으면 여지가 0 이라 아예 안 붙는다.
-     #orderSection 이 바로 부모여야 하고, 그 아래 여백(padding-bottom)이 버틸 거리가 된다. */
+     ⚠ 페이지 맨 끝(푸터 구간)에서는 표가 위로 밀리는데 이건 못 막는다 — 푸터(약 440px)가
+     화면을 차지하는 동안 표까지 다 보일 자리가 없다. 억지로 여백을 넣으면 빈 화면만 생긴다. */
   .order-block{border:1px solid var(--line-2);border-radius:16px;overflow:hidden;margin-bottom:8px;position:sticky;top:170px;z-index:2;background:var(--paper)}
   /* 안내문도 붙어 있는 줄의 일부 — 합계 바 바로 밑, 표 머리 바로 위.
      top 값은 fitTable 이 실측해 넣는다(상단바+색칩줄+합계바 높이). */
@@ -487,9 +488,6 @@
         </table>
       </div>
     </div>
-    <!-- 표가 화면에 붙어 있을 거리. padding 으로는 안 된다 — 브라우저는 sticky 범위를
-         부모의 padding 을 뺀 안쪽(content box)으로 잡는다. 실제 요소여야 한다. -->
-    <div class="order-tail" aria-hidden="true"></div>
   </div><!-- /orderSection -->
 </div>
 
@@ -896,10 +894,6 @@
     /* 붙어 있는 상자는 부모(#orderSection) 안에서만 버틴다. 부모가 상자보다 안 크면
        페이지 끝에서 상자가 위로 밀려 한 줄만 남는다 — 부모 아래에 상자 높이만큼 여지를 준다.
        그 구간에서는 표가 화면에 그대로 붙어 있고, 그다음에 푸터가 올라온다. */
-    try{
-      const tail=document.querySelector('.order-tail');
-      if(tail) tail.style.height=(h+24)+'px';
-    }catch(e){}
     try{
       const ob=document.querySelector('.order-block');
       if(ob) ob.style.top=(_need+_cnH)+'px';

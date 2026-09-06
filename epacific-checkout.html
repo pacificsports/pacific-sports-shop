@@ -375,15 +375,20 @@
       const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc&limit=50',
         {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       if(!r.ok) return;
-      savedAddrList=await r.json();
+      const all=await r.json();
+      /* 배송지만 고르게 하고, 기본 배송지를 맨 위로 (2026-09-06 kind/is_default 도입) */
+      const kindOf=a=>((a&&a.kind)==='billing'?'billing':'shipping');
+      savedAddrList=all.filter(a=>kindOf(a)==='shipping');
+      const billList=all.filter(a=>kindOf(a)==='billing');
+      savedAddrList.sort((x,y)=>(y.is_default?1:0)-(x.is_default?1:0));
       const sel=document.getElementById('savedAddr'); const wrap=document.getElementById('savedAddrWrap');
       if(!savedAddrList.length){ wrap.style.display='none'; return; }
       wrap.style.display='';
       sel.innerHTML=savedAddrList.map((a,i)=>{
-        const lbl=a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||''));
+        const lbl=(a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||'')))+(a.is_default?'  ★ default':'');
         return '<option value="'+i+'">'+esc(lbl)+'</option>';
       }).join('')+'<option value="new">+ Ship to a new address…</option>';
-      // 첫 주소 자동 선택해서 채움
+      // 기본 배송지 자동 선택해서 채움
       fillAddr(savedAddrList[0]);
       sel.value='0';
       sel.addEventListener('change',()=>{ if(sel.value==='new') clearAddr(); else fillAddr(savedAddrList[parseInt(sel.value)]); });
@@ -391,11 +396,14 @@
       const bsel=document.getElementById('bSaved'), bwrap=document.getElementById('bSavedWrap');
       if(bsel){
         bwrap.style.display='';
-        bsel.innerHTML='<option value="">— Enter billing address below —</option>'+savedAddrList.map((a,i)=>{
+        /* 청구지로 저장해 둔 게 있으면 그걸 먼저 보여주고, 없으면 배송지들 */
+        const bOpts = billList.length ? billList : savedAddrList;
+        window.__bOpts = bOpts;
+        bsel.innerHTML='<option value="">— Enter billing address below —</option>'+bOpts.map((a,i)=>{
           const lbl=a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||''));
           return '<option value="'+i+'">'+esc(lbl)+'</option>';
         }).join('');
-        bsel.addEventListener('change',()=>{ if(bsel.value==='') return; const a=savedAddrList[parseInt(bsel.value)];
+        bsel.addEventListener('change',()=>{ if(bsel.value==='') return; const a=(window.__bOpts||[])[parseInt(bsel.value)]; if(!a) return;
           const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v||''); };
           set('bName',a.name||a.company); set('bAddr1',a.addr1); set('bAddr2',a.addr2);
           set('bCity',a.city); set('bZip',a.zip); const ss=document.getElementById('bState'); if(ss) ss.value=a.state||'';
@@ -415,7 +423,8 @@
         body:JSON.stringify({ customer_id:cust.customer_id||null,
           label:(st.company||st.name||'')+' — '+(st.city||'')+', '+(st.state||''),
           name:st.name, company:st.company, addr1:st.addr1, addr2:st.addr2,
-          city:st.city, state:st.state, zip:st.zip, phone:st.phone, residential:!!st.residential })});
+          city:st.city, state:st.state, zip:st.zip, phone:st.phone, residential:!!st.residential,
+          kind:'shipping', is_default:false })});
     }catch(e){}
   }
 

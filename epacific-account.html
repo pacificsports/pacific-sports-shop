@@ -88,6 +88,15 @@
   .tag-SC{background:#e7eef3;color:#2f5b7a}.tag-CA{background:#f1ece0;color:#8a6a3a}
   .addr-card .a-edit{font-size:13px;color:var(--accent);cursor:pointer;white-space:nowrap}
   .addr-card .a-edit:hover{text-decoration:underline}
+  /* 배송지 / 청구지 분리 + 기본 배송지 (2026-09-06) */
+  .ag-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 12px}
+  .ag-head h3{font-family:var(--body);font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+  .addr-card.is-def{border-color:var(--accent);background:#fcfdfb}
+  .a-def{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;letter-spacing:.03em;
+         color:var(--accent);background:var(--accent-soft);border:1px solid #cdddc9;border-radius:999px;padding:2px 9px;margin-left:8px}
+  .a-setdef{font-size:13px;color:var(--soft-ink);cursor:pointer;white-space:nowrap;margin-right:14px}
+  .a-setdef:hover{color:var(--accent);text-decoration:underline}
+  .addr-empty{font-size:14px;color:var(--faint);padding:2px 0 10px}
 
   .toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:15px 26px;border-radius:12px;font-size:14px;font-weight:500;opacity:0;transition:.4s;z-index:200;box-shadow:0 20px 50px -15px rgba(0,0,0,.5)}
   .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
@@ -125,6 +134,19 @@
   .o-line2{font-size:13.5px;color:var(--soft-ink)}
   .o-line2 b{font-weight:600;color:var(--ink)}
   .o-line3{font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* 송장번호 · 결제 상태 (2026-09-06) — 예전엔 오더를 열어도 어디쯤 왔는지 알 수가 없었다 */
+  .o-pill{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .p-paid{background:var(--accent-soft);color:var(--accent)}
+  .p-due{background:#f6ecd8;color:#8a6a2a}
+  .o-track{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--soft-ink);margin-top:4px}
+  .o-track .tk-car{font-weight:700;font-size:11px;letter-spacing:.04em;color:var(--faint)}
+  .o-track a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--accent);
+             border:1px solid var(--line-2);border-radius:7px;padding:2px 8px;background:var(--paper);transition:.15s}
+  .o-track a:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .ship-box{border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;margin-top:14px;background:#fcfcfa}
+  .ship-box .sb-t{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+  .ship-box .sb-r{font-size:13.5px;color:var(--soft-ink);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .ship-box .sb-r b{color:var(--ink);font-weight:600}
   .o-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
   .o-arrow{color:var(--faint);transition:transform .25s;font-size:13px}
   .order.open .o-arrow{transform:rotate(180deg)}
@@ -235,7 +257,7 @@
         <div class="acct-live" id="acctLive">✓ Account is active.</div>
         <div class="ord-top">
           <h2>Orders</h2>
-          <div class="search-orders"><input type="text" id="orderSearch" placeholder="🔍  Search by order # or style…"></div>
+          <div class="search-orders"><input type="text" id="orderSearch" placeholder="🔍  Search by order #, style, or tracking…"></div>
         </div>
         <div id="orders"></div>
       </section>
@@ -256,9 +278,13 @@
 
           <div class="sec-divider"></div>
           <h2>Addresses</h2>
-          <div class="cdesc">Where your orders ship. Orders default to your nearest warehouse.</div>
-          <div id="acAddrList"></div>
-          <div style="margin-top:6px"><button class="btn-ghost" onclick="addrEdit(null)">+ Add address</button></div>
+          <div class="cdesc">Shipping addresses are where orders go — the default one is filled in for you at checkout. Billing is what goes on the card.</div>
+
+          <div class="ag-head"><h3>Shipping</h3><button class="btn-ghost sm" type="button" onclick="addrEdit(null,'shipping')">+ Add shipping address</button></div>
+          <div id="acShipList"></div>
+
+          <div class="ag-head" style="margin-top:26px"><h3>Billing</h3><button class="btn-ghost sm" type="button" onclick="addrEdit(null,'billing')">+ Add billing address</button></div>
+          <div id="acBillList"></div>
 
           <div class="sec-divider"></div>
           <h2>Login &amp; password</h2>
@@ -292,7 +318,8 @@
       <div class="field"><label>ZIP *</label><input type="text" id="maZip"></div>
     </div>
     <div class="field full"><label>Phone</label><input type="tel" id="maPhone"></div>
-    <label class="rescheck"><input type="checkbox" id="maResidential"> Residential address</label>
+    <label class="rescheck" id="maResWrap"><input type="checkbox" id="maResidential"> Residential address</label>
+    <label class="rescheck" id="maDefWrap"><input type="checkbox" id="maDefault"> Make this my default shipping address</label>
     <div class="addr-modal-foot">
       <button class="btn-ghost" type="button" onclick="addrClose()">Cancel</button>
       <button class="btn" type="button" onclick="addrSave()">Save address</button>
@@ -340,7 +367,10 @@
 
   /* ══════════ 주소록 (customer_addresses) ══════════ */
   const US_STATES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split(' ');
-  let acAddrs=[], acEditId=null;
+  let acAddrs=[], acEditId=null, acEditKind='shipping';
+  /* DB에 kind / is_default 컬럼이 아직 없을 수도 있다 — 없으면 예전처럼 한 목록으로만 굴린다 */
+  let acNewCols=true;
+  const addrKind=a=>((a&&a.kind)==='billing'?'billing':'shipping');
   function escA(x){ return String(x==null?'':x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
   async function loadAddresses(){
     const s=_sess(); if(!s||!s.token) return;
@@ -349,27 +379,47 @@
         {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       acAddrs = r.ok ? await r.json() : [];
     }catch(e){ acAddrs=[]; }
+    acNewCols = !acAddrs.length || ('kind' in acAddrs[0]);
     window.__acAddrs=acAddrs;
     renderAddresses(acAddrs);
   }
+  function addrCardHtml(a){
+    const kind=addrKind(a);
+    const tag=a.label?escA(a.label):(kind==='billing'?'Billing':'Ship to');
+    const line=[a.addr1,a.addr2].filter(Boolean).map(escA).join('<br>');
+    const def=(kind==='shipping'&&a.is_default);
+    return '<div class="addr-card'+(def?' is-def':'')+'"><div class="a-body">'
+      +'<span class="a-tag '+(kind==='billing'?'tag-SC':'tag-CA')+'">'+tag+'</span>'
+      +(def?'<span class="a-def">✓ Default</span>':'')+'<br>'
+      +(a.company||a.name?('<b>'+escA(a.company||a.name)+'</b><br>'):'')
+      +(line?(line+'<br>'):'')
+      +escA(a.city)+', '+escA(a.state)+' '+escA(a.zip)+(a.phone?('<br>'+escA(a.phone)):'')
+      +'</div><div style="white-space:nowrap">'
+      +((acNewCols&&kind==='shipping'&&!def)?'<span class="a-setdef" onclick="addrSetDefault(\''+a.id+'\')">Set as default</span>':'')
+      +'<span class="a-edit" onclick="addrEdit(\''+a.id+'\')">Edit</span>'
+      +'<span class="a-del" onclick="addrDel(\''+a.id+'\')">Delete</span></div></div>';
+  }
   function renderAddresses(list){
     if(list) acAddrs=list;
-    const el=document.getElementById('acAddrList'); if(!el) return;
-    if(!acAddrs.length){ el.innerHTML='<div class="cdesc" style="padding:8px 0">No saved addresses yet. Add one below — it will appear at checkout.</div>'; return; }
-    el.innerHTML=acAddrs.map(a=>{
-      const tag=a.label?escA(a.label):'Address';
-      const line=[a.addr1,a.addr2].filter(Boolean).map(escA).join('<br>');
-      return '<div class="addr-card"><div class="a-body">'
-        +'<span class="a-tag tag-CA">'+tag+'</span><br>'
-        +(a.company||a.name?('<b>'+escA(a.company||a.name)+'</b><br>'):'')
-        +(line?(line+'<br>'):'')
-        +escA(a.city)+', '+escA(a.state)+' '+escA(a.zip)+(a.phone?('<br>'+escA(a.phone)):'')
-        +'</div><div style="white-space:nowrap"><span class="a-edit" onclick="addrEdit(\''+a.id+'\')">Edit</span><span class="a-del" onclick="addrDel(\''+a.id+'\')">Delete</span></div></div>';
-    }).join('');
+    const sh=document.getElementById('acShipList'), bl=document.getElementById('acBillList');
+    if(!sh||!bl) return;
+    /* 컬럼이 아직 없으면 Billing 칸을 아예 감춘다 — 눌러봐야 저장이 안 된다 */
+    const bh=bl.previousElementSibling;
+    if(bh) bh.style.display = acNewCols?'':'none';
+    bl.style.display = acNewCols?'':'none';
+    const ship=acAddrs.filter(a=>addrKind(a)==='shipping');
+    const bill=acAddrs.filter(a=>addrKind(a)==='billing');
+    /* 기본 배송지를 맨 위로 */
+    ship.sort((x,y)=>(y.is_default?1:0)-(x.is_default?1:0));
+    sh.innerHTML = ship.length ? ship.map(addrCardHtml).join('')
+      : '<div class="addr-empty">No shipping address yet — add one and it will be filled in at checkout.</div>';
+    bl.innerHTML = bill.length ? bill.map(addrCardHtml).join('')
+      : '<div class="addr-empty">No billing address saved. If you leave this empty, checkout uses the shipping address.</div>';
   }
-  function addrEdit(id){
+  function addrEdit(id,kind){
     acEditId=id;
-    const a = id ? acAddrs.find(x=>x.id===id) : {};
+    const a = id ? (acAddrs.find(x=>x.id===id)||{}) : {};
+    acEditKind = id ? addrKind(a) : (kind==='billing'?'billing':'shipping');
     const ss=document.getElementById('maState');
     ss.innerHTML='<option value="">—</option>'+US_STATES.map(x=>'<option>'+x+'</option>').join('');
     const set=(i,v)=>{ document.getElementById(i).value=(v||''); };
@@ -377,20 +427,53 @@
     set('maAddr1',a.addr1); set('maAddr2',a.addr2); set('maCity',a.city);
     ss.value=a.state||''; set('maZip',a.zip); set('maPhone',a.phone);
     document.getElementById('maResidential').checked=!!a.residential;
-    document.getElementById('addrModalTitle').textContent=id?'Edit address':'Add address';
+    /* 배송지에만 residential / default 를 묻는다 */
+    const isShip = acEditKind==='shipping';
+    const firstShip = !acAddrs.some(x=>addrKind(x)==='shipping');
+    document.getElementById('maResWrap').style.display = isShip?'':'none';
+    document.getElementById('maDefWrap').style.display = (isShip&&acNewCols)?'':'none';
+    const dc=document.getElementById('maDefault');
+    dc.checked = isShip && (id ? !!a.is_default : firstShip);
+    dc.disabled = isShip && (id ? !!a.is_default : firstShip);   // 이미 기본이면 여기서 못 끈다 — 다른 걸 기본으로 바꿔야 한다
+    document.getElementById('addrModalTitle').textContent =
+      (id?'Edit ':'Add ') + (isShip?'shipping address':'billing address');
     document.getElementById('addrModalBg').classList.add('show');
   }
+  /* 기본 배송지 바꾸기 — 부분 unique index 때문에 먼저 전부 내리고 하나만 올린다 */
+  async function addrSetDefault(id){
+    const s=_sess(); if(!s||!s.token) return;
+    const H={apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'};
+    try{
+      await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?kind=eq.shipping&is_default=eq.true',
+        {method:'PATCH',headers:H,body:JSON.stringify({is_default:false})});
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+id,
+        {method:'PATCH',headers:H,body:JSON.stringify({is_default:true})});
+      if(!r.ok){ toast('Could not change the default ('+r.status+').'); return; }
+      toast('✓ Default shipping address updated'); loadAddresses();
+    }catch(e){ toast('Could not change the default.'); }
+  }
+  window.addrSetDefault=addrSetDefault;
   function addrClose(){ document.getElementById('addrModalBg').classList.remove('show'); }
   async function addrSave(){
     const s=_sess(); if(!s||!s.token) return;
     const v=i=>document.getElementById(i).value.trim();
     if(!v('maAddr1')||!v('maCity')||!v('maState')||!v('maZip')){ toast('Address, city, state, ZIP are required.'); return; }
     const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
+    const isShip = acEditKind==='shipping';
+    const wantDef = acNewCols && isShip && document.getElementById('maDefault').checked;
     const body={ label:v('maLabel')||null, company:v('maCompany')||null, name:v('maName')||null,
       addr1:v('maAddr1'), addr2:v('maAddr2')||null, city:v('maCity'), state:v('maState'),
-      zip:v('maZip'), phone:v('maPhone')||null, residential:document.getElementById('maResidential').checked,
+      zip:v('maZip'), phone:v('maPhone')||null,
+      residential:isShip && document.getElementById('maResidential').checked,
       customer_id:cust.customer_id||null };
+    if(acNewCols){ body.kind=acEditKind; body.is_default=wantDef; }
     try{
+      /* 기본으로 만들 거면 먼저 기존 기본을 내린다 (unique index 충돌 방지) */
+      if(wantDef){
+        await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?kind=eq.shipping&is_default=eq.true'+(acEditId?('&id=neq.'+acEditId):''),
+          {method:'PATCH',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'},
+           body:JSON.stringify({is_default:false})});
+      }
       let r;
       if(acEditId){
         r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+acEditId,
@@ -406,9 +489,20 @@
   async function addrDel(id){
     if(!confirm('Delete this address?')) return;
     const s=_sess(); if(!s||!s.token) return;
+    const was=acAddrs.find(x=>x.id===id);
     const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+id,
       {method:'DELETE',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
-    if(r.ok){ toast('Address deleted'); loadAddresses(); } else toast('Could not delete.');
+    if(!r.ok){ toast('Could not delete.'); return; }
+    /* 기본 배송지를 지웠으면 남은 배송지 하나를 기본으로 올린다 — 기본이 비면 체크아웃이 빈칸이 된다 */
+    if(was && addrKind(was)==='shipping' && was.is_default){
+      const next=acAddrs.find(x=>x.id!==id && addrKind(x)==='shipping');
+      if(next){
+        await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?id=eq.'+next.id,
+          {method:'PATCH',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'},
+           body:JSON.stringify({is_default:true})});
+      }
+    }
+    toast('Address deleted'); loadAddresses();
   }
 
   /* ══════════ 프로필 ══════════ */
@@ -522,6 +616,26 @@
     if(!d) return '';
     try{ return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return d; }
   }
+  /* ── 송장번호 ── tracking_number 한 칸에 줄바꿈으로 여러 개가 들어 있다 */
+  function trackNums(o){
+    return String(o.tracking||'').split(/[\s,;]+/).map(function(x){return x.trim();}).filter(Boolean);
+  }
+  function trackUrl(carrier,num){
+    var c=String(carrier||'').toUpperCase(), n=encodeURIComponent(num);
+    if(c.indexOf('FEDEX')>=0) return 'https://www.fedex.com/fedextrack/?trknbr='+n;
+    if(c.indexOf('USPS')>=0)  return 'https://tools.usps.com/go/TrackConfirmAction?tLabels='+n;
+    if(c.indexOf('DHL')>=0)   return 'https://www.dhl.com/en/express/tracking.html?AWB='+n;
+    return 'https://www.ups.com/track?tracknum='+n;   /* 기본 UPS */
+  }
+  function trackHtml(o,max){
+    var nums=trackNums(o); if(!nums.length) return '';
+    var show=(max?nums.slice(0,max):nums);
+    return '<div class="o-track" onclick="event.stopPropagation()">'
+      +'<span class="tk-car">'+esc(o.carrier||'TRACKING')+'</span>'
+      +show.map(function(n){ return '<a href="'+trackUrl(o.carrier,n)+'" target="_blank" rel="noopener">'+esc(n)+'</a>'; }).join('')
+      +((max&&nums.length>max)?('<span style="color:var(--faint)">+'+(nums.length-max)+' more</span>'):'')
+      +'</div>';
+  }
   /* 상태를 한 줄 제목으로 — Next Level 처럼 "지금 어디까지 왔나"가 먼저 보이게 */
   function headline(o){
     if(o.status==='shipped')   return 'Shipped '+niceDate(o.date);
@@ -530,6 +644,23 @@
     return 'Processing';
   }
 
+  function payPill(o){
+    if(o.pay==='paid') return '<span class="o-pill p-paid">Paid</span>';
+    if(!o.pay) return '';
+    return '<span class="o-pill p-due">'+esc(String(o.pay).replace(/_/g,' '))+'</span>';
+  }
+  /* 펼쳤을 때 나오는 배송 상자 — 상태 · 발송일 · 배송편 · 송장번호 전부 */
+  function shipBox(o){
+    var nums=trackNums(o);
+    if(!nums.length && !o.shippedAt && !o.shipMethod) return '';
+    var h='<div class="ship-box"><div class="sb-t">Shipment</div>';
+    h+='<div class="sb-r">Status <b>'+esc(o.statusLabel||'')+'</b>'
+      +(o.shippedAt?('<span style="color:var(--faint)">·</span>Shipped <b>'+esc(niceDate(String(o.shippedAt).slice(0,10)))+'</b>'):'')+'</div>';
+    if(o.shipMethod) h+='<div class="sb-r">Service <b>'+esc(o.shipMethod)+'</b></div>';
+    if(nums.length) h+='<div class="sb-r">Tracking</div>'+trackHtml(o);
+    h+='</div>';
+    return h;
+  }
   /* ── 색상 썸네일 ── */
   const colorCache={};
   async function colorsFor(style){
@@ -579,15 +710,17 @@
         <div class="o-head" onclick="this.parentElement.classList.toggle('open')">
           <div class="o-thumbs"></div>
           <div class="o-meta">
-            <div class="o-line1"><span class="o-dot d-${o.status}"></span>${esc(headline(o))}</div>
+            <div class="o-line1"><span class="o-dot d-${o.status}"></span>${esc(headline(o))}${payPill(o)}</div>
             <div class="o-line2"><b>${esc(o.id)}</b> · ${amt!=null?money(amt):'—'} · ${o.total_pcs||0} pcs</div>
             <div class="o-line3">${st?esc(st):esc(niceDate(o.date))}</div>
+            ${trackHtml(o,2)}
           </div>
           <div class="o-right"><span class="o-arrow">▾</span></div>
         </div>
         <div class="o-body">
           <div class="o-view">
             ${linesHtml}
+            ${shipBox(o)}
             ${o.notes?`<div style="font-size:13px;color:var(--soft-ink);padding:8px 0">📝 ${esc(o.notes)}</div>`:''}
             <div class="o-actions">
               <button class="btn-ghost" onclick="location.href='epacific-invoice.html?order=${encodeURIComponent(o.id)}'">View invoice</button>
@@ -740,6 +873,8 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
         const items=Array.isArray(rw.items)?rw.items:[];
         return { id:rw.order_number, date:(rw.created_at||'').slice(0,10), status:sm[0], statusLabel:sm[1],
                  total_pcs:rw.total_pcs, total_amount:rw.total_amount, notes:rw.notes, ship_to:rw.ship_to,
+                 tracking:rw.tracking_number, carrier:rw.carrier, shippedAt:rw.shipped_at,
+                 shipMethod:rw.shipping_method, pay:rw.payment_status,
                  items, lines:groupLines(items) };
       });
       render(orders);
@@ -752,6 +887,7 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
     const q=e.target.value.trim().toLowerCase();
     render(orders.filter(o=>
       String(o.id).toLowerCase().includes(q) ||
+      String(o.tracking||'').toLowerCase().includes(q) ||
       o.lines.some(l=>String(l.style).includes(q)||String(l.color).toLowerCase().includes(q))
     ));
   });

@@ -344,6 +344,7 @@
     <div class="field full"><label>Phone</label><input type="tel" id="maPhone"></div>
     <label class="rescheck" id="maResWrap"><input type="checkbox" id="maResidential"> Residential address</label>
     <label class="rescheck" id="maDefWrap"><input type="checkbox" id="maDefault"> Make this my default shipping address</label>
+    <label class="rescheck" id="maAlsoWrap"><input type="checkbox" id="maAlsoShip"> Also save this as a shipping address</label>
     <div class="addr-modal-foot">
       <button class="btn-ghost" type="button" onclick="addrClose()">Cancel</button>
       <button class="btn" type="button" onclick="addrSave()">Save address</button>
@@ -457,6 +458,9 @@
     const dc=document.getElementById('maDefault');
     dc.checked = isShip && (id ? !!a.is_default : firstShip);
     dc.disabled = isShip && (id ? !!a.is_default : firstShip);   // 이미 기본이면 여기서 못 끈다 — 다른 걸 기본으로 바꿔야 한다
+    const alsoWrap=document.getElementById('maAlsoWrap'), alsoCb=document.getElementById('maAlsoShip');
+    alsoWrap.style.display = (!id && !isShip && acNewCols) ? '' : 'none';
+    alsoCb.checked = false;
     document.getElementById('addrModalTitle').textContent =
       (id?'Edit ':'Add ') + (isShip?'shipping address':'billing address');
     document.getElementById('addrModalBg').classList.add('show');
@@ -483,6 +487,7 @@
     const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
     const isShip = acEditKind==='shipping';
     const wantDef = acNewCols && isShip && document.getElementById('maDefault').checked;
+    const alsoShip = acNewCols && !isShip && !acEditId && document.getElementById('maAlsoShip').checked;
     const body={ company:v('maCompany')||null, name:v('maName')||null,
       addr1:v('maAddr1'), addr2:v('maAddr2')||null, city:v('maCity'), state:v('maState'),
       zip:v('maZip'), phone:v('maPhone')||null,
@@ -505,6 +510,16 @@
           {method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
       }
       if(!r.ok){ toast('Could not save ('+r.status+').'); return; }
+      if(alsoShip){
+        const ship = Object.assign({}, body, {
+          kind:'shipping',
+          is_default: !acAddrs.some(x=>addrKind(x)==='shipping'),
+          residential:false });
+        const r2=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses',
+          {method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(ship)});
+        if(!r2.ok){ addrClose(); toast('Billing saved — the shipping copy failed.'); loadAddresses(); return; }
+        addrClose(); toast('✓ Saved as billing and shipping'); loadAddresses(); return;
+      }
       addrClose(); toast('✓ Address saved'); loadAddresses();
     }catch(e){ toast('Could not save address.'); }
   }

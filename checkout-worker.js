@@ -5,6 +5,7 @@
      POST /rates : UPS 실시간 배송비 (Ground / 3 Day Select / 2nd Day / Next Day)
                    SC·CA 두 창고에서 나눠 보내는 주문은 각각 계산해서 합산
      POST /pay   : Authorize.net 카드 결제 (Accept.js 토큰 → 실제 청구)
+     POST /track : UPS 배송 추적 (거래처 My Account 오더 화면에서 상태·이력 표시)
 
    ── Cloudflare 대시보드 → Worker → Settings → Variables 에 넣을 값 ──
    UPS_CLIENT_ID        UPS developer 앱 Client ID
@@ -46,12 +47,90 @@ export default {
       if (url.pathname.endsWith('/rates')) return await rates(await req.json(), env);
       if (url.pathname.endsWith('/pay'))   return await pay(await req.json(), env);
       if (url.pathname.endsWith('/refund')) return await refund(await req.json(), env);
+      if (url.pathname.endsWith('/track'))  return await track(await req.json(), env);
       return J({ error: 'unknown endpoint' }, 404);
     } catch (e) {
       return J({ error: String(e.message || e).slice(0, 300) }, 500);
     }
   }
 };
+
+/* ───────────────────────── UPS 배송 추적 ─────────────────────────
+   POST /track   { numbers: ['1Z...', ...] }   (최대 10개)
+   → { results: { '1Z...': { status, date, location, delivered, eta, activity:[...] } } }
+
+   ⚠ UPS developer 앱에 "Tracking" 제품이 추가돼 있어야 한다.
+     Rating 만 붙어 있으면 여기서 401/403 이 온다 — 같은 앱에 제품만 추가하면 되고
+     Client ID/Secret 은 새로 안 받아도 된다.
+   추적번호는 거래처가 이미 자기 오더에서 보는 값이라 따로 로그인 검사를 안 한다.
+*/
+async function track(body, env) {
+  const nums = (Array.isArray(body && body.numbers) ? body.numbers : [])
+    .map(n => String(n || '').trim()).filter(Boolean).slice(0, 10);
+  if (!nums.length) return J({ error: 'no tracking numbers' }, 400);
+
+  const base = env.UPS_ENV === 'production' ? 'https://onlinetools.ups.com' : 'https://wwwcie.ups.com';
+  const tok  = await upsToken(env);
+  const results = {};
+  for (const n of nums) {
+    try {
+      const r = await fetch(
+        base + '/api/track/v1/details/' + encodeURIComponent(n) + '?locale=en_US&returnSignature=false',
+        { headers: {
+            Authorization: 'Bearer ' + tok,
+            transId: 'pac' + Date.now(),
+            transactionSrc: 'pacific-shop',
+            Accept: 'application/json'
+        } });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { results[n] = { error: upsTrackErr(d, r.status) }; continue; }
+      results[n] = shapeTrack(d);
+    } catch (e) {
+      results[n] = { error: String(e.message || e).slice(0, 120) };
+    }
+  }
+  return J({ results });
+}
+function upsTrackErr(d, status) {
+  try {
+    const e = ((d.response || {}).errors || [])[0];
+    if (e) return (e.code ? e.code + ' ' : '') + (e.message || '');
+  } catch (x) {}
+  return 'HTTP ' + status;
+}
+function upsDate(s) {           // 20260617 → 2026-06-17
+  s = String(s || '');
+  return /^\d{8}$/.test(s) ? s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6) : '';
+}
+function upsTime(s) {           // 142126 → 14:21
+  s = String(s || '');
+  return /^\d{6}$/.test(s) ? s.slice(0, 2) + ':' + s.slice(2, 4) : '';
+}
+function upsLoc(loc) {
+  const a = (loc || {}).address || {};
+  return [a.city, a.stateProvince || a.stateProvinceCode, (a.countryCode && a.countryCode !== 'US') ? a.countryCode : '']
+    .filter(Boolean).join(', ');
+}
+function shapeTrack(d) {
+  const shp = ((d.trackResponse || {}).shipment || [])[0] || {};
+  const p   = (shp.package || [])[0] || {};
+  const acts = (p.activity || []).map(a => ({
+    status:   ((a.status || {}).description || (a.status || {}).type || '').trim(),
+    type:     ((a.status || {}).type || '').toUpperCase(),
+    date:     upsDate(a.date),
+    time:     upsTime(a.time),
+    location: upsLoc(a.location)
+  })).filter(a => a.status);
+  const latest = acts[0] || {};
+  const delivered = acts.some(a => a.type === 'D') || /delivered/i.test(latest.status || '');
+  const dd  = (p.deliveryDate || []);
+  const eta = ((dd.find(x => x.type === 'SDD') || dd[0] || {}).date) || '';
+  return {
+    status: latest.status || '', date: latest.date || '', time: latest.time || '',
+    location: latest.location || '', delivered, eta: upsDate(eta),
+    activity: acts.slice(0, 12)
+  };
+}
 
 /* ───────────────────────── UPS 배송비 ───────────────────────── */
 let _upsTok = null, _upsTokExp = 0;

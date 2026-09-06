@@ -159,6 +159,22 @@
   .ship-box .sb-t{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
   .ship-box .sb-r{font-size:13.5px;color:var(--soft-ink);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
   .ship-box .sb-r b{color:var(--ink);font-weight:600}
+  /* UPS 실시간 상태 (2026-09-06) — Next Level 처럼 어디까지 왔는지 단계로 */
+  .tk-live{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;letter-spacing:.02em;
+           border-radius:999px;padding:3px 10px;background:#f0efea;color:#6f6c63}
+  .tk-live.live-d{background:var(--accent-soft);color:var(--accent)}
+  .tk-live.live-i{background:#e7eef3;color:#2f5b7a}
+  .tk-live.live-x{background:#f7ecea;color:#a8463f}
+  .tl{margin-top:12px;padding-left:4px}
+  .tl-row{position:relative;padding:0 0 14px 22px;border-left:1.5px solid var(--line-2)}
+  .tl-row:last-child{border-left-color:transparent;padding-bottom:0}
+  .tl-row::before{content:'';position:absolute;left:-5.5px;top:4px;width:9px;height:9px;border-radius:50%;
+                  background:var(--line-2);box-shadow:0 0 0 3px var(--paper)}
+  .tl-row.now::before{background:var(--accent);width:11px;height:11px;left:-6.5px}
+  .tl-row.now .tl-s{font-weight:700;color:var(--ink)}
+  .tl-s{font-size:13.5px;color:var(--soft-ink);line-height:1.35}
+  .tl-m{font-size:12px;color:var(--faint);margin-top:1px}
+  .tk-load{font-size:12.5px;color:var(--faint);margin-top:10px}
   .o-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
   .o-arrow{color:var(--faint);transition:transform .25s;font-size:13px}
   .order.open .o-arrow{transform:rotate(180deg)}
@@ -672,7 +688,7 @@
     if(!o.pay) return '';
     return '<span class="o-pill p-due">'+esc(String(o.pay).replace(/_/g,' '))+'</span>';
   }
-  /* 펼쳤을 때 나오는 배송 상자 — 상태 · 발송일 · 배송편 · 송장번호 전부 */
+  /* 펼쳤을 때 나오는 배송 상자 — 상태 · 발송일 · 배송편 · 송장번호 · UPS 실시간 이력 */
   function shipBox(o){
     var nums=trackNums(o);
     if(!nums.length && !o.shippedAt && !o.shipMethod) return '';
@@ -680,9 +696,81 @@
     h+='<div class="sb-r">Status <b>'+esc(o.statusLabel||'')+'</b>'
       +(o.shippedAt?('<span style="color:var(--faint)">·</span>Shipped <b>'+esc(niceDate(String(o.shippedAt).slice(0,10)))+'</b>'):'')+'</div>';
     if(o.shipMethod) h+='<div class="sb-r">Service <b>'+esc(o.shipMethod)+'</b></div>';
-    if(nums.length) h+='<div class="sb-r">Tracking</div>'+trackHtml(o);
+    if(nums.length){
+      h+='<div class="sb-r">Tracking</div>'+trackHtml(o);
+      h+='<div class="tk-detail" data-oid="'+esc(o.id)+'"></div>';
+    }
     h+='</div>';
     return h;
+  }
+
+  /* ══ UPS 실시간 추적 ══
+     운송사 API 키는 브라우저에 둘 수 없어서 checkout 워커의 /track 을 거친다.
+     추적번호가 가짜거나 UPS 앱에 Tracking 제품이 없으면 조용히 아무것도 안 보여준다. */
+  var TRACK_CACHE={}, TRACK_PENDING={};
+  async function fetchTrack(nums){
+    var want=nums.filter(function(n){ return TRACK_CACHE[n]===undefined; });
+    if(!want.length) return TRACK_CACHE;
+    var url=(_C.CHECKOUT_WORKER||'')+'/track';
+    if(!_C.CHECKOUT_WORKER) return TRACK_CACHE;
+    var key=want.join(',');
+    if(!TRACK_PENDING[key]){
+      TRACK_PENDING[key]=fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({numbers:want})})
+        .then(function(r){ return r.ok?r.json():{results:{}}; })
+        .then(function(d){
+          var res=(d&&d.results)||{};
+          want.forEach(function(n){ TRACK_CACHE[n]=res[n]||{error:'no data'}; });
+          return TRACK_CACHE;
+        })
+        .catch(function(){ want.forEach(function(n){ TRACK_CACHE[n]={error:'unreachable'}; }); return TRACK_CACHE; });
+    }
+    await TRACK_PENDING[key];
+    return TRACK_CACHE;
+  }
+  function liveClass(t){
+    if(!t||t.error) return '';
+    if(t.delivered) return 'live-d';
+    if(/exception|return|delay|attempt/i.test(t.status||'')) return 'live-x';
+    return 'live-i';
+  }
+  function timelineHtml(o){
+    var nums=trackNums(o), h='';
+    nums.forEach(function(n){
+      var t=TRACK_CACHE[n];
+      if(!t||t.error||!(t.activity&&t.activity.length)) return;
+      h+='<div class="tl">';
+      if(nums.length>1) h+='<div class="sb-r" style="margin-bottom:6px"><b>'+esc(n)+'</b></div>';
+      t.activity.forEach(function(a,i){
+        h+='<div class="tl-row'+(i===0?' now':'')+'">'
+          +'<div class="tl-s">'+esc(a.status)+'</div>'
+          +'<div class="tl-m">'+esc([niceDate(a.date), a.time, a.location].filter(Boolean).join(' · '))+'</div></div>';
+      });
+      h+='</div>';
+    });
+    return h;
+  }
+  /* 카드가 펼쳐질 때만 UPS 를 부른다 — 목록 뜰 때마다 부르면 낭비다 */
+  async function paintTrack(card, o){
+    var host=card.querySelector('.tk-detail'); if(!host) return;
+    if(host.dataset.done) return;
+    var nums=trackNums(o); if(!nums.length) return;
+    host.dataset.done='1';
+    host.innerHTML='<div class="tk-load">Checking with '+esc(o.carrier||'the carrier')+'…</div>';
+    await fetchTrack(nums);
+    var tl=timelineHtml(o);
+    host.innerHTML = tl || '';
+    /* 접힌 줄에도 현재 상태 한 칸 */
+    var t=TRACK_CACHE[nums[0]];
+    if(t && !t.error && t.status){
+      var row=card.querySelector('.o-head .o-track');
+      if(row && !row.querySelector('.tk-live')){
+        var sp=document.createElement('span');
+        sp.className='tk-live '+liveClass(t);
+        sp.textContent=t.status+(t.date?(' · '+niceDate(t.date)):'');
+        row.appendChild(sp);
+      }
+    }
   }
   /* ── 색상 썸네일 ── */
   const colorCache={};
@@ -710,12 +798,23 @@
     wrap.innerHTML=html.join('');
   }
 
+  /* 펼치면서 그때 추적을 부른다 */
+  function orderToggle(head){
+    var card=head.parentElement;
+    card.classList.toggle('open');
+    if(!card.classList.contains('open')) return;
+    var o=orders.find(function(x){ return x.id===card.dataset.oid; });
+    if(o) paintTrack(card, o);
+  }
+  window.orderToggle=orderToggle;
+
   function render(list){
     ordersEl.innerHTML='';
     if(!list.length){ ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">No orders found.</div>'; return; }
     list.forEach(o=>{
       const div=document.createElement('div');
       div.className='order rise';
+      div.dataset.oid=o.id;
       const linesHtml=o.lines.map(l=>{
         const a=lineAmt(l);
         return `
@@ -730,7 +829,7 @@
       const amt=orderAmt(o);
       const st=shipToStr(o);
       div.innerHTML=`
-        <div class="o-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="o-head" onclick="orderToggle(this)">
           <div class="o-thumbs"></div>
           <div class="o-meta">
             <div class="o-line1"><span class="o-dot d-${o.status}"></span>${esc(headline(o))}${payPill(o)}</div>

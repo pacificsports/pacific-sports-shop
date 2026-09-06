@@ -163,6 +163,16 @@
   .re-foot{display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:10px;border-top:1px solid #ece9e1;flex-wrap:wrap}
   .re-sum{font-weight:700;font-size:13px;margin-right:auto}
   .re-loading{color:#8b8880;font-size:13px;padding:8px 0}
+  /* 재주문 안에서 다른 스타일 바로 얹기 (2026-09-06) — 예전엔 그 오더에 있던 것만 다시 살 수 있었다 */
+  .btn-ghost.sm,.btn-solid.sm{padding:8px 14px;font-size:13px;border-radius:9px}
+  .add-color{margin-top:6px}
+  .add-pop{display:none;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+  .add-pop.show{display:flex;animation:rise .3s both}
+  .add-pop input,.add-pop select{font-family:var(--body);font-size:14px;padding:9px 12px;border:1.5px solid var(--line-2);border-radius:9px;background:var(--paper);color:var(--ink)}
+  .add-pop input{width:230px}
+  .add-pop select{min-width:170px}
+  .add-pop input:focus,.add-pop select:focus{outline:none;border-color:var(--accent)}
+  .ap-note{font-size:12px;color:#a8463f}
 
   @media(max-width:880px){
     nav.main{display:none}
@@ -610,10 +620,80 @@ async function openReorder(o, btn){
   var rows=buildRows(o); var styles={}; rows.forEach(function(r){ styles[r.style]=1; });
   for(var st in styles){ await invFor(st); await sizesFor(st); }
   reorderState[o.id]=rows;
-  panel.innerHTML=renderReorderGrid(o.id, rows);
-  var addB=panel.querySelector('.re-add'); if(addB) addB.addEventListener('click', function(){ addReorderToCart(o.id); });
-  var canB=panel.querySelector('.re-cancel'); if(canB) canB.addEventListener('click', function(){ closeReorder(o.id); });
-  panel.addEventListener('input', function(e){ if(e.target&&e.target.matches&&e.target.matches('input[data-sz]')) reInput(e.target); });
+  panel.dataset.oid=o.id;
+  if(!panel.dataset.bound){
+    panel.dataset.bound='1';
+    /* 수량칸은 다시 그려도 살아 있게 패널에 한 번만 건다 */
+    panel.addEventListener('input', function(e){ if(e.target&&e.target.matches&&e.target.matches('input[data-sz]')) reInput(e.target); });
+  }
+  paintGrid(o.id, panel);
+  ensureStyleList();
+}
+/* 그리드를 다시 그리고 버튼을 다시 건다 — 스타일을 얹을 때마다 여길 지나간다 */
+function paintGrid(oid, panel){
+  panel.innerHTML=renderReorderGrid(oid, reorderState[oid]||[]);
+  var addB=panel.querySelector('.re-add'); if(addB) addB.onclick=function(){ addReorderToCart(oid); };
+  var canB=panel.querySelector('.re-cancel'); if(canB) canB.onclick=function(){ closeReorder(oid); };
+  var asB=panel.querySelector('.re-addstyle');
+  var pop=panel.querySelector('.add-pop');
+  if(asB&&pop){
+    asB.onclick=function(){
+      pop.classList.toggle('show');
+      if(pop.classList.contains('show')){ var i=pop.querySelector('.ap-style'); if(i) i.focus(); }
+    };
+  }
+  var si=panel.querySelector('.ap-style'), cs=panel.querySelector('.ap-color');
+  if(si&&cs){
+    si.onchange=function(){ apLoadColors(panel); };
+    si.onblur=function(){ apLoadColors(panel); };
+  }
+  var go=panel.querySelector('.ap-go'); if(go) go.onclick=function(){ apAdd(oid, panel); };
+}
+
+/* ── 스타일 목록 (datalist 한 번만) ── */
+var _apStyles=null;
+async function ensureStyleList(){
+  if(_apStyles) return _apStyles;
+  try{ _apStyles=await PacificData.getStyles(); }catch(e){ _apStyles=[]; }
+  var dl=document.getElementById('apStyles');
+  if(!dl){ dl=document.createElement('datalist'); dl.id='apStyles'; document.body.appendChild(dl); }
+  dl.innerHTML=_apStyles.map(function(s){ return '<option value="'+esc(s.no)+'">'+esc(s.desc||'')+'</option>'; }).join('');
+  return _apStyles;
+}
+function apStyleNo(txt){
+  txt=String(txt||'').trim(); if(!txt) return '';
+  var list=_apStyles||[];
+  var hit=list.find(function(s){ return String(s.no).toLowerCase()===txt.toLowerCase(); });
+  if(hit) return String(hit.no);
+  hit=list.find(function(s){ return String(s.desc||'').toLowerCase().includes(txt.toLowerCase()); });
+  return hit?String(hit.no):'';
+}
+async function apLoadColors(panel){
+  var si=panel.querySelector('.ap-style'), cs=panel.querySelector('.ap-color'); if(!si||!cs) return;
+  var no=apStyleNo(si.value);
+  if(!no){ cs.innerHTML='<option value="">Color…</option>'; return; }
+  cs.innerHTML='<option value="">Loading…</option>';
+  var cols=await colorsFor(no);
+  cs.innerHTML='<option value="">Color…</option>'+(cols||[]).map(function(c){ return '<option value="'+esc(c.name)+'">'+esc(c.name)+'</option>'; }).join('');
+}
+async function apAdd(oid, panel){
+  var si=panel.querySelector('.ap-style'), cs=panel.querySelector('.ap-color');
+  var no=apStyleNo(si?si.value:''), color=cs?cs.value:'';
+  if(!no){ showToast('Pick a style first.'); return; }
+  if(!color){ await apLoadColors(panel); showToast('Pick a color.'); return; }
+  var rows=reorderState[oid]||[];
+  if(rows.some(function(r){ return String(r.style)===no && String(r.color).toUpperCase()===color.toUpperCase(); })){
+    showToast(no+' '+color+' is already on this list.'); return;
+  }
+  var go=panel.querySelector('.ap-go'); if(go){ go.disabled=true; go.textContent='Adding…'; }
+  await invFor(no); await sizesFor(no);
+  var nm=''; try{ var hit=(_apStyles||[]).find(function(s){ return String(s.no)===no; }); nm=hit?(hit.desc||''):''; }catch(e){}
+  rows.push({style:no, styleName:nm, color:color, wh:'SC', sizes:{}});
+  rows.push({style:no, styleName:nm, color:color, wh:'CA', sizes:{}});
+  reorderState[oid]=rows;
+  paintGrid(oid, panel);
+  var pop=panel.querySelector('.add-pop'); if(pop) pop.classList.add('show');
+  showToast('✓ '+no+' '+color+' added — enter quantities');
 }
 function renderReorderGrid(oid, rows){
   var h='<div class="re-wrap"><div class="re-title">Adjust quantities &amp; reorder</div>';
@@ -629,7 +709,12 @@ function renderReorderGrid(oid, rows){
     h+='</div></div>';
   });
   if(lastKey!=='') h+='</div>';
-  h+='<div class="re-foot"><span class="re-sum" id="resum-'+esc(oid)+'">0 pcs</span><button class="btn-ghost re-cancel" type="button">Cancel</button><button class="btn-solid re-add" type="button">Add to cart</button></div></div>';
+  h+='<div class="add-color"><button class="btn-ghost sm re-addstyle" type="button">+ Add style</button>'
+    +'<div class="add-pop"><input class="ap-style" type="text" list="apStyles" placeholder="Style # or name" autocomplete="off">'
+    +'<select class="ap-color"><option value="">Color…</option></select>'
+    +'<button class="btn-solid sm ap-go" type="button">Add</button></div></div>';
+  var _sum=0; rows.forEach(function(r){ for(var k in r.sizes) _sum+=Number(r.sizes[k])||0; });
+  h+='<div class="re-foot"><span class="re-sum" id="resum-'+esc(oid)+'">'+_sum+' pcs</span><button class="btn-ghost re-cancel" type="button">Cancel</button><button class="btn-solid re-add" type="button">Add to cart</button></div></div>';
   return h;
 }
 function reInput(inp){ var ri=+inp.getAttribute('data-ri'), sz=inp.getAttribute('data-sz'), max=+inp.getAttribute('data-max'); var oid=findOid(inp); var q=parseInt(inp.value,10); if(isNaN(q)||q<0) q=0; if(max>0&&q>max){ q=max; inp.value=max; } var rows=reorderState[oid]; if(rows&&rows[ri]){ if(q>0) rows[ri].sizes[sz]=q; else delete rows[ri].sizes[sz]; } var sum=0; (reorderState[oid]||[]).forEach(function(r){ for(var k in r.sizes) sum+=Number(r.sizes[k])||0; }); var el=document.getElementById('resum-'+oid); if(el) el.textContent=sum+' pcs'; }

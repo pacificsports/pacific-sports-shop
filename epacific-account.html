@@ -332,10 +332,7 @@
 <div class="addr-modal-bg" id="addrModalBg">
   <div class="addr-modal">
     <h3 id="addrModalTitle">Add address</h3>
-    <div class="grid2">
-      <div class="field"><label>Label (e.g. Main store)</label><input type="text" id="maLabel"></div>
-      <div class="field"><label>Company</label><input type="text" id="maCompany"></div>
-    </div>
+    <div class="field full"><label>Company</label><input type="text" id="maCompany"></div>
     <div class="field full"><label>Full name</label><input type="text" id="maName"></div>
     <div class="field full"><label>Address line 1 *</label><input type="text" id="maAddr1"></div>
     <div class="field full"><label>Address line 2</label><input type="text" id="maAddr2" placeholder="Suite, unit, etc."></div>
@@ -412,12 +409,10 @@
   }
   function addrCardHtml(a){
     const kind=addrKind(a);
-    const tag=a.label?escA(a.label):(kind==='billing'?'Billing':'Ship to');
     const line=[a.addr1,a.addr2].filter(Boolean).map(escA).join('<br>');
     const def=(kind==='shipping'&&a.is_default);
     return '<div class="addr-card'+(def?' is-def':'')+'"><div class="a-body">'
-      +'<span class="a-tag '+(kind==='billing'?'tag-SC':'tag-CA')+'">'+tag+'</span>'
-      +(def?'<span class="a-def">✓ Default</span>':'')+'<br>'
+      +(def?'<span class="a-def">✓ Default</span><br>':'')
       +(a.company||a.name?('<b>'+escA(a.company||a.name)+'</b><br>'):'')
       +(line?(line+'<br>'):'')
       +escA(a.city)+', '+escA(a.state)+' '+escA(a.zip)+(a.phone?('<br>'+escA(a.phone)):'')
@@ -450,7 +445,7 @@
     const ss=document.getElementById('maState');
     ss.innerHTML='<option value="">—</option>'+US_STATES.map(x=>'<option>'+x+'</option>').join('');
     const set=(i,v)=>{ document.getElementById(i).value=(v||''); };
-    set('maLabel',a.label); set('maCompany',a.company); set('maName',a.name);
+    set('maCompany',a.company); set('maName',a.name);
     set('maAddr1',a.addr1); set('maAddr2',a.addr2); set('maCity',a.city);
     ss.value=a.state||''; set('maZip',a.zip); set('maPhone',a.phone);
     document.getElementById('maResidential').checked=!!a.residential;
@@ -488,7 +483,7 @@
     const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
     const isShip = acEditKind==='shipping';
     const wantDef = acNewCols && isShip && document.getElementById('maDefault').checked;
-    const body={ label:v('maLabel')||null, company:v('maCompany')||null, name:v('maName')||null,
+    const body={ company:v('maCompany')||null, name:v('maName')||null,
       addr1:v('maAddr1'), addr2:v('maAddr2')||null, city:v('maCity'), state:v('maState'),
       zip:v('maZip'), phone:v('maPhone')||null,
       residential:isShip && document.getElementById('maResidential').checked,

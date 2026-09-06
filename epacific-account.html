@@ -20,12 +20,7 @@
   .rise{animation:rise .6s cubic-bezier(.2,.7,.3,1) both}
 
   .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px}
-  .utility{border-bottom:1px solid var(--line);font-size:12.5px;color:var(--soft-ink)}
-  .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
-  .utility-in .left{display:flex;gap:20px}
-  .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
-  /* 창고 위치·전화번호는 푸터로 (2026-09-06). 예전엔 화면 맨 위 utility 바에 있었는데
-     주문할 때 아무 쓸모가 없으면서 붙어 있는 자리만 39px 먹었다. 이런 정보는 보통 아래에 둔다. */
+  /* 창고 위치·전화번호는 푸터로 (2026-09-06). */
   .f-loc{margin-top:14px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#8f8f85;line-height:1.6}
   .f-loc b{color:#c9c9be;font-weight:600}
   .f-loc a{color:#8f8f85}
@@ -36,7 +31,6 @@
   .logo{font-family:var(--display);font-size:28px;line-height:1;display:flex;align-items:baseline;gap:2px}
   .logo-img{height:40px;width:auto;display:block}
   .fb .logo .logo-img, .footer .logo-img, footer .logo-img{height:34px}
-
   .logo i{font-style:italic;color:var(--accent)}
   nav.main{display:flex;gap:2px;flex:1}
   .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:.2s}
@@ -51,13 +45,20 @@
 
   .page{max-width:1180px;margin:0 auto;padding:18px 30px 90px}
   .page h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5vw,58px);line-height:1;margin-bottom:6px}
-  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-bottom:34px}
+  .page .sub{color:var(--soft-ink);font-size:16px;font-weight:350;margin-bottom:30px}
 
-  .layout{max-width:760px}
-  .side{position:sticky;top:104px;display:flex;flex-direction:column;gap:4px}
-  .side a{padding:11px 16px;border-radius:10px;font-size:15px;color:var(--soft-ink);cursor:pointer;transition:.2s}
+  /* ===== 왼쪽 메뉴 + 오른쪽 내용 (2026-09-06) =====
+     예전엔 한 장짜리 긴 카드였고 오더는 딴 페이지였다. 거래처가 제일 자주 보는 건
+     내 정보가 아니라 자기 오더라서, Next Level 처럼 Orders 를 기본 화면으로 둔다. */
+  .layout{display:grid;grid-template-columns:196px minmax(0,1fr);gap:38px;align-items:start}
+  .side{position:sticky;top:104px;display:flex;flex-direction:column;gap:3px}
+  .side a{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:10px;font-size:15px;color:var(--soft-ink);cursor:pointer;transition:.16s}
   .side a:hover{background:var(--accent-soft);color:var(--ink)}
   .side a.active{background:var(--ink);color:var(--bg);font-weight:500}
+  .side .side-sep{height:1px;background:var(--line);margin:12px 4px}
+  .side .side-out{display:flex;align-items:center;gap:10px;padding:11px 15px;border:none;background:none;font-family:var(--body);font-size:15px;color:#9c4a4a;border-radius:10px;cursor:pointer;text-align:left;transition:.16s}
+  .side .side-out:hover{background:#fbf1f1}
+  .view[hidden]{display:none}
 
   .card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:30px;margin-bottom:22px}
   .card h2{font-family:var(--display);font-weight:400;font-size:25px;margin-bottom:14px}
@@ -70,14 +71,6 @@
   .field input,.field select{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);color:var(--ink);transition:border .2s}
   .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
   .field input:disabled{background:var(--bg);color:var(--faint)}
-  /* 오더 보기 · 로그아웃 (2026-09-06) — 예전엔 어디서도 로그아웃을 못 했다 */
-  .acct-links{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
-  .al{display:inline-flex;align-items:center;gap:7px;font-family:var(--body);font-size:14px;font-weight:500;
-      color:var(--ink);background:var(--paper);border:1px solid var(--line-2);border-radius:10px;
-      padding:9px 15px;cursor:pointer;text-decoration:none;transition:border-color .15s,background .15s}
-  .al:hover{border-color:var(--accent);background:var(--accent-soft)}
-  .al-out{color:#9c4a4a}
-  .al-out:hover{border-color:#c08a8a;background:#fbf1f1}
   .field .lock{font-size:12px;color:var(--faint);margin-top:5px}
   .save-row{display:flex;justify-content:flex-end;gap:12px;margin-top:8px}
   .btn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:11px;cursor:pointer;padding:13px 26px;transition:transform .2s,background .25s}
@@ -86,6 +79,8 @@
   .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 
   .verified{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);border:1px solid #cdddc9;border-radius:999px;padding:6px 14px;margin-bottom:20px}
+  /* Orders 화면 맨 위 계정 상태 줄 */
+  .acct-live{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:500;color:var(--accent);background:var(--accent-soft);border:1px solid #cdddc9;border-radius:12px;padding:12px 16px;margin-bottom:18px}
 
   .addr-card{border:1px solid var(--line-2);border-radius:13px;padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:14px}
   .addr-card .a-body{font-size:14px;line-height:1.6}
@@ -99,12 +94,6 @@
 
   footer{border-top:1px solid var(--line);padding:30px;text-align:center;font-size:12px;color:var(--faint);margin-top:40px}
 
-  @media(max-width:880px){
-    nav.main{display:none}
-    .layout{grid-template-columns:1fr}
-    .side{position:static;flex-direction:row;flex-wrap:wrap;margin-bottom:10px}
-    .grid2{grid-template-columns:1fr}
-  }
   .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
   .addr-modal-bg{display:none;position:fixed;inset:0;background:rgba(28,28,26,.5);z-index:400;align-items:center;justify-content:center;padding:20px}
   .addr-modal-bg.show{display:flex}
@@ -114,10 +103,79 @@
   .addr-modal .rescheck{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--soft-ink);margin-top:10px;cursor:pointer}
   .addr-modal-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
   .a-del{color:#a8463f;cursor:pointer;font-size:13px;margin-left:14px}
+
+  /* ===== 오더 카드 ===== */
+  .ord-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+  .ord-top h2{font-family:var(--display);font-weight:400;font-size:26px}
+  .search-orders input{font-family:var(--body);font-size:14px;padding:11px 15px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);width:260px}
+  .search-orders input:focus{outline:none;border-color:var(--accent)}
+
+  .order{background:var(--paper);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden;transition:box-shadow .2s,border-color .2s}
+  .order:hover{border-color:var(--line-2);box-shadow:0 16px 40px -30px rgba(28,28,26,.34)}
+  .o-head{display:flex;align-items:center;gap:20px;padding:18px 22px;cursor:pointer}
+  .o-thumbs{display:flex;gap:6px;flex-shrink:0}
+  .o-th{width:52px;height:52px;border-radius:10px;background:#f4f3f0;border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center}
+  .o-th img{width:100%;height:100%;object-fit:contain;display:block}
+  .o-th svg{width:100%;height:100%;display:block}
+  .o-th.more{font-size:12px;font-weight:600;color:var(--faint);background:var(--bg)}
+  .o-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .o-line1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .o-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .d-shipped{background:var(--accent)}.d-processing{background:#c79a3a}.d-transit{background:#2f5b7a}.d-rejected{background:#a8463f}
+  .o-line2{font-size:13.5px;color:var(--soft-ink)}
+  .o-line2 b{font-weight:600;color:var(--ink)}
+  .o-line3{font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .o-right{display:flex;align-items:center;gap:14px;flex-shrink:0}
+  .o-arrow{color:var(--faint);transition:transform .25s;font-size:13px}
+  .order.open .o-arrow{transform:rotate(180deg)}
+
+  .o-body{display:none;border-top:1px solid var(--line);padding:8px 22px 20px}
+  .order.open .o-body{display:block;animation:rise .4s both}
+  .line{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .line:last-of-type{border-bottom:none}
+  .line .dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+  .line .lc{font-weight:500;font-size:14px;min-width:84px}
+  .line .wh{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .wh-SC{background:#e7eef3;color:#2f5b7a}.wh-CA{background:#f1ece0;color:#8a6a3a}
+  .line .sizes{flex:1;font-size:13px;color:var(--soft-ink);display:flex;flex-wrap:wrap;gap:3px 11px}
+  .line .sizes b{color:var(--ink);font-weight:600}
+  .line .lqty{font-family:var(--display);font-size:18px;min-width:48px;text-align:right}
+  .line .lamt{font-size:14px;font-weight:600;min-width:84px;text-align:right}
+  .o-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px}
+  .btn-solid{background:var(--ink);color:var(--bg);border:none;font-family:var(--body);font-size:14px;font-weight:500;padding:11px 22px;border-radius:10px;cursor:pointer;transition:transform .2s,background .25s}
+  .btn-solid:hover{transform:translateY(-2px);background:var(--accent)}
+  .o-actions .btn-ghost{font-size:14px;padding:11px 20px;border-radius:10px}
+
+  .reorder-panel{margin-top:10px}
+  .re-wrap{background:#faf9f6;border:1px solid #e7e4dc;border-radius:12px;padding:14px 16px}
+  .re-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#8b8880;margin-bottom:10px}
+  .re-group{margin-bottom:12px}
+  .re-glabel{font-size:13px;margin-bottom:6px;color:#3a3833}
+  .re-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px}
+  .re-wh{width:34px;font-size:11px;font-weight:700;color:#3d5a40;padding-top:18px}
+  .re-cells{display:flex;flex-wrap:wrap;gap:6px}
+  .re-cell{width:54px;text-align:center}
+  .re-sz{font-size:10.5px;color:#8b8880;font-weight:700;margin-bottom:2px}
+  .re-cell input{width:100%;text-align:center;border:1px solid #d6d2c6;border-radius:7px;padding:5px 2px;font-size:13px;font-family:var(--body)}
+  .re-cell.re-out input{background:#f1efe9;color:#bbb}
+  .re-stk{font-size:9.5px;color:#8b8880;margin-top:2px}
+  .re-cell.re-out .re-stk{color:#a8463f}
+  .re-foot{display:flex;align-items:center;gap:10px;margin-top:8px;padding-top:10px;border-top:1px solid #ece9e1;flex-wrap:wrap}
+  .re-sum{font-weight:700;font-size:13px;margin-right:auto}
+  .re-loading{color:#8b8880;font-size:13px;padding:8px 0}
+
+  @media(max-width:880px){
+    nav.main{display:none}
+    .layout{grid-template-columns:1fr;gap:18px}
+    .side{position:static;flex-direction:row;flex-wrap:wrap;gap:6px}
+    .side .side-sep{display:none}
+    .grid2{grid-template-columns:1fr}
+    .o-head{flex-wrap:wrap;gap:12px}
+    .o-thumbs .o-th:nth-child(n+4){display:none}
+  }
 </style>
 </head>
 <body>
-
 
 <header>
   <div class="header-in">
@@ -141,53 +199,69 @@
       <button id="hdAcct" style="display:none" onclick="location.href='epacific-account.html'">My Account</button>
       <button id="hdLogin" style="display:none" onclick="location.href='epacific-login.html'">Log in</button>
       <button id="hdOut" style="display:none" onclick="pacLogout()" title="Log out">Log out</button>
-      <button class="primary">Cart</button>
+      <button class="primary" onclick="location.href='epacific-cart.html'">Cart</button>
     </div>
   </div>
 </header>
 
-
-
-<div class="crumb"><a href="#">Home</a><span>/</span>My Account</div>
+<div class="crumb"><a href="epacific-timeless.html">Home</a><span>/</span>My Account</div>
 
 <div class="page">
   <h1 class="rise">My Account</h1>
-  <div class="sub rise">Manage your business details, addresses, and login.</div>
-  <div class="acct-links rise"><a class="al" href="epacific-orders.html">📋 Order history</a><a class="al" href="epacific-cart.html">🛒 Cart</a><button class="al al-out" type="button" onclick="acLogout()">Log out</button></div>
+  <div class="sub rise" id="acSub">Your orders, business details, and login.</div>
 
   <div class="layout">
-    <div class="card rise">
-      <span class="verified">✓ Verified wholesale account</span>
+    <aside class="side rise">
+      <a data-view="orders" class="active" id="navOrders">📋 Orders</a>
+      <a data-view="profile" id="navProfile">👤 Profile</a>
+      <a href="epacific-cart.html">🛒 Cart</a>
+      <div class="side-sep"></div>
+      <button class="side-out" type="button" onclick="acLogout()">Sign out</button>
+    </aside>
 
-      <!-- BUSINESS -->
-      <h2>Business information</h2>
-      <div class="grid2">
-        <div class="field"><label>Business name</label><input type="text" id="acBiz" value=""></div>
-        <div class="field" id="acAcctWrap" style="display:none"><label>Account #</label><input type="text" id="acAcct" value="" disabled><div class="lock">Assigned by Pacific Sports</div></div>
-        <div class="field"><label>Contact name</label><input type="text" id="acContact" value=""></div>
-        <div class="field"><label>Phone</label><input type="tel" id="acPhone" value=""></div>
-        <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" id="acResale" value="" disabled><div class="lock">Contact us to update your resale certificate</div></div>
-      </div>
+    <div>
+      <!-- ══ ORDERS (기본 화면) ══ -->
+      <section class="view" id="viewOrders">
+        <div class="acct-live" id="acctLive">✓ Account is active.</div>
+        <div class="ord-top">
+          <h2>Orders</h2>
+          <div class="search-orders"><input type="text" id="orderSearch" placeholder="🔍  Search by order # or style…"></div>
+        </div>
+        <div id="orders"></div>
+      </section>
 
-      <!-- ADDRESSES -->
-      <div class="sec-divider"></div>
-      <h2>Addresses</h2>
-      <div class="cdesc">Where your orders ship. Orders default to your nearest warehouse.</div>
-      <div id="acAddrList"></div>
-      <div style="margin-top:6px"><button class="btn-ghost" onclick="addrEdit(null)">+ Add address</button></div>
+      <!-- ══ PROFILE ══ -->
+      <section class="view" id="viewProfile" hidden>
+        <div class="card">
+          <span class="verified">✓ Verified wholesale account</span>
 
-      <!-- LOGIN -->
-      <div class="sec-divider"></div>
-      <h2>Login &amp; password</h2>
-      <div class="grid2">
-        <div class="field full"><label>Email</label><input type="email" id="acEmail" value="" disabled><div class="lock">Contact us to change your login email</div></div>
-        <div class="field"><label>New password</label><input type="password" id="acPw1" placeholder="••••••••"></div>
-        <div class="field"><label>Confirm new password</label><input type="password" id="acPw2" placeholder="••••••••"></div>
-      </div>
+          <h2>Business information</h2>
+          <div class="grid2">
+            <div class="field"><label>Business name</label><input type="text" id="acBiz" value=""></div>
+            <div class="field" id="acAcctWrap" style="display:none"><label>Account #</label><input type="text" id="acAcct" value="" disabled><div class="lock">Assigned by Pacific Sports</div></div>
+            <div class="field"><label>Contact name</label><input type="text" id="acContact" value=""></div>
+            <div class="field"><label>Phone</label><input type="tel" id="acPhone" value=""></div>
+            <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" id="acResale" value="" disabled><div class="lock">Contact us to update your resale certificate</div></div>
+          </div>
 
-      <!-- ONE SAVE BAR -->
-      <div class="sec-divider"></div>
-      <div class="save-row"><button class="btn-ghost">Cancel</button><button class="btn" onclick="save()">Save all changes</button></div>
+          <div class="sec-divider"></div>
+          <h2>Addresses</h2>
+          <div class="cdesc">Where your orders ship. Orders default to your nearest warehouse.</div>
+          <div id="acAddrList"></div>
+          <div style="margin-top:6px"><button class="btn-ghost" onclick="addrEdit(null)">+ Add address</button></div>
+
+          <div class="sec-divider"></div>
+          <h2>Login &amp; password</h2>
+          <div class="grid2">
+            <div class="field full"><label>Email</label><input type="email" id="acEmail" value="" disabled><div class="lock">Contact us to change your login email</div></div>
+            <div class="field"><label>New password</label><input type="password" id="acPw1" placeholder="••••••••"></div>
+            <div class="field"><label>Confirm new password</label><input type="password" id="acPw2" placeholder="••••••••"></div>
+          </div>
+
+          <div class="sec-divider"></div>
+          <div class="save-row"><button class="btn-ghost" onclick="acLoad()">Cancel</button><button class="btn" onclick="save()">Save all changes</button></div>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -226,13 +300,35 @@
 <script src="pacific-config.js"></script>
 <script src="pacific-data.js"></script>
 <script>
+  const _C = window.PACIFIC_CONFIG || {};
+  function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
   let tT;
   function toast(msg){
     const t=document.getElementById('toast');
     if(msg) t.textContent=msg;
     t.classList.add('show'); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove('show'),2200);
   }
-  // ── 주소록 (customer_addresses) ──
+  const showToast=toast;
+
+  /* ══════════ 왼쪽 메뉴 전환 ══════════ */
+  function setView(v){
+    if(v!=='profile') v='orders';
+    document.getElementById('viewOrders').hidden = (v!=='orders');
+    document.getElementById('viewProfile').hidden = (v!=='profile');
+    document.querySelectorAll('.side a[data-view]').forEach(a=>a.classList.toggle('active', a.dataset.view===v));
+    document.getElementById('acSub').textContent = v==='profile'
+      ? 'Your business details, addresses, and login.'
+      : 'Your web orders — status, amounts, and one-click reorder.';
+    if(location.hash.replace('#','')!==v){ history.replaceState(null,'','#'+v); }
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  document.addEventListener('click',e=>{
+    const a=e.target.closest('.side a[data-view]'); if(!a) return;
+    e.preventDefault(); setView(a.dataset.view);
+  });
+  window.addEventListener('hashchange',()=>setView(location.hash.replace('#','')));
+
+  /* ══════════ 주소록 (customer_addresses) ══════════ */
   const US_STATES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split(' ');
   let acAddrs=[], acEditId=null;
   function escA(x){ return String(x==null?'':x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
@@ -294,7 +390,7 @@
           {method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(body)});
       }
       if(!r.ok){ toast('Could not save ('+r.status+').'); return; }
-      addrClose(); toast('\u2713 Address saved'); loadAddresses();
+      addrClose(); toast('✓ Address saved'); loadAddresses();
     }catch(e){ toast('Could not save address.'); }
   }
   async function addrDel(id){
@@ -305,14 +401,11 @@
     if(r.ok){ toast('Address deleted'); loadAddresses(); } else toast('Could not delete.');
   }
 
-  const _C = window.PACIFIC_CONFIG || {};
-  function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
-
+  /* ══════════ 프로필 ══════════ */
   async function acLoad(){
     const s=_sess();
     if(!s || !s.token){ location.href='epacific-login.html?next='+encodeURIComponent('epacific-account.html'); return; }
     const em=document.getElementById('acEmail'); if(em) em.value=s.email||'';
-    // 거래처 신청 정보로 회사/담당자/전화 채우기
     try{
       const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId+'&select=company_name,contact_name,phone,resale_tax_id',
         {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
@@ -321,9 +414,10 @@
         const ct=document.getElementById('acContact'); if(ct) ct.value=c.contact_name||'';
         const ph=document.getElementById('acPhone'); if(ph) ph.value=c.phone||'';
         const rs=document.getElementById('acResale'); if(rs) rs.value=c.resale_tax_id||'';
+        const lv=document.getElementById('acctLive');
+        if(lv && c.company_name) lv.innerHTML='✓ Account is active — <b style="font-weight:600;margin-left:4px">'+escA(c.company_name)+'</b>';
       }}
     }catch(e){}
-    // IMS 거래처 번호 (연결돼 있을 때만)
     try{
       const cust=(()=>{try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;}})()||{};
       if(cust.customer_id){
@@ -341,7 +435,6 @@
     const s=_sess(); if(!s||!s.token){ location.href='epacific-login.html'; return; }
     const pw1=(document.getElementById('acPw1')||{}).value||'';
     const pw2=(document.getElementById('acPw2')||{}).value||'';
-    // 1) 비밀번호 변경 (입력했을 때만)
     if(pw1 || pw2){
       if(pw1.length<6){ toast('Password must be at least 6 characters.'); return; }
       if(pw1!==pw2){ toast('Passwords do not match.'); return; }
@@ -353,7 +446,6 @@
         document.getElementById('acPw1').value=''; document.getElementById('acPw2').value='';
       }catch(e){ toast('Could not change password.'); return; }
     }
-    // 2) 회사·담당자·전화 저장
     const biz=(document.getElementById('acBiz')||{}).value||'';
     const ctc=(document.getElementById('acContact')||{}).value||'';
     const phn=(document.getElementById('acPhone')||{}).value||'';
@@ -363,26 +455,228 @@
          headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'},
          body:JSON.stringify({company_name:biz,contact_name:ctc,phone:phn})});
       if(!r.ok){
-        /* 정책상 본인 줄 수정이 막혀 있으면 여기로 온다 — 조용히 실패하면 고쳤다고 착각한다 */
         toast('Saved your password/addresses, but business details could not be updated. Please contact us.');
         return;
       }
     }catch(e){ toast('Could not save business details.'); return; }
-    toast('\u2713 Saved');
+    toast('✓ Saved');
   }
 
-  /* 로그아웃 — 세션을 지우고 첫 화면으로 */
   function acLogout(){
     try{ localStorage.removeItem('pacific_user'); localStorage.removeItem('pacific_customer'); }catch(e){}
     location.href='epacific-timeless.html';
   }
   window.acLogout=acLogout;
-  document.addEventListener('DOMContentLoaded',acLoad);
 </script>
 
+<script>
+/* ══════════════ 오더 목록 (예전 epacific-orders.html 내용을 여기로 합쳤다) ══════════════ */
+  const sizeOrder=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+  const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  function session(){ return _sess(); }
+  async function refreshTok(s){ try{ const rr=await fetch(_C.SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})}); if(!rr.ok) return null; const j=await rr.json(); s.token=j.access_token; s.refresh=j.refresh_token; s.expires_at=j.expires_at; localStorage.setItem('pacific_user',JSON.stringify(s)); return s; }catch(e){ return null; } }
+  const ordersEl=document.getElementById('orders');
+  let orders=[];
+  const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], shipped:['shipped','Shipped'], rejected:['rejected','Rejected'] };
 
+  function groupLines(items){
+    const map={}, out=[];
+    (items||[]).forEach(i=>{
+      const k=i.style+'|'+i.color+'|'+i.wh;
+      if(!map[k]){ map[k]={style:i.style,styleName:i.styleName||'',color:i.color,wh:i.wh||'SC',sizes:{},prices:{}}; out.push(map[k]); }
+      map[k].sizes[i.size]=(map[k].sizes[i.size]||0)+(i.qty||0);
+      if(i.unit_price!=null) map[k].prices[i.size]=Number(i.unit_price);
+    });
+    return out;
+  }
+  const lineQty=l=>Object.values(l.sizes).reduce((a,b)=>a+b,0);
+  function lineAmt(l){
+    let t=0;
+    for(const z in l.sizes){ if(l.prices[z]==null) return null; t+=l.sizes[z]*l.prices[z]; }
+    return t;
+  }
+  function orderAmt(o){
+    if(o.total_amount!=null) return Number(o.total_amount);
+    let t=0; for(const l of o.lines){ const a=lineAmt(l); if(a==null) return null; t+=a; }
+    return t;
+  }
+  const sizesStr=l=>sizeOrder.filter(z=>l.sizes[z]).map(z=>`${z} <b>${l.sizes[z]}</b>`).join('  ');
+  function shipToStr(o){
+    const st=o.ship_to||{};
+    const who=st.company||st.name||'';
+    const where=[st.city,st.state].filter(Boolean).join(', ');
+    return [who,where].filter(Boolean).join(' · ');
+  }
+  function niceDate(d){
+    if(!d) return '';
+    try{ return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return d; }
+  }
+  /* 상태를 한 줄 제목으로 — Next Level 처럼 "지금 어디까지 왔나"가 먼저 보이게 */
+  function headline(o){
+    if(o.status==='shipped')   return 'Shipped '+niceDate(o.date);
+    if(o.status==='rejected')  return 'Cancelled';
+    if(o.statusLabel==='Accepted') return 'Accepted — preparing to ship';
+    return 'Processing';
+  }
 
+  /* ── 색상 썸네일 ── */
+  const colorCache={};
+  async function colorsFor(style){
+    if(colorCache[style]!==undefined) return colorCache[style];
+    try{ const p=await PacificData.getProduct(style); colorCache[style]=(p&&p.colors)||[]; }
+    catch(e){ colorCache[style]=[]; }
+    return colorCache[style];
+  }
+  function teeThumb(hex){
+    return '<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M13 8 L8 12 L11 16 L13 14 L13 33 L27 33 L27 14 L29 16 L32 12 L27 8 L24 8 A4 4 0 0 1 16 8 Z" fill="'+(hex||'#d6d2c6')+'" stroke="rgba(0,0,0,.16)" stroke-width="0.8"/></svg>';
+  }
+  async function paintThumbs(o, host){
+    const wrap=host.querySelector('.o-thumbs'); if(!wrap) return;
+    const keys=[]; const seen={};
+    o.lines.forEach(l=>{ const k=l.style+'|'+l.color; if(!seen[k]){ seen[k]=1; keys.push({style:l.style,color:l.color}); } });
+    const show=keys.slice(0,4), extra=keys.length-show.length;
+    const html=[];
+    for(const k of show){
+      const cols=await colorsFor(k.style);
+      const c=(cols||[]).find(x=>String(x.name).toUpperCase()===String(k.color).toUpperCase());
+      html.push('<div class="o-th">'+(c&&c.img?('<img src="'+esc(c.img)+'" alt="'+esc(k.color)+'" loading="lazy">'):teeThumb(c&&c.hex))+'</div>');
+    }
+    if(extra>0) html.push('<div class="o-th more">+'+extra+'</div>');
+    wrap.innerHTML=html.join('');
+  }
 
+  function render(list){
+    ordersEl.innerHTML='';
+    if(!list.length){ ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">No orders found.</div>'; return; }
+    list.forEach(o=>{
+      const div=document.createElement('div');
+      div.className='order rise';
+      const linesHtml=o.lines.map(l=>{
+        const a=lineAmt(l);
+        return `
+        <div class="line">
+          <span class="dot" style="background:#d6d2c6"></span>
+          <span class="lc">#${esc(l.style)} ${esc(l.color)}</span>
+          <span class="wh wh-${esc(l.wh)}">${esc(l.wh)}</span>
+          <span class="sizes">${sizesStr(l)}</span>
+          <span class="lqty">${lineQty(l)}</span>
+          <span class="lamt">${a!=null?money(a):'—'}</span>
+        </div>`;}).join('');
+      const amt=orderAmt(o);
+      const st=shipToStr(o);
+      div.innerHTML=`
+        <div class="o-head" onclick="this.parentElement.classList.toggle('open')">
+          <div class="o-thumbs"></div>
+          <div class="o-meta">
+            <div class="o-line1"><span class="o-dot d-${o.status}"></span>${esc(headline(o))}</div>
+            <div class="o-line2"><b>${esc(o.id)}</b> · ${amt!=null?money(amt):'—'} · ${o.total_pcs||0} pcs</div>
+            <div class="o-line3">${st?esc(st):esc(niceDate(o.date))}</div>
+          </div>
+          <div class="o-right"><span class="o-arrow">▾</span></div>
+        </div>
+        <div class="o-body">
+          <div class="o-view">
+            ${linesHtml}
+            ${o.notes?`<div style="font-size:13px;color:var(--soft-ink);padding:8px 0">📝 ${esc(o.notes)}</div>`:''}
+            <div class="o-actions">
+              <button class="btn-ghost" onclick="location.href='epacific-invoice.html?order=${encodeURIComponent(o.id)}'">View invoice</button>
+              <button class="btn-solid" data-reorder="${esc(o.id)}">↻ Reorder</button>
+            </div>
+          </div>
+        </div>`;
+      ordersEl.appendChild(div);
+      paintThumbs(o, div);
+    });
+    ordersEl.querySelectorAll('button[data-reorder]').forEach(b=>b.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      const o=orders.find(x=>x.id===b.dataset.reorder); if(!o) return;
+      if(window.PacificCart) openReorder(o, b);
+    }));
+  }
+
+  var reorderState={}, invCache={}, sizesCache={};
+function fmtStock(n){ if(!n||n<=0) return '0'; var B=[25000,20000,15000,12500,10000,7500,5000,2500,2000,1500,1000,500,200]; for(var i=0;i<B.length;i++){ if(n>=B[i]) return B[i].toLocaleString()+'+'; } return String(n); }
+async function invFor(style){ if(invCache[style]!==undefined) return invCache[style]; try{ invCache[style]=await PacificData.getInventory(style); }catch(e){ invCache[style]=null; } return invCache[style]; }
+async function sizesFor(style){ if(sizesCache[style]!==undefined) return sizesCache[style]; try{ var p=await PacificData.getProduct(style); sizesCache[style]=(p&&p.sizes&&p.sizes.length)?p.sizes:['S','M','L','XL']; }catch(e){ sizesCache[style]=['S','M','L','XL']; } return sizesCache[style]; }
+function stockAt(inv,color,wh,size){ if(!inv||!inv[color]||!inv[color][wh]) return 0; var idx=sizeOrder.indexOf(size); if(idx<0) return 0; return Number(inv[color][wh][idx])||0; }
+function buildRows(o){ var map={}; (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var k=it.style+'|'+it.color; if(!map[k]) map[k]={style:it.style, styleName:it.styleName||'', color:it.color, whs:{SC:{},CA:{}}}; var wh=(it.wh==='CA')?'CA':'SC'; map[k].whs[wh][it.size]=(map[k].whs[wh][it.size]||0)+(Number(it.qty)||0); }); var rows=[]; Object.keys(map).forEach(function(k){ var g=map[k]; ['SC','CA'].forEach(function(wh){ rows.push({style:g.style, styleName:g.styleName, color:g.color, wh:wh, sizes:Object.assign({}, g.whs[wh])}); }); }); return rows; }
+async function openReorder(o, btn){
+  var card=(btn&&btn.closest)?(btn.closest('.order')||btn.parentElement):document.body;
+  var panel=card.querySelector('.reorder-panel');
+  if(!panel){ panel=document.createElement('div'); panel.className='reorder-panel'; panel.style.display='none'; card.appendChild(panel); }
+  if(panel.style.display!=='none'){ panel.style.display='none'; panel.innerHTML=''; return; }
+  panel.style.display='block'; panel.innerHTML='<div class="re-loading">Loading availability...</div>';
+  var rows=buildRows(o); var styles={}; rows.forEach(function(r){ styles[r.style]=1; });
+  for(var st in styles){ await invFor(st); await sizesFor(st); }
+  reorderState[o.id]=rows;
+  panel.innerHTML=renderReorderGrid(o.id, rows);
+  var addB=panel.querySelector('.re-add'); if(addB) addB.addEventListener('click', function(){ addReorderToCart(o.id); });
+  var canB=panel.querySelector('.re-cancel'); if(canB) canB.addEventListener('click', function(){ closeReorder(o.id); });
+  panel.addEventListener('input', function(e){ if(e.target&&e.target.matches&&e.target.matches('input[data-sz]')) reInput(e.target); });
+}
+function renderReorderGrid(oid, rows){
+  var h='<div class="re-wrap"><div class="re-title">Adjust quantities &amp; reorder</div>';
+  var lastKey='';
+  rows.forEach(function(r,ri){
+    var inv=invCache[r.style]; var sizes=sizesCache[r.style]||[];
+    var key=r.style+'|'+r.color;
+    if(key!==lastKey){ if(lastKey!=='') h+='</div>'; h+='<div class="re-group"><div class="re-glabel"><b>'+esc(r.style)+'</b> '+esc(r.styleName||'')+' &middot; '+esc(r.color)+'</div>'; lastKey=key; }
+    h+='<div class="re-row"><div class="re-wh">'+esc(r.wh)+'</div><div class="re-cells">';
+    sizes.forEach(function(s){ var stock=stockAt(inv,r.color,r.wh,s); var out=stock<=0; var val=r.sizes[s]||'';
+      h+='<div class="re-cell'+(out?' re-out':'')+'"><div class="re-sz">'+esc(s)+'</div><input type="number" min="0" inputmode="numeric" placeholder="0" value="'+val+'" '+(out?'disabled':'')+' data-ri="'+ri+'" data-sz="'+esc(s)+'" data-max="'+stock+'"><div class="re-stk">'+(out?'out':fmtStock(stock))+'</div></div>';
+    });
+    h+='</div></div>';
+  });
+  if(lastKey!=='') h+='</div>';
+  h+='<div class="re-foot"><span class="re-sum" id="resum-'+esc(oid)+'">0 pcs</span><button class="btn-ghost re-cancel" type="button">Cancel</button><button class="btn-solid re-add" type="button">Add to cart</button></div></div>';
+  return h;
+}
+function reInput(inp){ var ri=+inp.getAttribute('data-ri'), sz=inp.getAttribute('data-sz'), max=+inp.getAttribute('data-max'); var oid=findOid(inp); var q=parseInt(inp.value,10); if(isNaN(q)||q<0) q=0; if(max>0&&q>max){ q=max; inp.value=max; } var rows=reorderState[oid]; if(rows&&rows[ri]){ if(q>0) rows[ri].sizes[sz]=q; else delete rows[ri].sizes[sz]; } var sum=0; (reorderState[oid]||[]).forEach(function(r){ for(var k in r.sizes) sum+=Number(r.sizes[k])||0; }); var el=document.getElementById('resum-'+oid); if(el) el.textContent=sum+' pcs'; }
+function findOid(el){ var p=el.closest('.reorder-panel'); if(!p) return null; var s=p.querySelector('.re-sum'); return s? s.id.replace('resum-','') : null; }
+function addReorderToCart(oid){ var rows=reorderState[oid]||[]; var items=[]; rows.forEach(function(r){ for(var sz in r.sizes){ var q=Number(r.sizes[sz])||0; if(q>0) items.push({style:r.style, styleName:r.styleName||'', color:r.color, wh:r.wh, size:sz, qty:q}); } }); if(!items.length){ showToast('Enter at least one quantity'); return; } if(window.PacificCart) window.PacificCart.add(items); var pcs=items.reduce(function(a,i){return a+i.qty;},0); showToast('✓ '+pcs+' pcs added to cart'); closeReorder(oid); }
+function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var panel=s?s.closest('.reorder-panel'):null; if(panel){ panel.style.display='none'; panel.innerHTML=''; } }
+
+  async function loadOrders(){
+    const s=session();
+    if(!s||!s.token){
+      ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">🔒 <a href="epacific-login.html?next='+encodeURIComponent('epacific-account.html')+'" style="color:var(--accent)">Log in</a> to see your orders.</div>';
+      return;
+    }
+    ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Loading…</div>';
+    const url=_C.SUPABASE_URL+'/rest/v1/web_orders?select=*&order=created_at.desc&limit=200';
+    try{
+      let r=await fetch(url,{headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      if(r.status===401 && s.refresh){ const ns=await refreshTok(s); if(ns){ r=await fetch(url,{headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+ns.token}}); } }
+      if(!r.ok) throw new Error(r.status);
+      const rows=await r.json();
+      orders=rows.map(rw=>{
+        const sm=STATUS_MAP[rw.status]||['processing',rw.status||''];
+        const items=Array.isArray(rw.items)?rw.items:[];
+        return { id:rw.order_number, date:(rw.created_at||'').slice(0,10), status:sm[0], statusLabel:sm[1],
+                 total_pcs:rw.total_pcs, total_amount:rw.total_amount, notes:rw.notes, ship_to:rw.ship_to,
+                 items, lines:groupLines(items) };
+      });
+      render(orders);
+    }catch(e){
+      ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Could not load orders. Please try again shortly.</div>';
+    }
+  }
+
+  document.getElementById('orderSearch').addEventListener('input',e=>{
+    const q=e.target.value.trim().toLowerCase();
+    render(orders.filter(o=>
+      String(o.id).toLowerCase().includes(q) ||
+      o.lines.some(l=>String(l.style).includes(q)||String(l.color).toLowerCase().includes(q))
+    ));
+  });
+
+  document.addEventListener('DOMContentLoaded',function(){
+    setView(location.hash.replace('#','')||'orders');
+    acLoad();
+    loadOrders();
+  });
+</script>
 
 <script>
 (function(){
@@ -425,11 +719,10 @@
     btn.addEventListener('click',openSearch);
     document.getElementById('searchClose').addEventListener('click',closeSearch);
     inp.addEventListener('input',()=>render(inp.value));
-    // Enter → 정확히 일치하는 스타일, 없으면 맨 위 결과로 바로 이동
     inp.addEventListener('keydown',e=>{
       if(e.key!=='Enter') return;
       const q=inp.value.trim().toLowerCase(); if(!q) return;
-      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);  // 번호 정확 일치
+      let target=allStyles.find(s=>String(s.no).toLowerCase()===q);
       if(!target){
         const list=allStyles.filter(s=>
           String(s.no).toLowerCase().includes(q) ||
@@ -440,7 +733,6 @@
       if(target) location.href='epacific-product.html?style='+encodeURIComponent(target.no);
     });
     document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSearch(); });
-    // 바깥 클릭하면 결과만 닫기
     document.addEventListener('click',e=>{ if(box.style.display!=='none' && !box.contains(e.target) && e.target!==btn){ res.style.display='none'; } });
   })();
   }
@@ -449,10 +741,9 @@
 })();
 </script>
 <script src="pacific-nav.js"></script>
-<!-- v2026-06-08 account-live4-cfgorder -->
+<!-- v2026-09-06 account-orders-first -->
 <script>
-/* 상단바 계정 버튼 — 예전 utility 바에 있던 My Account / Login 을 여기로 옮겼다 (2026-09-06).
-   로그인 상태면 My Account, 아니면 Log in 하나만 보인다. */
+/* 상단바 계정 버튼 */
 (function(){
   var on=false;
   try{ var s=JSON.parse(localStorage.getItem("pacific_user")||"null"); on=!!(s&&s.token); }catch(e){}

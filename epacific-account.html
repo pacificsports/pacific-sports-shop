@@ -70,6 +70,14 @@
   .field input,.field select{width:100%;font-family:var(--body);font-size:15px;padding:12px 14px;border:1.5px solid var(--line-2);border-radius:10px;background:var(--paper);color:var(--ink);transition:border .2s}
   .field input:focus,.field select:focus{outline:none;border-color:var(--accent)}
   .field input:disabled{background:var(--bg);color:var(--faint)}
+  /* 오더 보기 · 로그아웃 (2026-09-06) — 예전엔 어디서도 로그아웃을 못 했다 */
+  .acct-links{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+  .al{display:inline-flex;align-items:center;gap:7px;font-family:var(--body);font-size:14px;font-weight:500;
+      color:var(--ink);background:var(--paper);border:1px solid var(--line-2);border-radius:10px;
+      padding:9px 15px;cursor:pointer;text-decoration:none;transition:border-color .15s,background .15s}
+  .al:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .al-out{color:#9c4a4a}
+  .al-out:hover{border-color:#c08a8a;background:#fbf1f1}
   .field .lock{font-size:12px;color:var(--faint);margin-top:5px}
   .save-row{display:flex;justify-content:flex-end;gap:12px;margin-top:8px}
   .btn{background:var(--ink);color:var(--bg);font-family:var(--body);font-weight:500;font-size:15px;border:none;border-radius:11px;cursor:pointer;padding:13px 26px;transition:transform .2s,background .25s}
@@ -132,6 +140,7 @@
       </div>
       <button id="hdAcct" style="display:none" onclick="location.href='epacific-account.html'">My Account</button>
       <button id="hdLogin" style="display:none" onclick="location.href='epacific-login.html'">Log in</button>
+      <button id="hdOut" style="display:none" onclick="pacLogout()" title="Log out">Log out</button>
       <button class="primary">Cart</button>
     </div>
   </div>
@@ -144,6 +153,7 @@
 <div class="page">
   <h1 class="rise">My Account</h1>
   <div class="sub rise">Manage your business details, addresses, and login.</div>
+  <div class="acct-links rise"><a class="al" href="epacific-orders.html">📋 Order history</a><a class="al" href="epacific-cart.html">🛒 Cart</a><button class="al al-out" type="button" onclick="acLogout()">Log out</button></div>
 
   <div class="layout">
     <div class="card rise">
@@ -152,10 +162,10 @@
       <!-- BUSINESS -->
       <h2>Business information</h2>
       <div class="grid2">
-        <div class="field"><label>Business name</label><input type="text" id="acBiz" value="" disabled></div>
+        <div class="field"><label>Business name</label><input type="text" id="acBiz" value=""></div>
         <div class="field" id="acAcctWrap" style="display:none"><label>Account #</label><input type="text" id="acAcct" value="" disabled><div class="lock">Assigned by Pacific Sports</div></div>
-        <div class="field"><label>Contact name</label><input type="text" id="acContact" value="" disabled></div>
-        <div class="field"><label>Phone</label><input type="tel" id="acPhone" value="" disabled></div>
+        <div class="field"><label>Contact name</label><input type="text" id="acContact" value=""></div>
+        <div class="field"><label>Phone</label><input type="tel" id="acPhone" value=""></div>
         <div class="field full"><label>Resale certificate / Tax ID</label><input type="text" id="acResale" value="" disabled><div class="lock">Contact us to update your resale certificate</div></div>
       </div>
 
@@ -343,8 +353,30 @@
         document.getElementById('acPw1').value=''; document.getElementById('acPw2').value='';
       }catch(e){ toast('Could not change password.'); return; }
     }
+    // 2) 회사·담당자·전화 저장
+    const biz=(document.getElementById('acBiz')||{}).value||'';
+    const ctc=(document.getElementById('acContact')||{}).value||'';
+    const phn=(document.getElementById('acPhone')||{}).value||'';
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId,
+        {method:'PATCH',
+         headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'},
+         body:JSON.stringify({company_name:biz,contact_name:ctc,phone:phn})});
+      if(!r.ok){
+        /* 정책상 본인 줄 수정이 막혀 있으면 여기로 온다 — 조용히 실패하면 고쳤다고 착각한다 */
+        toast('Saved your password/addresses, but business details could not be updated. Please contact us.');
+        return;
+      }
+    }catch(e){ toast('Could not save business details.'); return; }
     toast('\u2713 Saved');
   }
+
+  /* 로그아웃 — 세션을 지우고 첫 화면으로 */
+  function acLogout(){
+    try{ localStorage.removeItem('pacific_user'); localStorage.removeItem('pacific_customer'); }catch(e){}
+    location.href='epacific-timeless.html';
+  }
+  window.acLogout=acLogout;
   document.addEventListener('DOMContentLoaded',acLoad);
 </script>
 
@@ -427,7 +459,13 @@
   var a=document.getElementById("hdAcct"), l=document.getElementById("hdLogin");
   if(a) a.style.display = on ? "" : "none";
   if(l) l.style.display = on ? "none" : "";
+  var o=document.getElementById("hdOut");
+  if(o) o.style.display = on ? "" : "none";
 })();
+function pacLogout(){
+  try{ localStorage.removeItem("pacific_user"); localStorage.removeItem("pacific_customer"); }catch(e){}
+  location.href="epacific-timeless.html";
+}
 </script>
 </body>
 </html>

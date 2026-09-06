@@ -181,6 +181,7 @@
       </div>
       <button id="hdAcct" style="display:none" onclick="location.href='epacific-account.html'">My Account</button>
       <button id="hdLogin" style="display:none" onclick="location.href='epacific-login.html'">Log in</button>
+      <button id="hdOut" style="display:none" onclick="pacLogout()" title="Log out">Log out</button>
       <button class="primary">Cart <span class="cart-c">0</span></button>
     </div>
   </div>
@@ -681,7 +682,13 @@
   var a=document.getElementById("hdAcct"), l=document.getElementById("hdLogin");
   if(a) a.style.display = on ? "" : "none";
   if(l) l.style.display = on ? "none" : "";
+  var o=document.getElementById("hdOut");
+  if(o) o.style.display = on ? "" : "none";
 })();
+function pacLogout(){
+  try{ localStorage.removeItem("pacific_user"); localStorage.removeItem("pacific_customer"); }catch(e){}
+  location.href="epacific-timeless.html";
+}
 </script>
 </body>
 </html>

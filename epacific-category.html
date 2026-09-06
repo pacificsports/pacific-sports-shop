@@ -27,8 +27,11 @@
   .utility a{margin-left:18px;transition:color .2s}.utility a:hover{color:var(--ink)}
   /* 창고 위치·전화번호는 푸터로 (2026-09-06). 예전엔 화면 맨 위 utility 바에 있었는데
      주문할 때 아무 쓸모가 없으면서 붙어 있는 자리만 39px 먹었다. 이런 정보는 보통 아래에 둔다. */
-  .f-loc{margin-top:16px;display:flex;flex-direction:column;gap:11px;font-size:13px;color:#8f8f85;line-height:1.5}
+  .f-loc{margin-top:16px;display:flex;flex-direction:column;gap:13px;font-size:13px;color:#8f8f85;line-height:1.55}
   .f-loc span{display:flex;flex-direction:column}
+  .f-loc em{font-style:normal}
+  .f-loc b{margin-bottom:2px}
+  .f-loc a{margin-top:3px}
   .f-loc b{color:#c9c9be;font-weight:600}
   .f-loc a{color:#8f8f85}
   .f-loc a:hover{color:#fff}
@@ -176,6 +179,8 @@
         <button id="searchClose" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:17px;cursor:pointer;color:var(--faint);line-height:1">×</button>
         <div id="searchResults" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:380px;max-height:60vh;overflow:auto;background:var(--paper);border:1px solid var(--line);border-radius:14px;box-shadow:0 20px 50px -18px rgba(28,28,26,.4);padding:6px;z-index:300"></div>
       </div>
+      <button id="hdAcct" style="display:none" onclick="location.href='epacific-account.html'">My Account</button>
+      <button id="hdLogin" style="display:none" onclick="location.href='epacific-login.html'">Log in</button>
       <button class="primary">Cart <span class="cart-c">0</span></button>
     </div>
   </div>
@@ -237,7 +242,7 @@
     <div class="fb">
       <div class="logo"><img src="logo-pacific-white.png" alt="Pacific Sports" class="logo-img"></div>
       <p>Headquartered in Sumter, South Carolina. Founded 1992. Proprietary dyeing and finishing technology, delivering premium cotton blanks nationwide.</p>
-      <div class="f-loc"><span><b>West Coast</b> — Eastvale, CA<a href="tel:8034470012">(CA) 803-447-0012</a></span><span><b>East Coast</b> — Sumter, SC<a href="tel:8037732177">(SC) 803-773-2177</a></span></div>
+      <div class="f-loc"><span><b>West Coast</b><em>14129 The Merge Street, Unit B</em><em>Eastvale, CA 92880</em><a href="tel:8034470012">(CA) 803-447-0012</a></span><span><b>East Coast</b><em>1605 South Guignard Parkway</em><em>Sumter, SC 29150</em><a href="tel:8037732177">(SC) 803-773-2177</a></span></div>
     </div>
     <div><h4>Shop</h4><a href="#">Adult</a><a href="#">Youth & Kids</a><a href="#">Collections</a><a href="#">Shop by Color</a></div>
     <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
@@ -667,5 +672,16 @@
 })();
 </script>
 <script src="pacific-nav.js"></script>
+<script>
+/* 상단바 계정 버튼 — 예전 utility 바에 있던 My Account / Login 을 여기로 옮겼다 (2026-09-06).
+   로그인 상태면 My Account, 아니면 Log in 하나만 보인다. */
+(function(){
+  var on=false;
+  try{ var s=JSON.parse(localStorage.getItem("pacific_user")||"null"); on=!!(s&&s.token); }catch(e){}
+  var a=document.getElementById("hdAcct"), l=document.getElementById("hdLogin");
+  if(a) a.style.display = on ? "" : "none";
+  if(l) l.style.display = on ? "none" : "";
+})();
+</script>
 </body>
 </html>

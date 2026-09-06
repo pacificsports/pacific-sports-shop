@@ -95,7 +95,12 @@ table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:1
 </div>
 </div>
 
-<div class="sheet">
+<!-- ══ psflowx 가 실제로 발행한 인보이스 (2026-09-06) ══
+     여기 내용이 있으면 아래 우리 레이아웃은 안 쓴다. 거래처가 메일로 받은 그 문서를
+     글자 하나 안 바꾸고 그대로 보여주는 게 맞다 — 인보이스는 두 벌일 수 없다. -->
+<div id="realInv" class="sheet" style="display:none"></div>
+
+<div class="sheet" id="fallbackSheet">
 <!-- HEADER -->
 <div class="inv-top">
 <div>
@@ -149,6 +154,9 @@ table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:1
 <div class="row"><span class="lbl">Total pieces</span><span id="tPcs">0</span></div>
 <div class="row"><span class="lbl">From SC — Sumter</span><span id="tSC">0</span></div>
 <div class="row"><span class="lbl">From CA — Eastvale</span><span id="tCA">0</span></div>
+<!-- 운임 줄이 없어서 줄 합계랑 Total 이 안 맞았다 (2026-09-06) -->
+<div class="row" id="rowGoods" style="display:none"><span class="lbl">Merchandise</span><span id="tGoods">—</span></div>
+<div class="row" id="rowShip" style="display:none"><span class="lbl">Shipping</span><span id="tShip">—</span></div>
 <div class="row grand"><span class="lbl">Total</span><span class="val" id="tAmt">$0.00</span></div>
 </div>
 
@@ -199,6 +207,20 @@ const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?order_number=eq.'+enco
 const rows=r.ok?await r.json():[];
 const o=rows[0];
 if(!o){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">Order not found (or no access).</td></tr>'; return; }
+
+// 실제 발행된 인보이스가 돌아와 있으면 그걸 그대로 띄우고 끝낸다
+if(o.invoice_html){
+  const real=document.getElementById('realInv'), fb=document.getElementById('fallbackSheet');
+  real.innerHTML=o.invoice_html;
+  real.style.display='';
+  if(fb) fb.style.display='none';
+  document.title='Pacific Sports — Invoice '+(o.invoice_no||o.order_number);
+  return;
+}
+// 아직 인보이스 전이면 주문 확인서로 보여준다 (출고되면 진짜 인보이스로 바뀐다)
+const bigEl=document.querySelector('#fallbackSheet .inv-label .big');
+if(bigEl) bigEl.textContent='Order confirmation';
+const noteEl=document.getElementById('splitNote');
 document.getElementById('invNo').textContent='No. '+o.order_number;
 document.getElementById('invStatus').textContent=(o.status||'').charAt(0).toUpperCase()+(o.status||'').slice(1);
 document.getElementById('billTo').innerHTML=[
@@ -232,6 +254,14 @@ document.getElementById('tSC').textContent=sc;
 document.getElementById('tCA').textContent=ca;
 const amt=o.total_amount!=null?Number(o.total_amount):(grandOk?grand:null);
 document.getElementById('tAmt').textContent=amt!=null?money(amt):'—';
+/* 물품값 + 운임 = Total 이 눈에 보이게. 안 그러면 줄 합계랑 Total 이 달라 보인다. */
+const ship=o.shipping_cost!=null?Number(o.shipping_cost):null;
+if(ship!=null && ship>0){
+  const goods=(amt!=null)?(amt-ship):(grandOk?grand:null);
+  if(goods!=null){ document.getElementById('tGoods').textContent=money(goods); document.getElementById('rowGoods').style.display=''; }
+  document.getElementById('tShip').textContent=money(ship)+(o.shipping_method?(' · '+esc(o.shipping_method)):'');
+  document.getElementById('rowShip').style.display='';
+}
 if(sc>0&&ca>0) document.getElementById('splitNote').style.display='';
 }
 load();

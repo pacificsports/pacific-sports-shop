@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pacific Sports — Invoice PS-10428</title>
+<title>Pacific Sports — Order</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -112,7 +112,7 @@ table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:1
 </div>
 </div>
 <div class="inv-label">
-<div class="big">Invoice</div>
+<div class="big">Order confirmation</div>
 <div class="num" id="invNo">No. —</div>
 <div class="status" id="invStatus"></div>
 </div>
@@ -164,7 +164,7 @@ table.items tbody tr{display:block;border-bottom:1px solid var(--line);padding:1
 
 <div class="foot-note">
 Thank you for your business.<br>
-Questions about this invoice? Contact us at (CA) 803-447-0012 or (SC) 803-773-2177.
+Questions about this order? Contact us at (CA) 803-447-0012 or (SC) 803-773-2177.
 </div>
 </div>
 
@@ -220,6 +220,7 @@ if(o.invoice_html){
 // 아직 인보이스 전이면 주문 확인서로 보여준다 (출고되면 진짜 인보이스로 바뀐다)
 const bigEl=document.querySelector('#fallbackSheet .inv-label .big');
 if(bigEl) bigEl.textContent='Order confirmation';
+document.title='Pacific Sports — Order '+o.order_number;
 const noteEl=document.getElementById('splitNote');
 document.getElementById('invNo').textContent='No. '+o.order_number;
 document.getElementById('invStatus').textContent=(o.status||'').charAt(0).toUpperCase()+(o.status||'').slice(1);
@@ -267,5 +268,5 @@ if(sc>0&&ca>0) document.getElementById('splitNote').style.display='';
 load();
 </script>
 </body>
-<!-- v2026-06-07 real-invoice -->
+<!-- v2026-09-06 order-ack -->
 </html>

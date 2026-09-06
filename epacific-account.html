@@ -138,11 +138,23 @@
   .o-pill{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
   .p-paid{background:var(--accent-soft);color:var(--accent)}
   .p-due{background:#f6ecd8;color:#8a6a2a}
-  .o-track{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;color:var(--soft-ink);margin-top:4px}
-  .o-track .tk-car{font-weight:700;font-size:11px;letter-spacing:.04em;color:var(--faint)}
-  .o-track a{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--accent);
-             border:1px solid var(--line-2);border-radius:7px;padding:2px 8px;background:var(--paper);transition:.15s}
-  .o-track a:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .o-track{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px;color:var(--soft-ink);margin-top:7px}
+  /* 운송사 배지 — 회사 색을 살짝 빌려서 한눈에 구분되게 */
+  .o-track .tk-car{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:10.5px;letter-spacing:.07em;
+                   border-radius:6px;padding:3px 8px;background:#f0efea;color:#7a776d}
+  .o-track .tk-car.c-ups{background:#f4ece0;color:#7d5f2f}
+  .o-track .tk-car.c-fedex{background:#efeaf7;color:#5b3f96}
+  .o-track .tk-car.c-usps{background:#e7eef3;color:#2f5b7a}
+  .o-track .tk-car.c-dhl{background:#fdf1dc;color:#8a6a1a}
+  /* 송장번호 — 입력칸처럼 안 보이게 알약 모양 + 링크라는 표시(↗) */
+  .o-track a{display:inline-flex;align-items:center;gap:7px;
+             font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;letter-spacing:.02em;
+             color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:999px;
+             padding:4px 11px;transition:background .15s,border-color .15s,color .15s}
+  .o-track a::after{content:'↗';font-family:var(--body);font-size:11px;color:var(--faint);transition:color .15s}
+  .o-track a:hover{background:var(--accent-soft);border-color:#cdddc9;color:var(--accent)}
+  .o-track a:hover::after{color:var(--accent)}
+  .o-track .tk-more{font-size:12px;color:var(--faint)}
   .ship-box{border:1px solid var(--line-2);border-radius:12px;padding:14px 16px;margin-top:14px;background:#fcfcfa}
   .ship-box .sb-t{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
   .ship-box .sb-r{font-size:13.5px;color:var(--soft-ink);display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
@@ -627,13 +639,24 @@
     if(c.indexOf('DHL')>=0)   return 'https://www.dhl.com/en/express/tracking.html?AWB='+n;
     return 'https://www.ups.com/track?tracknum='+n;   /* 기본 UPS */
   }
+  function carrierClass(c){
+    c=String(c||'').toUpperCase();
+    if(c.indexOf('FEDEX')>=0) return 'c-fedex';
+    if(c.indexOf('USPS')>=0)  return 'c-usps';
+    if(c.indexOf('DHL')>=0)   return 'c-dhl';
+    if(c.indexOf('UPS')>=0)   return 'c-ups';
+    return '';
+  }
   function trackHtml(o,max){
     var nums=trackNums(o); if(!nums.length) return '';
     var show=(max?nums.slice(0,max):nums);
+    var car=o.carrier||'Tracking';
     return '<div class="o-track" onclick="event.stopPropagation()">'
-      +'<span class="tk-car">'+esc(o.carrier||'TRACKING')+'</span>'
-      +show.map(function(n){ return '<a href="'+trackUrl(o.carrier,n)+'" target="_blank" rel="noopener">'+esc(n)+'</a>'; }).join('')
-      +((max&&nums.length>max)?('<span style="color:var(--faint)">+'+(nums.length-max)+' more</span>'):'')
+      +'<span class="tk-car '+carrierClass(o.carrier)+'">📦 '+esc(car)+'</span>'
+      +show.map(function(n){
+          return '<a href="'+trackUrl(o.carrier,n)+'" target="_blank" rel="noopener" title="Track with '+esc(car)+'">'+esc(n)+'</a>';
+        }).join('')
+      +((max&&nums.length>max)?('<span class="tk-more">+'+(nums.length-max)+' more</span>'):'')
       +'</div>';
   }
   /* 상태를 한 줄 제목으로 — Next Level 처럼 "지금 어디까지 왔나"가 먼저 보이게 */

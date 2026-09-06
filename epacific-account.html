@@ -691,15 +691,11 @@
   /* 펼쳤을 때 나오는 배송 상자 — 상태 · 발송일 · 배송편 · 송장번호 · UPS 실시간 이력 */
   function shipBox(o){
     var nums=trackNums(o);
-    if(!nums.length && !o.shippedAt && !o.shipMethod) return '';
-    var h='<div class="ship-box"><div class="sb-t">Shipment</div>';
+    var h='<div class="ship-box"><div class="sb-t">Progress</div>';
     h+='<div class="sb-r">Status <b>'+esc(o.statusLabel||'')+'</b>'
-      +(o.shippedAt?('<span style="color:var(--faint)">·</span>Shipped <b>'+esc(niceDate(String(o.shippedAt).slice(0,10)))+'</b>'):'')+'</div>';
-    if(o.shipMethod) h+='<div class="sb-r">Service <b>'+esc(o.shipMethod)+'</b></div>';
-    if(nums.length){
-      h+='<div class="sb-r">Tracking</div>'+trackHtml(o);
-      h+='<div class="tk-detail" data-oid="'+esc(o.id)+'"></div>';
-    }
+      +(o.shipMethod?('<span style="color:var(--faint)">·</span>'+esc(o.shipMethod)):'')+'</div>';
+    if(nums.length) h+=trackHtml(o);
+    h+='<div class="tk-detail" data-oid="'+esc(o.id)+'"></div>';
     h+='</div>';
     return h;
   }
@@ -734,32 +730,49 @@
     if(/exception|return|delay|attempt/i.test(t.status||'')) return 'live-x';
     return 'live-i';
   }
+  /* 우리 시스템 단계 (접수 → 승인 → 출고) — 이건 web_orders 에 다 있다.
+     UPS 는 박스가 나간 다음부터만 아니까, 우리 것 위에 UPS 이력을 얹는다. */
+  function ourSteps(o){
+    var s=[];
+    if(o.shippedAt) s.push({status:'Shipped from '+(o.wh||'our warehouse'), date:String(o.shippedAt).slice(0,10), time:'', location:o.shipMethod||''});
+    if(o.acceptedAt) s.push({status:'Accepted — picking and packing', date:String(o.acceptedAt).slice(0,10), time:'', location:''});
+    if(o.date) s.push({status:'Order placed', date:o.date, time:'', location:(o.pay==='paid'?'Paid':'')});
+    return s;
+  }
   function timelineHtml(o){
-    var nums=trackNums(o), h='';
+    var nums=trackNums(o);
+    var upsRows=[];
     nums.forEach(function(n){
       var t=TRACK_CACHE[n];
       if(!t||t.error||!(t.activity&&t.activity.length)) return;
-      h+='<div class="tl">';
-      if(nums.length>1) h+='<div class="sb-r" style="margin-bottom:6px"><b>'+esc(n)+'</b></div>';
-      t.activity.forEach(function(a,i){
-        h+='<div class="tl-row'+(i===0?' now':'')+'">'
-          +'<div class="tl-s">'+esc(a.status)+'</div>'
-          +'<div class="tl-m">'+esc([niceDate(a.date), a.time, a.location].filter(Boolean).join(' · '))+'</div></div>';
+      t.activity.forEach(function(a){
+        upsRows.push({status:a.status, date:a.date, time:a.time,
+                      location:[a.location, (nums.length>1?('#'+n):'')].filter(Boolean).join(' · ')});
       });
-      h+='</div>';
     });
-    return h;
+    var rows=upsRows.concat(ourSteps(o));
+    if(!rows.length) return '';
+    var h='<div class="tl">';
+    rows.forEach(function(a,i){
+      h+='<div class="tl-row'+(i===0?' now':'')+'">'
+        +'<div class="tl-s">'+esc(a.status)+'</div>'
+        +'<div class="tl-m">'+esc([niceDate(a.date), a.time, a.location].filter(Boolean).join(' · '))+'</div></div>';
+    });
+    return h+'</div>';
   }
   /* 카드가 펼쳐질 때만 UPS 를 부른다 — 목록 뜰 때마다 부르면 낭비다 */
   async function paintTrack(card, o){
     var host=card.querySelector('.tk-detail'); if(!host) return;
     if(host.dataset.done) return;
-    var nums=trackNums(o); if(!nums.length) return;
     host.dataset.done='1';
-    host.innerHTML='<div class="tk-load">Checking with '+esc(o.carrier||'the carrier')+'…</div>';
+    /* 우리 시스템 단계는 바로 그린다 — UPS 를 기다릴 이유가 없다 */
+    host.innerHTML=timelineHtml(o);
+    var nums=trackNums(o); if(!nums.length) return;
+    var wait=document.createElement('div');
+    wait.className='tk-load'; wait.textContent='Checking with '+(o.carrier||'the carrier')+'…';
+    host.insertBefore(wait, host.firstChild);
     await fetchTrack(nums);
-    var tl=timelineHtml(o);
-    host.innerHTML = tl || '';
+    host.innerHTML = timelineHtml(o);
     /* 접힌 줄에도 현재 상태 한 칸 */
     var t=TRACK_CACHE[nums[0]];
     if(t && !t.error && t.status){
@@ -996,7 +1009,8 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
         return { id:rw.order_number, date:(rw.created_at||'').slice(0,10), status:sm[0], statusLabel:sm[1],
                  total_pcs:rw.total_pcs, total_amount:rw.total_amount, notes:rw.notes, ship_to:rw.ship_to,
                  tracking:rw.tracking_number, carrier:rw.carrier, shippedAt:rw.shipped_at,
-                 shipMethod:rw.shipping_method, pay:rw.payment_status,
+                 acceptedAt:rw.accepted_at, shipMethod:rw.shipping_method, pay:rw.payment_status,
+                 wh:[...new Set(items.map(function(i){return i.wh||'SC';}))].join(' + '),
                  items, lines:groupLines(items) };
       });
       render(orders);

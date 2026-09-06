@@ -24,6 +24,12 @@
   .utility-in{max-width:1240px;margin:0 auto;padding:10px 30px;display:flex;justify-content:space-between;align-items:center}
   .utility-in .left{display:flex;gap:20px}
   .utility a{margin-left:18px}.utility a:hover{color:var(--ink)}
+  /* 창고 위치·전화번호는 푸터로 (2026-09-06). 예전엔 화면 맨 위 utility 바에 있었는데
+     주문할 때 아무 쓸모가 없으면서 붙어 있는 자리만 39px 먹었다. 이런 정보는 보통 아래에 둔다. */
+  .f-loc{margin-top:14px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#8f8f85;line-height:1.6}
+  .f-loc b{color:#c9c9be;font-weight:600}
+  .f-loc a{color:#8f8f85}
+  .f-loc a:hover{color:#fff}
 
   header{position:sticky;top:0;z-index:100;background:rgba(251,251,249,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
   .header-in{max-width:1240px;margin:0 auto;padding:20px 30px;display:flex;align-items:center;gap:46px}
@@ -92,13 +98,6 @@
 <body>
 
 
-<div class="utility">
-  <div class="utility-in">
-    <div class="left"><span>West Coast — Eastvale, CA</span><span>East Coast — Sumter, SC</span></div>
-    <div><a href="#">My Account</a><a href="#">Order History</a></div>
-  </div>
-</div>
-
 <header>
   <div class="header-in">
     <a href="epacific-timeless.html" class="logo"><img src="logo-pacific.png" alt="Pacific Sports" class="logo-img"></a>
@@ -139,7 +138,10 @@
   <div class="colors rise" id="colors"></div>
 </div>
 
-<footer>© 2026 Pacific Sports. Demo redesign concept.</footer>
+<footer>
+  <div class="f-loc"><span><b>West Coast</b> — Eastvale, CA · <a href="tel:8034470012">(CA) 803-447-0012</a></span><span><b>East Coast</b> — Sumter, SC · <a href="tel:8037732177">(SC) 803-773-2177</a></span></div>
+  <div>© 2026 Pacific Sports. Demo redesign concept.</div>
+</footer>
 
 <script>
   function teeSVG(hex,s){s=s||40;return `<svg viewBox="0 0 100 100" width="${s}" height="${s}"><path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="${hex}" stroke="rgba(0,0,0,.1)" stroke-width="1"/><path d="M30 18 C34 24 42 26 50 26 C58 26 66 24 70 18 C66 21 58 22 50 22 C42 22 34 21 30 18 Z" fill="rgba(0,0,0,.08)"/></svg>`;}

@@ -421,7 +421,6 @@
       await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses',{method:'POST',
         headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
         body:JSON.stringify({ customer_id:cust.customer_id||null,
-          label:(st.company||st.name||'')+' — '+(st.city||'')+', '+(st.state||''),
           name:st.name, company:st.company, addr1:st.addr1, addr2:st.addr2,
           city:st.city, state:st.state, zip:st.zip, phone:st.phone, residential:!!st.residential,
           kind:'shipping', is_default:false })});

@@ -314,6 +314,11 @@
           <div id="acShipList"></div>
 
           <div class="sec-divider"></div>
+          <div class="ag-head"><h2 style="margin:0">Payment methods</h2><button class="btn-ghost sm" type="button" onclick="pmOpen()">+ Add card</button></div>
+          <div class="lock" style="margin:0 0 14px">Cards are held by Authorize.Net. We never see or store the full number.</div>
+          <div id="pmList"></div>
+
+          <div class="sec-divider"></div>
           <h2>Login &amp; password</h2>
           <div class="grid2">
             <div class="field full"><label>Email</label><input type="email" id="acEmail" value="" disabled><div class="lock">Contact us to change your login email</div></div>
@@ -366,6 +371,23 @@
     <div class="addr-modal-foot">
       <button class="btn-ghost" type="button" onclick="addrClose()">Cancel</button>
       <button class="btn" type="button" onclick="addrSave()">Save address</button>
+    </div>
+  </div>
+</div>
+
+<div class="addr-modal-bg" id="pmModalBg">
+  <div class="addr-modal">
+    <h3>Add card</h3>
+    <div class="field full"><label>Card number</label><input type="text" id="pcNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456"></div>
+    <div class="grid3">
+      <div class="field"><label>Month</label><input type="text" id="pcMo" inputmode="numeric" maxlength="2" placeholder="MM" autocomplete="cc-exp-month"></div>
+      <div class="field"><label>Year</label><input type="text" id="pcYr" inputmode="numeric" maxlength="4" placeholder="YYYY" autocomplete="cc-exp-year"></div>
+      <div class="field"><label>CVV</label><input type="text" id="pcCvv" inputmode="numeric" maxlength="4" autocomplete="cc-csc"></div>
+    </div>
+    <div class="lock" id="pmMsg" style="min-height:18px"></div>
+    <div class="addr-modal-foot">
+      <button class="btn-ghost" type="button" onclick="pmClose()">Cancel</button>
+      <button class="btn" type="button" id="pmSaveBtn" onclick="pmSave()">Save card</button>
     </div>
   </div>
 </div>
@@ -588,7 +610,101 @@
       }
     }catch(e){}
     loadAddresses();
+    loadCards();
   }
+
+  /* ── 저장 카드 (Authorize.net CIM) — 2026-09-07 ──────────────────────
+     카드번호는 이 페이지를 떠나지 않는다: Accept.js 가 Authorize.net 으로
+     직접 보내고 우리는 그 토큰(opaqueData)만 워커에 넘긴다.
+     프로필은 워커가 Authorize.net 쪽에서 찾는다 — 우리 DB 에 아무것도 안 남는다. */
+  function pmCards(list){
+    const el=document.getElementById('pmList');
+    if(!el) return;
+    if(!list.length){ el.innerHTML='<div class="addr-empty">No card saved yet — add one to check out faster next time.</div>'; return; }
+    el.innerHTML = list.map(function(c){
+      const exp=String(c.exp||'').replace(/^XXXX/,'').replace(/^-/,'');
+      return '<div class="addr-card"><div class="a-body"><b>'+escA(c.brand)+'</b> •••• '+escA(c.last4)
+        + (exp? '<br><span style="color:var(--faint)">Expires '+escA(exp)+'</span>' : '')
+        + '</div><div class="a-edit" onclick="pmRemove(\''+escA(c.id)+'\')">Remove</div></div>';
+    }).join('');
+  }
+  async function pmCall(path, body){
+    const s=_sess(); if(!s||!s.token) throw new Error('signed out');
+    const r=await fetch((_C.CHECKOUT_WORKER||'')+path,
+      {method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},
+       body:JSON.stringify(body||{})});
+    const j=await r.json().catch(function(){ return {}; });
+    if(!r.ok) throw new Error(j.error||('error '+r.status));
+    return j;
+  }
+  async function loadCards(){
+    if(!_C.CHECKOUT_WORKER) return;
+    try{ const j=await pmCall('/pm/list'); pmCards(j.cards||[]); }
+    catch(e){ pmCards([]); }
+  }
+  function pmOpen(){
+    ['pcNum','pcMo','pcYr','pcCvv'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+    document.getElementById('pmMsg').textContent='';
+    document.getElementById('pmModalBg').classList.add('show');
+  }
+  function pmClose(){ document.getElementById('pmModalBg').classList.remove('show'); }
+  window.pmOpen=pmOpen; window.pmClose=pmClose;
+
+  function pmSave(){
+    const msg=document.getElementById('pmMsg');
+    if(!window.Accept){ msg.textContent='Card module did not load — please refresh.'; return; }
+    if(!_C.ANET_API_LOGIN_ID||!_C.ANET_CLIENT_KEY){ msg.textContent='Card keys are not set up yet.'; return; }
+    const num=(document.getElementById('pcNum').value||'').replace(/[^0-9]/g,'');
+    const mo=(document.getElementById('pcMo').value||'').trim();
+    const yr=(document.getElementById('pcYr').value||'').trim();
+    const cvv=(document.getElementById('pcCvv').value||'').trim();
+    if(num.length<13||!mo||yr.length<4||!cvv){ msg.textContent='Please check the card details.'; return; }
+    const btn=document.getElementById('pmSaveBtn'); btn.disabled=true; btn.textContent='Saving…';
+    const done=function(){ btn.disabled=false; btn.textContent='Save card'; };
+    msg.textContent='';
+    Accept.dispatchData({
+      authData:{ clientKey:_C.ANET_CLIENT_KEY, apiLoginID:_C.ANET_API_LOGIN_ID },
+      cardData:{ cardNumber:num, month:mo, year:yr, cardCode:cvv }
+    }, async function(resp){
+      if(resp.messages.resultCode==='Error'){
+        msg.textContent=resp.messages.message.map(function(m){ return m.text; }).join(' / ');
+        done(); return;
+      }
+      try{
+        const j=await pmCall('/pm/add',{opaqueData:resp.opaqueData, billTo:pmBillTo()});
+        pmCards(j.cards||[]); pmClose(); toast('✓ Card saved');
+      }catch(e){ msg.textContent=String(e.message||e); }
+      done();
+    });
+  }
+  window.pmSave=pmSave;
+
+  /* 청구지가 있으면 같이 보낸다 — AVS 통과율이 올라간다 */
+  function pmBillTo(){
+    const b=(acAddrs||[]).filter(function(a){ return addrKind(a)==='billing'; })[0]
+          || (acAddrs||[]).filter(function(a){ return addrKind(a)==='shipping'; })[0];
+    if(!b) return {};
+    const nm=String(b.name||'').trim().split(/\s+/);
+    return { firstName:nm[0]||'', lastName:nm.slice(1).join(' ')||'', company:b.company||'',
+             address:b.addr1||'', city:b.city||'', state:b.state||'', zip:b.zip||'' };
+  }
+
+  async function pmRemove(id){
+    if(!confirm('Remove this card?')) return;
+    try{ const j=await pmCall('/pm/del',{id:id}); pmCards(j.cards||[]); toast('✓ Card removed'); }
+    catch(e){ toast('Could not remove the card.'); }
+  }
+  window.pmRemove=pmRemove;
+
+  /* Accept.js 로드 — sandbox/production 은 pacific-config.js 의 ANET_ENV 를 따른다 */
+  (function(){
+    if(!_C.ANET_CLIENT_KEY) return;
+    const sc=document.createElement('script');
+    sc.src = _C.ANET_ENV==='production' ? 'https://js.authorize.net/v1/Accept.js'
+                                        : 'https://jstest.authorize.net/v1/Accept.js';
+    sc.charset='utf-8';
+    document.head.appendChild(sc);
+  })();
 
   async function save(){
     const s=_sess(); if(!s||!s.token){ location.href='epacific-login.html'; return; }

@@ -78,7 +78,9 @@
       </div>
       <div class="grid2">
         <div><label>Phone *</label><input type="tel" id="fPhone" autocomplete="tel"></div>
-        <div><label style="margin-top:26px"><input type="checkbox" id="fResidential" style="width:auto;margin-right:6px">Residential address</label></div>
+        <!-- 주소 종류는 UPS 가 판정한다 (checkout 워커 upsClassify) — 손님에게 안 묻는다 (2026-09-07).
+             요소는 남겨둔다: 아래 JS 몇 곳이 이걸 찾는다 -->
+        <div style="display:none"><label style="margin-top:26px"><input type="checkbox" id="fResidential" style="width:auto;margin-right:6px">Residential address</label></div>
       </div>
       <div style="margin-top:16px"><button class="btn2" id="rateBtn">Get shipping rates →</button></div>
     </div>
@@ -235,7 +237,7 @@
       state:document.getElementById('fState').value,
       zip:document.getElementById('fZip').value.trim(),
       phone:document.getElementById('fPhone').value.trim(),
-      residential:document.getElementById('fResidential').checked
+      residential:false   /* UPS Address Validation 이 워커에서 판정한다 (2026-09-07) */
     };
   }
 

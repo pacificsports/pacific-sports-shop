@@ -342,7 +342,9 @@
       <div class="field"><label>ZIP *</label><input type="text" id="maZip"></div>
     </div>
     <div class="field full"><label>Phone</label><input type="tel" id="maPhone"></div>
-    <label class="rescheck" id="maResWrap"><input type="checkbox" id="maResidential"> Residential address</label>
+    <!-- 주소 종류는 UPS 가 판정한다 (checkout 워커 upsClassify) — 손님에게 안 묻는다 (2026-09-07).
+         요소는 남겨둔다: 아래 JS 여러 곳이 이걸 찾는다. 화면에만 안 보인다 -->
+    <label class="rescheck" id="maResWrap" style="display:none"><input type="checkbox" id="maResidential"> Residential address</label>
     <label class="rescheck" id="maDefWrap"><input type="checkbox" id="maDefault"> Make this my default shipping address</label>
     <label class="rescheck" id="maAlsoWrap"><input type="checkbox" id="maAlsoShip"> Also save this as a shipping address</label>
     <div class="addr-modal-foot">
@@ -453,7 +455,7 @@
     /* 배송지에만 residential / default 를 묻는다 */
     const isShip = acEditKind==='shipping';
     const firstShip = !acAddrs.some(x=>addrKind(x)==='shipping');
-    document.getElementById('maResWrap').style.display = isShip?'':'none';
+    document.getElementById('maResWrap').style.display = 'none';   /* UPS 가 판정 — 항상 숨김 */
     document.getElementById('maDefWrap').style.display = (isShip&&acNewCols)?'':'none';
     const dc=document.getElementById('maDefault');
     dc.checked = isShip && (id ? !!a.is_default : firstShip);
@@ -491,7 +493,7 @@
     const body={ company:v('maCompany')||null, name:v('maName')||null,
       addr1:v('maAddr1'), addr2:v('maAddr2')||null, city:v('maCity'), state:v('maState'),
       zip:v('maZip'), phone:v('maPhone')||null,
-      residential:isShip && document.getElementById('maResidential').checked,
+      residential:false,   /* UPS Address Validation 이 워커에서 판정한다 (2026-09-07) */
       customer_id:cust.customer_id||null };
     if(acNewCols){ body.kind=acEditKind; body.is_default=wantDef; }
     try{

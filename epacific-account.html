@@ -671,8 +671,10 @@
         done(); return;
       }
       try{
-        const j=await pmCall('/pm/add',{opaqueData:resp.opaqueData, billTo:pmBillTo()});
-        pmCards(j.cards||[]); pmClose(); toast('✓ Card saved');
+        await pmCall('/pm/add',{opaqueData:resp.opaqueData, billTo:pmBillTo()});
+        pmClose(); toast('✓ Card saved');
+        /* 저장 직후 Authorize.net 이 돌려주는 목록이 비어 있을 때가 있다 — 다시 읽는다 */
+        await loadCards();
       }catch(e){ msg.textContent=String(e.message||e); }
       done();
     });

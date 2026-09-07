@@ -326,7 +326,7 @@
           <div id="pwBox" style="display:none">
             <div class="lock" id="pwSentMsg" style="margin:0 0 14px"></div>
             <div class="grid2">
-              <div class="field"><label>6-digit code</label><input type="text" id="acCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
+              <div class="field"><label>Verification code</label><input type="text" id="acCode" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="Code from your email"></div>
               <div class="field" style="display:flex;align-items:flex-end"><button class="btn-ghost sm" type="button" id="pwResend" onclick="pwBegin(true)">Resend code</button></div>
               <div class="field"><label>New password</label><input type="password" id="acPw1" placeholder="••••••••"></div>
               <div class="field"><label>Confirm new password</label><input type="password" id="acPw2" placeholder="••••••••"></div>
@@ -634,7 +634,7 @@
       if(!r.ok){ const t=await r.text(); toast('Could not send the code ('+r.status+'). '+t.slice(0,70)); return; }
       pwCooldown=now+60000;   /* Supabase 가 같은 사람에게 60초에 한 통만 보낸다 */
       const em=(document.getElementById('acEmail')||{}).value||'your email';
-      document.getElementById('pwSentMsg').textContent='We emailed a 6-digit code to '+em+'. It expires shortly.';
+      document.getElementById('pwSentMsg').textContent='We emailed a verification code to '+em+'. It expires shortly.';
       document.getElementById('pwStart').style.display='none';
       document.getElementById('pwBox').style.display='';
       const c=document.getElementById('acCode'); if(c) c.focus();
@@ -649,7 +649,7 @@
     const code=(document.getElementById('acCode').value||'').trim();
     const pw1=document.getElementById('acPw1').value||'';
     const pw2=document.getElementById('acPw2').value||'';
-    if(!code){ toast('Enter the 6-digit code from your email.'); return; }
+    if(!code){ toast('Enter the code from your email.'); return; }
     if(pw1.length<8){ toast('Password must be at least 8 characters.'); return; }
     if(pw1!==pw2){ toast('Passwords do not match.'); return; }
     const btn=document.getElementById('pwSaveBtn'); if(btn) btn.disabled=true;

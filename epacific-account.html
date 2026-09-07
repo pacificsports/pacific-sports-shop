@@ -317,8 +317,24 @@
           <h2>Login &amp; password</h2>
           <div class="grid2">
             <div class="field full"><label>Email</label><input type="email" id="acEmail" value="" disabled><div class="lock">Contact us to change your login email</div></div>
-            <div class="field"><label>New password</label><input type="password" id="acPw1" placeholder="••••••••"></div>
-            <div class="field"><label>Confirm new password</label><input type="password" id="acPw2" placeholder="••••••••"></div>
+          </div>
+          <!-- 비밀번호 변경은 "Save all changes" 에서 떼어냈다 (2026-09-07).
+               코드를 먼저 받고 그다음 새 비번을 넣는다 — 은행들이 하는 순서 -->
+          <div id="pwStart">
+            <button class="btn-ghost sm" type="button" onclick="pwBegin(false)">Change password</button>
+          </div>
+          <div id="pwBox" style="display:none">
+            <div class="lock" id="pwSentMsg" style="margin:0 0 14px"></div>
+            <div class="grid2">
+              <div class="field"><label>6-digit code</label><input type="text" id="acCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
+              <div class="field" style="display:flex;align-items:flex-end"><button class="btn-ghost sm" type="button" id="pwResend" onclick="pwBegin(true)">Resend code</button></div>
+              <div class="field"><label>New password</label><input type="password" id="acPw1" placeholder="••••••••"></div>
+              <div class="field"><label>Confirm new password</label><input type="password" id="acPw2" placeholder="••••••••"></div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="btn" type="button" id="pwSaveBtn" onclick="pwSave()">Update password</button>
+              <button class="btn-ghost" type="button" onclick="pwCancel()">Cancel</button>
+            </div>
           </div>
 
           <div class="sec-divider"></div>
@@ -576,19 +592,7 @@
 
   async function save(){
     const s=_sess(); if(!s||!s.token){ location.href='epacific-login.html'; return; }
-    const pw1=(document.getElementById('acPw1')||{}).value||'';
-    const pw2=(document.getElementById('acPw2')||{}).value||'';
-    if(pw1 || pw2){
-      if(pw1.length<6){ toast('Password must be at least 6 characters.'); return; }
-      if(pw1!==pw2){ toast('Passwords do not match.'); return; }
-      try{
-        const r=await fetch(_C.SUPABASE_URL+'/auth/v1/user',
-          {method:'PUT',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json'},
-           body:JSON.stringify({password:pw1})});
-        if(!r.ok){ const t=await r.text(); toast('Could not change password: '+t.slice(0,80)); return; }
-        document.getElementById('acPw1').value=''; document.getElementById('acPw2').value='';
-      }catch(e){ toast('Could not change password.'); return; }
-    }
+    /* 비밀번호는 여기서 안 다룬다 — pwBegin/pwSave 로 떼어냈다 (2026-09-07) */
     const biz=(document.getElementById('acBiz')||{}).value||'';
     const ctc=(document.getElementById('acContact')||{}).value||'';
     const phn=(document.getElementById('acPhone')||{}).value||'';
@@ -598,12 +602,74 @@
          headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json',Prefer:'return=minimal'},
          body:JSON.stringify({company_name:biz,contact_name:ctc,phone:phn})});
       if(!r.ok){
-        toast('Saved your password/addresses, but business details could not be updated. Please contact us.');
+        toast('Your addresses were saved, but business details could not be updated. Please contact us.');
         return;
       }
     }catch(e){ toast('Could not save business details.'); return; }
     toast('✓ Saved');
   }
+
+  /* ── 비밀번호 변경: 코드 먼저, 그다음 새 비번 (2026-09-07) ──────────
+     GET /auth/v1/reauthenticate 가 계정 메일로 6자리 코드를 보낸다.
+     그 코드를 PUT /auth/v1/user 에 {password, nonce} 로 같이 올린다.
+     Supabase 의 "Secure password change" 를 켜두면 nonce 없는 변경을 서버가 거부한다 —
+     화면에서만 막는 게 아니라서 토큰으로 API 를 직접 때려도 못 뚫는다. */
+  let pwCooldown=0;
+  function pwCancel(){
+    document.getElementById('pwBox').style.display='none';
+    document.getElementById('pwStart').style.display='';
+    ['acCode','acPw1','acPw2'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+  }
+  window.pwCancel=pwCancel;
+
+  async function pwBegin(again){
+    const s=_sess(); if(!s||!s.token){ location.href='epacific-login.html'; return; }
+    const now=Date.now();
+    if(now<pwCooldown){ toast('Please wait a moment before asking for another code.'); return; }
+    const btn=document.getElementById(again?'pwResend':'pwStart');
+    if(btn) btn.disabled=true;
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/auth/v1/reauthenticate',
+        {method:'GET',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      if(!r.ok){ const t=await r.text(); toast('Could not send the code ('+r.status+'). '+t.slice(0,70)); return; }
+      pwCooldown=now+60000;   /* Supabase 가 같은 사람에게 60초에 한 통만 보낸다 */
+      const em=(document.getElementById('acEmail')||{}).value||'your email';
+      document.getElementById('pwSentMsg').textContent='We emailed a 6-digit code to '+em+'. It expires shortly.';
+      document.getElementById('pwStart').style.display='none';
+      document.getElementById('pwBox').style.display='';
+      const c=document.getElementById('acCode'); if(c) c.focus();
+      if(again) toast('✓ New code sent');
+    }catch(e){ toast('Could not send the code.'); }
+    finally{ if(btn) btn.disabled=false; }
+  }
+  window.pwBegin=pwBegin;
+
+  async function pwSave(){
+    const s=_sess(); if(!s||!s.token){ location.href='epacific-login.html'; return; }
+    const code=(document.getElementById('acCode').value||'').trim();
+    const pw1=document.getElementById('acPw1').value||'';
+    const pw2=document.getElementById('acPw2').value||'';
+    if(!code){ toast('Enter the 6-digit code from your email.'); return; }
+    if(pw1.length<8){ toast('Password must be at least 8 characters.'); return; }
+    if(pw1!==pw2){ toast('Passwords do not match.'); return; }
+    const btn=document.getElementById('pwSaveBtn'); if(btn) btn.disabled=true;
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/auth/v1/user',
+        {method:'PUT',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json'},
+         body:JSON.stringify({password:pw1,nonce:code})});
+      if(!r.ok){
+        const t=await r.text();
+        /* 코드가 틀렸거나 만료된 경우가 대부분이다 */
+        toast(/nonce/i.test(t) ? 'That code is wrong or expired — send a new one.'
+                               : 'Could not change password ('+r.status+').');
+        return;
+      }
+      pwCancel();
+      toast('✓ Password changed');
+    }catch(e){ toast('Could not change password.'); }
+    finally{ if(btn) btn.disabled=false; }
+  }
+  window.pwSave=pwSave;
 
   function acLogout(){
     try{ localStorage.removeItem('pacific_user'); localStorage.removeItem('pacific_customer'); }catch(e){}

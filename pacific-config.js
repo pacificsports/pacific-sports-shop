@@ -18,8 +18,8 @@ window.PACIFIC_CONFIG = {
   // Authorize.net 공개 키 두 개 (Account → Settings → Security Settings)
   //  - API Login ID (공개되어도 되는 ID)
   //  - Manage Public Client Key 에서 발급한 Public Client Key
-  ANET_API_LOGIN_ID: '54tbWB4w3Ma',
-  ANET_CLIENT_KEY: '35C5jbQQaqcA4DA4wx9y879Bck9Cf9e4S95G9V7t75ytbT9HuBZgacLgD4kJX7px',
-  ANET_ENV: 'sandbox',          // 테스트 후 'production' 으로
+  ANET_API_LOGIN_ID: '538BhgBf',
+  ANET_CLIENT_KEY: '9S9dzP4nBNaYQ82fVdvL8uV4F34xx6nzJK584a6vfg4srBCQQxkA5ZYcds737GjC',
+  ANET_ENV: 'production',       // 2026-09-08 production 전환 (옛 epacificsports.com 과 같은 계정·같은 키)
   WEIGHT_PER_PC: 0.5            // 배송비 계산용 1장당 무게(lbs)
 };

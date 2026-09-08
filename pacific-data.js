@@ -164,6 +164,7 @@ window.PacificData = (function () {
     {no:'8150',desc:'Adult Cationic Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
     {no:'8155',desc:'Adult Spacedye Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
     {no:'8180',desc:'Adult Mesh Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
+    {no:'8255',desc:'Youth Spacedye Performance Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'8368',desc:'Adult 30/1 CVC Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'9307',desc:'Adult Infinite Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'}
   ];

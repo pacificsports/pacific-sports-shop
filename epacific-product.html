@@ -1196,23 +1196,43 @@
     '60:40 Cotton / Poly',
     '100% Cotton',
     'US Cotton',
-    'Made in Haiti',
     'Tear-away label',
+    'Made in Haiti',
     'BCI Certified'
   ];
   // 기본 칩 (설정 없을 때)
   const DEFAULT_SPEC_CHIPS=['4.3 oz / 145 gram','60:40 Cotton / Poly','Tear-away label','BCI Certified'];
+  /* 📐 칩 순서는 스타일마다 정하지 않는다 — 모든 상품이 같은 차례로 보인다 (2026-09-09, 사장님 지시).
+       ① 무게 → ② 원단 → ③ US Cotton → ④ Tear-away label → ⑤ Made in Haiti → ⑥ BCI Certified
+     "고를 때 보는 것(무게·원단)" 이 먼저, "믿을 때 보는 것(원산지·인증)" 이 나중이다.
+     SanMar·Next Level·S&S 도 같은 차례다. 목록에 없는 칩은 원래 순서대로 맨 뒤에 붙는다.
+     예전엔 스타일마다 저장된 순서를 그대로 썼고, 그래서 22개 스타일에 순서가 12가지로 갈려 있었다. */
+  function chipRank(c){
+    const t=String(c||'').trim().toLowerCase();
+    if(/\boz\b|gram|sq\.?\s*yd/.test(t))                 return 1;   // 무게
+    if(t==='us cotton')                                    return 3;   // 원면 산지
+    if(/cotton|poly|blend|tri-?blend|rayon|linen/.test(t)) return 2;   // 원단 구성
+    if(/tear-?away|label/.test(t))                         return 4;
+    if(/made in/.test(t))                                  return 5;
+    if(/bci|certified|oeko|wrap/.test(t))                  return 6;
+    return 7;                                                          // 나머지는 뒤에
+  }
+  function sortChips(list){
+    return (list||[]).map((c,i)=>({c,i,r:chipRank(c)}))
+                     .sort((a,b)=> a.r-b.r || a.i-b.i)
+                     .map(x=>x.c);
+  }
   function activeChips(){
-    return Array.isArray(styleSettings.spec_chips) ? styleSettings.spec_chips : DEFAULT_SPEC_CHIPS.slice();
+    return sortChips(Array.isArray(styleSettings.spec_chips) ? styleSettings.spec_chips : DEFAULT_SPEC_CHIPS.slice());
   }
   function renderSpecChips(){
     const box=document.getElementById('specChips');
     if(!box) return;
     const act=activeChips();
     if(editOn){
-      // 켜진 칩(저장된 순서, 드래그 가능) + 꺼진 기본 칩 + "+ Add"
+      // 켜진 칩(순서는 자동) + 꺼진 기본 칩 + "+ Add"
       const onChips=act.map(c=>
-        `<span class="chip chip-edit chip-on" draggable="true" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
+        `<span class="chip chip-edit chip-on" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
       const offChips=ALL_SPEC_CHIPS.filter(c=>!act.includes(c)).map(c=>
         `<span class="chip chip-edit chip-off" data-chip="${c.replace(/"/g,'&quot;')}">${c}</span>`);
       box.innerHTML=onChips.join('')+offChips.join('')+
@@ -1231,27 +1251,8 @@
           if(!ok) alert('Could not save. Please try again.');
         });
       });
-      // 드래그로 순서 바꾸기 (켜진 칩들끼리)
-      let dragSrc=null;
-      box.querySelectorAll('.chip-on[draggable]').forEach(el=>{
-        el.addEventListener('dragstart',e=>{ dragSrc=el; el.style.opacity='.4'; e.dataTransfer.effectAllowed='move'; });
-        el.addEventListener('dragend',()=>{ if(dragSrc){dragSrc.style.opacity='';} dragSrc=null; });
-        el.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
-        el.addEventListener('drop',async e=>{
-          e.preventDefault();
-          if(!dragSrc || dragSrc===el) return;
-          const from=dragSrc.dataset.chip, to=el.dataset.chip;
-          let list=activeChips().slice();
-          const fi=list.indexOf(from), ti=list.indexOf(to);
-          if(fi<0||ti<0) return;
-          list.splice(fi,1); list.splice(ti,0,from);   // from을 to 자리로
-          dragSrc.dataset.dragged='1';
-          styleSettings.spec_chips=list;
-          renderSpecChips();
-          const ok=await saveSettings(currentStyle,{spec_chips:list});
-          if(!ok) alert('Could not save. Please try again.');
-        });
-      });
+      /* 드래그로 순서 바꾸기는 없앴다 — 순서는 `sortChips()` 가 모든 상품에 똑같이 매긴다.
+         끌어다 놓아도 다시 제자리로 가니, 되지도 않는 손잡이를 남겨두면 사람만 헷갈린다. */
       // + Add → 입력칸으로
       const addBtn=box.querySelector('#chipAdd');
       if(addBtn) addBtn.addEventListener('click',()=>{

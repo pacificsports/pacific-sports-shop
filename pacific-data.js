@@ -431,6 +431,15 @@ window.PacificData = (function () {
     }
     const b=P.base;
     if(b){
+      /* 아동 계열 — 거래처 가격표(customer_prices)와 같은 칸을 웹 기본가에도 둔다 (2026-09-09).
+         한 스타일은 자기 계열 칸 하나만 쓴다:
+           Toddler price_toddler · Juvy price_juvy · Youth price_youth
+           Kids  2T-5T price_2t · XS-XL base_price
+         이렇게 두면 나중에 "이 거래처는 거래처가, 저 거래처는 웹 기본가" 로 바꿔도 두 표가 그대로 맞는다. */
+      const vk=_stepUp(b,_TOTORDER,_TOTSZ,sz,null); if(vk!==undefined) return vk;
+      if(/youth/i.test(P.cat)   && b.price_youth!=null)   return Math.round(Number(b.price_youth)*100)/100;
+      if(/juvy/i.test(P.cat)    && b.price_juvy!=null)    return Math.round(Number(b.price_juvy)*100)/100;
+      if(/toddler/i.test(P.cat) && b.price_toddler!=null) return Math.round(Number(b.price_toddler)*100)/100;
       /* 표(Price Management)에 값이 적혀 있으면 그 값이 먼저다 — 스타일별 예외를 손으로 넣을 수 있어야 한다.
          비어 있으면 기본가에서 _WEBBIG 규칙으로 계산한다. */
       const col=_BIGSZ[sz];

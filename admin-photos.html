@@ -21,6 +21,9 @@
   header .logo-img{height:34px}
   header .title{font-family:var(--display);font-size:24px}
   header .who{margin-left:auto;font-size:13px;color:var(--faint)}
+  /* 이 화면엔 나가는 링크가 아예 없어서 한번 들어오면 못 빠져나왔다. 헤더 오른쪽 끝에 붙인다. */
+  header .backlink{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600;white-space:nowrap}
+  header .backlink:hover{text-decoration:underline}
   .wrap{max-width:1080px;margin:0 auto;padding:30px}
   .bar{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:8px}
   .field{display:flex;flex-direction:column;gap:6px}
@@ -58,6 +61,7 @@
   <img src="logo-pacific.png" alt="Pacific Sports" class="logo-img">
   <div class="title">사진 관리</div>
   <div class="who" id="connWho">연결 확인 중…</div>
+  <a href="epacific-timeless.html" class="backlink">← Back to site</a>
 </header>
 
 <div class="wrap">

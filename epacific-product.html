@@ -191,8 +191,10 @@
   .search-sug .sg .sgimg{width:26px;height:26px;border-radius:6px;background:#eceae6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
   .search-sug .sg .sgimg svg{display:block}
   .search-sug .none{padding:12px 14px;color:var(--faint);font-size:14px}
-  /* jump highlight */
-  tr.jump-hl td{background:var(--accent-soft)!important;transition:background .3s}
+  /* ⚠ 예전에는 색 칩을 누르면 그 색의 세 줄에 1.6초 동안 초록 띠(--accent-soft)를 깔았다.
+     칩을 눌러 색을 옮겨 다니면 띠가 깔렸다 사라지는 게 계속 눈에 걸려서 없앴다.
+     어디로 갔는지는 그 줄이 표 맨 위로 올라오고 첫 칸에 커서가 잡히는 것으로 충분히 안다.
+     (초록색은 이제 '수량을 넣은 줄'(.active-row) 하나만 쓴다 — 그래야 그 색이 의미를 갖는다.) */
   /* WH 두 줄 방식 */
   .otable th.whcol{width:42px}
   .otable th.szh{padding:13px 6px}
@@ -265,8 +267,11 @@
   .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
   .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
   .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
-  /* 색마다 SC+CA 를 더한 재고 줄 — 주문 줄이 아니라 참고용이라 조용하게 */
-  .otable tbody tr.stock-total>td{background:#f6f6f3;padding-top:2px;padding-bottom:5px}
+  /* 색마다 SC+CA 를 더한 재고 줄 — 주문 줄이 아니라 참고용이라 조용하게.
+     ⚠ 예전엔 이 줄에 회색(#f6f6f3)을 깔았는데, 색마다 띠가 하나씩 생겨서 표가 어수선했다.
+     깔개를 빼고 **묶음 끝에 선 하나**로 바꿨다 — 한 색은 SC · CA · SC+CA 세 줄이고,
+     그 선이 다음 색이 시작되는 자리를 말해준다. 글씨가 이미 작고 흐려서 참고용으로 읽힌다. */
+  .otable tbody tr.stock-total>td{padding-top:2px;padding-bottom:5px;border-bottom:1.5px solid var(--line-2)}
   .otable tbody tr.stock-total .stock{font-size:12px;font-weight:700;color:var(--ink,#1c1c1a);opacity:.75}
   .otable tbody tr.stock-total .stock.out{opacity:.3;font-weight:500}
   .otable tbody tr.stock-total .stock.low{color:#c0392b;opacity:1}
@@ -1058,11 +1063,7 @@
       try{ if(Math.abs(_jumpOffset(scroller, row, headH)) > 2) _jumpAlign(scroller, row, headH, false); }catch(e){}
     }, ms));
 
-    // 그 색에 딸린 줄 전부 강조 (SC · CA · SC+CA 합계)
-    const rows=[row];
-    for(let n=row.nextElementSibling; n && n.dataset && n.dataset.color===row.dataset.color; n=n.nextElementSibling) rows.push(n);
-    rows.forEach(r=>r.classList.add('jump-hl'));
-    setTimeout(()=>rows.forEach(r=>r.classList.remove('jump-hl')),1600);
+    /* 여기서 예전에 그 색의 세 줄에 jump-hl 을 1.6초 붙였다 (초록 띠). 없앴다 — 위 CSS 주석 참고. */
     /* 첫 입력칸에 포커스 — preventScroll 없이 부르면 브라우저가 스크롤을 다시 잡아서
        방금 맞춰놓은 위치를 흐트러뜨린다. 그래서 색이 표 가운데에 걸쳐 보였다. */
     const firstInput=row.querySelector('input:not([disabled])');

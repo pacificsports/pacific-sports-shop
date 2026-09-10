@@ -225,11 +225,15 @@
   <b id="homeStaffName">Staff</b>
   <span style="opacity:.65">· Manage the shop</span>
   <span style="flex:1"></span>
+  <!-- 직원이 웹사이트에서 하는 일은 딱 두 가지다: **스타일 수정**과 **사진**.
+       나머지(웹주문·가입승인·웹가격·재고업로드·매출분석)는 전부 psflowx 에서 한다.
+       그래서 이 바가 웹사이트 관리의 **유일한 입구**다 — 예전엔 사진 화면으로 가려면
+       Dashboard 를 거쳐야 했는데, 그 Dashboard 를 안 쓰기로 해서 Photos 를 여기로 꺼냈다. -->
   <button onclick="location.href='epacific-category.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Manage styles</button>
+  <button onclick="location.href='admin-photos.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Photos</button>
   <!-- 👥 Staff: owner 에게만 보인다 (아래 initStaffBar 에서 켜준다).
-       Dashboard 버튼은 없앴다 — 그 안 타일 5개 중 4개(웹오더·가입승인·가격·재고업로드)는
-       psflowx 로 옮겼거나 안 쓰고, 매출 분석은 psflowx 대시보드가 더 낫다. 남은 건 Staff 하나뿐이라
-       그 하나를 여기로 꺼냈다. admin-dashboard.html 페이지 자체는 지우지 않았다(주소로는 열린다). -->
+       admin-dashboard.html 파일 자체는 지우지 않았다 — 링크만 다 끊었으니 주소로는 열린다.
+       나중에 뭐가 빠진 게 나오면 그때 다시 꺼내면 된다. -->
   <button id="homeStaffUsers" onclick="location.href='admin-staff.html'" style="display:none;border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Staff</button>
   <button id="homeStaffLogout" style="border:none;background:none;color:#b9b6ab;cursor:pointer;font-size:13px">Log out</button>
 </div>

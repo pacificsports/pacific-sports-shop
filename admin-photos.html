@@ -123,13 +123,18 @@
   // ── 초기화: 로그인 확인 → 연결 확인 + 스타일 목록 ──
   (async function init(){
     if(!URL || !KEY){ $('connWho').textContent='⚠ 설정 없음'; setStatus('pacific-config.js 에 URL/키가 없어요.','err'); return; }
-    // 관리자 로그인 가드 — 아니면 로그인 페이지로 보냄
-    SESSION = await PacificAuth.requireAdmin('admin-login.html');
-    if(!SESSION) return;  // 리다이렉트 중
+    /* ⚠⚠ 여기서 예전에 `PacificAuth.requireAdmin('admin-login.html')` 를 불렀다.
+       그런 함수는 **없다** — PacificAuth 가 주는 건 currentUser / currentStaff / logout 셋뿐이다.
+       그래서 이 화면은 열자마자 TypeError 로 죽어서, 스타일 목록도 안 뜨고 사진을 아무도 못 올렸다.
+       (사진 없는 스타일이 41개나 쌓인 이유가 이것이다.)
+       admin-login.html 도 옛날 4자리 PIN 화면이라 안 쓴다 — 로그인은 epacific-login.html 하나다.
+       다른 admin 화면들이 쓰는 것과 똑같은 방식으로 맞췄다. */
+    try{ SESSION = await PacificAuth.currentStaff(); }catch(e){ SESSION = null; }
+    if(!SESSION){ location.href='epacific-login.html?next=admin-photos.html'; return; }
     try{
       styles = await PacificData.getStyles();
       $('connWho').innerHTML = `${SESSION.name} (${SESSION.role}) · 스타일 ${styles.length}개 &nbsp; <a href="#" id="logout" style="color:var(--accent)">로그아웃</a>`;
-      const lo=$('logout'); if(lo) lo.addEventListener('click',e=>{e.preventDefault();PacificAuth.logout();location.href='admin-login.html';});
+      const lo=$('logout'); if(lo) lo.addEventListener('click',e=>{e.preventDefault();PacificAuth.logout();location.href='epacific-login.html';});
       fillStyleSelect(styles);
     }catch(e){
       $('connWho').textContent='⚠ 연결 실패';

@@ -50,35 +50,11 @@ window.PacificAuth = (function () {
 })();
 
 /* =====================================================================
-   관리자 하위 페이지(admin-*.html)에 'Dashboard' 바로가기 링크 자동 추가
-   — 'Back to site' 링크 앞에 삽입. 대시보드/손님 페이지엔 안 넣음.
+   ⚠ 예전에는 여기서 admin-*.html 모든 화면에 '← Dashboard' 링크를 자동으로 꽂았다.
+   웹 대시보드는 이제 안 쓴다 — 매출 분석·웹주문·가입승인·웹가격·재고업로드는 전부
+   psflowx 로 갔고, 웹사이트에 남는 건 **사진**과 **스타일 수정** 둘뿐이다.
+   (게다가 Cloudflare Pages 가 주소에서 `.html` 을 떼기 때문에 `p === 'admin-dashboard.html'`
+    제외 조건이 안 먹혀서, 대시보드가 **자기 자신을 가리키는** 링크까지 달고 있었다.)
+   그래서 이 자동 삽입을 통째로 없앴다. 각 화면은 '← Back to site' 로 홈에 돌아가고,
+   홈의 직원 바에서 다시 들어간다.
    ===================================================================== */
-(function () {
-  function addDashLink() {
-    var p = (location.pathname.split('/').pop() || '').toLowerCase();
-    if (p.indexOf('admin-') !== 0 || p === 'admin-dashboard.html') return;
-    if (document.querySelector('[data-dashlink]')) return;
-    var links = document.getElementsByTagName('a');
-    for (var i = 0; i < links.length; i++) {
-      var t = (links[i].textContent || '').toLowerCase();
-      if (t.indexOf('back to site') > -1 || t.indexOf('back to shop') > -1) {
-        var back = links[i];
-        // 'Back to site' 를 감싸는 그룹을 만들어 그 앞에 Dashboard 링크를 붙임
-        // (그래야 space-between 레이아웃에서 가운데로 안 밀리고 오른쪽에 나란히 놓임)
-        var group = document.createElement('span');
-        group.setAttribute('data-dashlink', '1');
-        group.style.cssText = 'display:inline-flex;align-items:center;gap:16px';
-        var a = document.createElement('a');
-        a.href = 'admin-dashboard.html';
-        a.textContent = '← Dashboard';
-        a.style.cssText = 'color:var(--accent,#3d5a40);text-decoration:none;font-weight:600';
-        back.parentNode.insertBefore(group, back);
-        group.appendChild(a);
-        group.appendChild(back);
-        break;
-      }
-    }
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addDashLink);
-  else addDashLink();
-})();

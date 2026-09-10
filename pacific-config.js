@@ -14,7 +14,7 @@ window.PACIFIC_CONFIG = {
   // checkout-worker 배포 주소 (예: https://checkout.hjbae.workers.dev)
   CHECKOUT_WORKER: 'https://checkout.hjbae.workers.dev',
   // staff-admin-worker 배포 주소 (직원 계정 생성/관리). 워커 배포 후 주소를 넣으세요.
-  STAFF_WORKER: '',
+  STAFF_WORKER: 'https://staff-admin.hjbae.workers.dev',
   // Authorize.net 공개 키 두 개 (Account → Settings → Security Settings)
   //  - API Login ID (공개되어도 되는 ID)
   //  - Manage Public Client Key 에서 발급한 Public Client Key

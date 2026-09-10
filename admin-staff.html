@@ -65,7 +65,16 @@ a.back:hover{color:var(--ink)}
 <h1>Staff <span class="em">Management</span></h1>
 <div class="who" id="whoami"></div>
 </div>
-<p class="sub">Add and manage staff who can access the shop admin. (Separate from the IMS inventory system.)</p>
+<p class="sub"><b>This is the same login as psflowx.</b> Both sites use one Supabase account list and one <code>user_roles</code> table &mdash; so the same email and password works on psflowx.com and here, and the role you set below is the role psflowx sees too.</p>
+
+<div class="card" style="border-color:#e6d9b8;background:#fdfaf0">
+<b>Which role?</b>
+<div class="hint" style="margin-top:6px">
+<b>Sales</b> or <b>Warehouse</b> &mdash; can edit the shop (photos, styles) and use psflowx. <b>Cannot see cost.</b><br>
+<b>Accounting</b> or <b>Owner</b> &mdash; the same, <b>plus they can see cost and margin in psflowx</b>. Only give these to people who should see cost.<br>
+<b>Owner</b> also gets this Staff page.
+</div>
+</div>
 
 <div id="cfgWarn" class="card" style="display:none;border-color:#e7c9c5;background:#fdf3f1">
 <b style="color:var(--bad)">Setup needed:</b> <span class="muted">The <code>STAFF_WORKER</code> URL in pacific-config.js is empty. Deploy the worker and add its URL before you can add staff.</span>
@@ -74,7 +83,7 @@ a.back:hover{color:var(--ink)}
 <!-- Add -->
 <div class="card">
 <h2>Add staff</h2>
-<div class="hint">Create the account and role in one step. A <b>temporary password</b> is shown once — share it with the staff member along with their email.</div>
+<div class="hint">Create the account and role in one step. A <b>temporary password</b> is shown once — share it with the staff member along with their email. They use that same email and password to log in to <b>psflowx.com</b> as well.</div>
 <div class="row">
 <div class="fld"><label>Name</label><input id="f_name" type="text" placeholder="Jane Doe" /></div>
 <div class="fld"><label>Email</label><input id="f_email" type="text" placeholder="staff@example.com" style="min-width:220px" /></div>
@@ -103,7 +112,7 @@ a.back:hover{color:var(--ink)}
 <!-- List -->
 <div class="card">
 <h2>Staff list</h2>
-<div class="hint">Change roles or revoke access. (Revoking keeps the login account, but admin access is removed.)</div>
+<div class="hint">Change roles or revoke access. Revoking keeps the login account but removes staff access <b>on both sites</b> — they will not be able to get into psflowx either.</div>
 <div id="listMsg" class="msg"></div>
 <table id="tbl" style="display:none">
 <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Added</th><th></th></tr></thead>

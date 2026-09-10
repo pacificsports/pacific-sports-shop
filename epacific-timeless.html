@@ -225,8 +225,12 @@
   <b id="homeStaffName">Staff</b>
   <span style="opacity:.65">· Manage the shop</span>
   <span style="flex:1"></span>
-  <button onclick="location.href='admin-dashboard.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Dashboard</button>
   <button onclick="location.href='epacific-category.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Manage styles</button>
+  <!-- 👥 Staff: owner 에게만 보인다 (아래 initStaffBar 에서 켜준다).
+       Dashboard 버튼은 없앴다 — 그 안 타일 5개 중 4개(웹오더·가입승인·가격·재고업로드)는
+       psflowx 로 옮겼거나 안 쓰고, 매출 분석은 psflowx 대시보드가 더 낫다. 남은 건 Staff 하나뿐이라
+       그 하나를 여기로 꺼냈다. admin-dashboard.html 페이지 자체는 지우지 않았다(주소로는 열린다). -->
+  <button id="homeStaffUsers" onclick="location.href='admin-staff.html'" style="display:none;border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Staff</button>
   <button id="homeStaffLogout" style="border:none;background:none;color:#b9b6ab;cursor:pointer;font-size:13px">Log out</button>
 </div>
 <script>
@@ -240,6 +244,8 @@
       bar.style.display='flex';
       const n=document.getElementById('homeStaffName');
       if(n) n.textContent=(st.name||st.email)+' ('+st.role+')';
+      const su=document.getElementById('homeStaffUsers');
+      if(su && st.role==='owner') su.style.display='';   // 직원 계정 관리는 owner 만
       const lo=document.getElementById('homeStaffLogout');
       if(lo) lo.addEventListener('click',()=>{ PacificAuth.logout(); location.reload(); });
     }catch(e){}

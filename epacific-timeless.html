@@ -89,6 +89,82 @@
   .btn.text:hover{transform:none;color:var(--accent);background:none}
   .btn.text span{border-bottom:1px solid currentColor;padding-bottom:2px}
 
+  /* ══════════════ 🎞 메인 배너 슬라이더 (2026-09-10) ══════════════
+     예전엔 hero 가 글자만 있는 고정 한 장이었다. 광고할 자리가 없어서
+     Next Level 처럼 여러 장이 도는 배너로 바꿨다.
+     내용은 psflowx → Website 탭 → 🎞 Banner 에서 직원이 직접 고친다
+     (pr_config 의 'web_banners' 한 줄에 JSON 으로 저장된다).
+     ⚠ 서버에 아무것도 없거나 못 읽어도 화면이 비지 않는다 — 스크립트의 HS_FALLBACK 이 뜬다. */
+
+  /* ⚠ 슬라이드를 position:absolute 로 겹치면 **가장 높은 장이 잘린다** (첫 장이 높이를 정하니까).
+     그래서 grid 한 칸에 전부 포개서 track 높이가 제일 큰 장을 따라가게 했다. */
+  .hs{position:relative;overflow:hidden;background:var(--sbg,var(--bg));color:var(--sfg,var(--ink));
+    transition:background .55s ease,color .55s ease}
+  .hs-track{display:grid}
+  .hs-slide{grid-area:1/1;opacity:0;visibility:hidden;transition:opacity .5s ease;
+    background:var(--sbg,var(--bg));color:var(--sfg,var(--ink))}
+  .hs-slide.on{opacity:1;visibility:visible;z-index:2}
+  .hs-in{max-width:1240px;margin:0 auto;padding:74px 30px 82px;display:grid;
+    grid-template-columns:1.02fr .98fr;gap:34px;align-items:center;min-height:clamp(390px,44vw,530px)}
+  .hs-txt .eyebrow{color:inherit;opacity:.72;margin-bottom:22px}
+  .hs-txt .eyebrow .dot{background:currentColor;opacity:.85}
+  .hs-txt h2{font-family:var(--display);font-weight:400;font-size:clamp(40px,5.6vw,80px);
+    line-height:.98;letter-spacing:-.015em;margin:0 0 20px;max-width:15ch;color:inherit;text-wrap:balance}
+  .hs-txt h2 i{font-style:italic;opacity:.78}
+  .hs-txt p{font-size:17.5px;max-width:44ch;margin:0 0 30px;font-weight:350;opacity:.82;color:inherit}
+  /* ⚠ 여기서 background:currentColor 를 쓰면 안 된다 — 같은 규칙의 color 가 먼저 적용돼서
+     글자색과 배경색이 같아지고 버튼이 통째로 사라진다. 변수를 직접 쓴다. */
+  .hs-slide .cta .btn{background:var(--sfg,var(--ink));color:var(--sbg,var(--bg))}
+  .hs-slide .cta .btn:hover{background:var(--sfg,var(--ink));color:var(--sbg,var(--bg));opacity:.84}
+  .hs-slide .cta .btn.text{background:none;color:var(--sfg,var(--ink));opacity:.85}
+  .hs-slide .cta .btn.text:hover{opacity:1;background:none;color:var(--sfg,var(--ink))}
+
+  /* 사진 세 장을 겹쳐 펼친다 — 한 장 딸랑 놓는 것보다 색 종류가 많다는 게 보인다.
+     ⚠ 상품 사진은 전부 **흰 배경(불투명)** 이다 — 투명 PNG 가 아니다. 어두운 배너에 그냥 얹으면
+     흰 네모가 둥둥 떠서 망가진 것처럼 보인다. 그래서 아예 **흰 카드**로 만들었다:
+     둥근 모서리 + 그림자를 주면 어떤 배경색에서도 일부러 그렇게 디자인한 것처럼 읽힌다.
+     (사진 배경을 투명하게 다시 찍으면 그때 background/box-shadow 를 빼고
+      filter:drop-shadow 로 바꾸면 된다.) */
+  .hs-art{position:relative;height:clamp(250px,29vw,370px);display:flex;align-items:center;justify-content:center}
+  .hs-art img{position:absolute;height:100%;width:auto;max-width:44%;object-fit:contain;
+    background:#fff;border-radius:16px;box-shadow:0 16px 38px rgba(0,0,0,.24)}
+  .hs-art img:nth-child(1){transform:translateX(-66%) rotate(-8deg) scale(.8);z-index:1}
+  .hs-art img:nth-child(2){transform:translateX(66%) rotate(8deg) scale(.8);z-index:1}
+  .hs-art img:nth-child(3){transform:scale(.98);z-index:2}
+  .hs-art.one img{position:relative;transform:none;max-width:72%}
+
+  /* 화살표·점·진행바는 .hs 의 color 를 물려받는다 — 슬라이드가 바뀔 때 스크립트가 .hs 의
+     색을 같이 바꿔주기 때문에 어두운 장에서도 안 사라진다. */
+  .hs-arw{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:42px;height:42px;
+    border-radius:50%;border:1px solid currentColor;background:transparent;color:inherit;
+    font-size:19px;line-height:1;cursor:pointer;opacity:.28;transition:opacity .2s,background .2s;
+    display:flex;align-items:center;justify-content:center;padding:0 0 2px}
+  .hs:hover .hs-arw{opacity:.72}
+  .hs-arw:hover,.hs-arw:focus-visible{opacity:1;background:rgba(128,128,128,.16)}
+  .hs-prev{left:14px}.hs-next{right:14px}
+
+  .hs-bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:rgba(128,128,128,.2);z-index:6}
+  .hs-bar i{display:block;height:100%;width:0;background:currentColor;opacity:.5}
+  .hs-bar i.run{animation:hsfill linear forwards}
+  @keyframes hsfill{from{width:0}to{width:100%}}
+
+  .hs-dots{position:absolute;left:0;right:0;bottom:16px;z-index:6;display:flex;gap:8px;
+    justify-content:center;align-items:center}
+  .hs-dots button{width:9px;height:9px;padding:0;border-radius:50%;border:1px solid currentColor;
+    background:transparent;color:inherit;opacity:.4;cursor:pointer;transition:opacity .2s,width .25s}
+  .hs-dots button.on{opacity:1;background:currentColor;width:24px;border-radius:99px}
+
+  @media (max-width:860px){
+    .hs-in{grid-template-columns:1fr;padding:52px 22px 70px;gap:24px;min-height:0}
+    .hs-txt h2{max-width:none}
+    .hs-art{height:clamp(190px,46vw,260px);order:2}
+    .hs-arw{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hs,.hs-slide{transition:none}
+    .hs-bar i.run{animation:none;width:100%}
+  }
+
   .marquee-soft{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;background:var(--paper)}
   .marquee-soft .row{display:flex;gap:60px;padding:20px 0;white-space:nowrap;animation:slide 38s linear infinite;font-family:var(--display);font-size:24px;color:var(--faint)}
   .marquee-soft .row i{font-style:italic;color:var(--accent)}
@@ -262,17 +338,218 @@
 
 
 
-<div class="hero">
-  <div class="hero-in">
-    <div class="eyebrow rise d1"><span class="dot"></span>Premium blank apparel · since 1992</div>
-    <h1 class="rise d2">Blanks made to <i>be made into</i> something.</h1>
-    <p class="rise d3">Premium blank tees, tanks, long sleeves, and hooded long sleeves built for print — across cotton, blends, heathers, and performance. Choose a color, fill in your sizes, and order by the piece or the case in a single step.</p>
-    <div class="cta rise d4">
-      <a href="#order" class="btn">Try the order grid</a>
-      <a href="epacific-login.html" class="btn text"><span>Become a reseller</span></a>
-    </div>
-  </div>
+<!-- 🎞 메인 배너 — 내용은 psflowx → Website 탭 → 🎞 Banner 에서 고친다.
+     여기 마크업은 껍데기뿐이고, 아래 스크립트가 슬라이드를 만들어 넣는다.
+     예전의 고정 hero 문구는 스크립트 안 HS_FALLBACK 첫 장으로 그대로 살아 있다. -->
+<div class="hs" id="hs" tabindex="0" aria-roledescription="carousel" aria-label="Pacific Sports 소식">
+  <div class="hs-track" id="hsTrack"></div>
+  <button class="hs-arw hs-prev" id="hsPrev" type="button" aria-label="이전 배너">&lsaquo;</button>
+  <button class="hs-arw hs-next" id="hsNext" type="button" aria-label="다음 배너">&rsaquo;</button>
+  <div class="hs-dots" id="hsDots"></div>
+  <div class="hs-bar"><i id="hsBar"></i></div>
 </div>
+<script>
+(function(){
+  /* ⚠⚠ pacific-config.js 는 이 배너 마크업보다 **훨씬 아래**(문서 끝)에서 불린다.
+     그래서 여기서 window.PACIFIC_CONFIG 를 지금 읽으면 아직 없어서 {} 가 되고,
+     슬라이드도 사진도 영원히 못 불러온다(항상 기본 3장만 뜬다).
+     설정은 init() 안에서, DOMContentLoaded 뒤에 읽는다 — 그때는 확실히 들어와 있다. */
+  var CFG = {}, IMGBASE = '';
+  var DUR = 6800;                 // 한 장이 머무는 시간(ms)
+  var slides = [], idx = 0, timer = null, paused = false, imgsByStyle = null;
+  var host = document.getElementById('hsTrack'), hs = document.getElementById('hs');
+  if(!host || !hs) return;
+
+  /* 서버에 배너가 하나도 없을 때 보여줄 기본 3장.
+     첫 장은 예전 hero 문구 그대로 — 배너 기능을 켜다가 홈이 갑자기 낯설어지지 않게. */
+  var HS_FALLBACK = [
+    { eyebrow:'Premium blank apparel · since 1992',
+      title:'Blanks made to <i>be made into</i> something.',
+      sub:'Premium blank tees, tanks, long sleeves, and hooded long sleeves built for print — across cotton, blends, heathers, and performance.',
+      btn:'Try the order grid', href:'#order',
+      btn2:'Become a reseller', href2:'epacific-login.html',
+      bg:'#fbfbf9', fg:'#1c1c1a', style:'' },
+    { eyebrow:'Colour, not compromise',
+      title:'One tee. <i>Fifty-seven</i> colours.',
+      sub:'Pick the shade the job needs — heathers, brights, naturals and PFD, all off the same blank.',
+      btn:'See the colours', href:'epacific-shopbycolor.html',
+      btn2:'Shop all styles', href2:'epacific-category.html',
+      bg:'#1f2420', fg:'#f3f2ec', style:'8368' },
+    { eyebrow:'Sumter, SC · Eastvale, CA',
+      title:'By the piece. Or <i>by the case.</i>',
+      sub:'Fill in the sizes you want and order either way in one step — shipped from whichever warehouse is closer to you.',
+      btn:'Start an order', href:'#order',
+      btn2:'Talk to us', href2:'mailto:sales@peacepacificsports.com',
+      bg:'#eceae2', fg:'#1c1c1a', style:'1348' }
+  ];
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]; }); }
+  /* 제목만 <i> 를 살려둔다 — 기울임 강조를 쓰고 싶어서. 그 밖의 태그는 다 글자로 만든다. */
+  function titleHtml(s){ return esc(s).replace(/&lt;i&gt;/g,'<i>').replace(/&lt;\/i&gt;/g,'</i>'); }
+  /* 링크는 우리 사이트 안이나 http(s)/mailto 만 통과시킨다 — 배너 글은 직원이 넣는 값이라
+     javascript: 같은 게 들어오면 안 된다. */
+  function safeHref(h){
+    h = String(h==null?'':h).trim();
+    if(!h) return '';
+    if(/^(https?:\/\/|mailto:|#|\/)/i.test(h)) return h;
+    if(/^[A-Za-z0-9._~-]+\.html(\?[^"'<>\s]*)?$/.test(h)) return h;
+    return '';
+  }
+  function safeColor(c){
+    c = String(c==null?'':c).trim();
+    return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '';
+  }
+
+  async function loadImgs(){
+    if(imgsByStyle) return imgsByStyle;
+    imgsByStyle = {};
+    var need = slides.some(function(s){ return s && s.style; });
+    if(!need) return imgsByStyle;
+    try{
+      var r = await fetch(CFG.SUPABASE_URL + '/rest/v1/product_images?select=style_number,color,image_path&order=sort_order,color',
+        { headers:{ apikey:CFG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + CFG.SUPABASE_ANON_KEY } });
+      if(r.ok){ (await r.json()).forEach(function(x){
+        var k = String(x.style_number);
+        (imgsByStyle[k] = imgsByStyle[k] || []).push({ color:String(x.color||''), path:x.image_path });
+      }); }
+    }catch(e){}
+    return imgsByStyle;
+  }
+  /* 슬라이드에 쓸 사진 고르기 — 색을 적어놨으면 그 색, 안 적었으면 목록에서 골고루 3장.
+     앞에서 3장만 뽑으면 알파벳 순서라 비슷한 색만 나온다. */
+  function pickImgs(sl){
+    var list = (imgsByStyle && imgsByStyle[String(sl.style||'')]) || [];
+    if(!list.length) return [];
+    var want = (sl.colors||[]).map(function(c){ return String(c).trim().toLowerCase(); }).filter(Boolean);
+    var out = [];
+    if(want.length) want.forEach(function(w){
+      var hit = list.filter(function(x){ return x.color.toLowerCase() === w; })[0];
+      if(hit) out.push(hit);
+    });
+    if(!out.length){
+      var step = Math.max(1, Math.floor(list.length / 3));
+      for(var i=0; i<list.length && out.length<3; i+=step) out.push(list[i]);
+    }
+    return out.slice(0,3);
+  }
+
+  function artHtml(sl){
+    var im = pickImgs(sl);
+    if(!im.length) return '';
+    var tag = function(x){ return '<img src="' + esc(IMGBASE + x.path) + '" alt="" loading="lazy">'; };
+    if(im.length === 1) return '<div class="hs-art one">' + tag(im[0]) + '</div>';
+    /* CSS 가 3번째 칸을 가운데·제일 크게 그린다. 그래서 가운데에 놓고 싶은 장을 마지막에 넣는다. */
+    var order = im.length === 3 ? [im[1], im[2], im[0]] : im;
+    return '<div class="hs-art">' + order.map(tag).join('') + '</div>';
+  }
+
+  function slideHtml(sl, i){
+    var h1 = safeHref(sl.href), h2 = safeHref(sl.href2);
+    var cta = ((h1 && sl.btn) || (h2 && sl.btn2))
+      ? '<div class="cta rise d4">'
+        + (h1 && sl.btn  ? '<a href="' + esc(h1) + '" class="btn">' + esc(sl.btn) + '</a>' : '')
+        + (h2 && sl.btn2 ? '<a href="' + esc(h2) + '" class="btn text"><span>' + esc(sl.btn2) + '</span></a>' : '')
+        + '</div>'
+      : '';
+    return '<div class="hs-slide" role="group" aria-roledescription="slide" aria-label="'
+      + (i+1) + ' / ' + slides.length + '" style="--sbg:' + (safeColor(sl.bg) || '#fbfbf9')
+      + ';--sfg:' + (safeColor(sl.fg) || '#1c1c1a') + ';">'
+      + '<div class="hs-in"><div class="hs-txt">'
+      + (sl.eyebrow ? '<div class="eyebrow rise d1"><span class="dot"></span>' + esc(sl.eyebrow) + '</div>' : '')
+      + (sl.title ? '<h2 class="rise d2">' + titleHtml(sl.title) + '</h2>' : '')
+      + (sl.sub ? '<p class="rise d3">' + esc(sl.sub) + '</p>' : '')
+      + cta + '</div>' + artHtml(sl) + '</div></div>';
+  }
+
+  function paint(){
+    host.innerHTML = slides.map(slideHtml).join('');
+    var many = slides.length > 1;
+    var dots = document.getElementById('hsDots');
+    if(dots){
+      dots.innerHTML = many ? slides.map(function(s,i){
+        return '<button type="button" aria-label="' + (i+1) + '번째 배너"></button>'; }).join('') : '';
+      [].forEach.call(dots.children, function(b,i){
+        b.addEventListener('click', function(){ go(i, true); }); });
+    }
+    ['hsPrev','hsNext'].forEach(function(id){
+      var b = document.getElementById(id); if(b) b.style.display = many ? '' : 'none'; });
+    var bar = document.getElementById('hsBar');
+    if(bar) bar.style.display = many ? '' : 'none';
+    show(0);
+  }
+
+  function show(i){
+    idx = (i + slides.length) % slides.length;
+    var kids = host.children;
+    for(var k=0;k<kids.length;k++) kids[k].classList.toggle('on', k===idx);
+    var dots = document.getElementById('hsDots');
+    if(dots) [].forEach.call(dots.children, function(b,k){ b.classList.toggle('on', k===idx); });
+    /* 화살표·점·진행바가 어두운 장에서도 보이게 .hs 의 색까지 같이 바꾼다 */
+    var sl = slides[idx] || {};
+    hs.style.setProperty('--sbg', safeColor(sl.bg) || '#fbfbf9');
+    hs.style.setProperty('--sfg', safeColor(sl.fg) || '#1c1c1a');
+    /* 글자 등장 애니메이션 다시 재생 — 클래스를 떼었다 붙이면 브라우저가 다시 돌린다 */
+    var on = kids[idx];
+    if(on) [].forEach.call(on.querySelectorAll('.rise'), function(el){
+      el.style.animation = 'none'; void el.offsetHeight; el.style.animation = ''; });
+    tick();
+  }
+
+  function tick(){
+    if(timer){ clearTimeout(timer); timer = null; }
+    var bar = document.getElementById('hsBar');
+    if(bar){
+      bar.classList.remove('run'); void bar.offsetWidth;
+      bar.style.animationDuration = DUR + 'ms';
+      if(slides.length > 1 && !paused && !document.hidden) bar.classList.add('run');
+    }
+    if(slides.length < 2 || paused || document.hidden) return;
+    timer = setTimeout(function(){ show(idx + 1); }, DUR);
+  }
+  function go(i, byHand){ if(byHand) paused = false; show(i); }
+
+  var pv = document.getElementById('hsPrev'), nx = document.getElementById('hsNext');
+  if(pv) pv.addEventListener('click', function(){ go(idx-1, true); });
+  if(nx) nx.addEventListener('click', function(){ go(idx+1, true); });
+  hs.addEventListener('mouseenter', function(){
+    paused = true; if(timer){ clearTimeout(timer); timer = null; }
+    var b = document.getElementById('hsBar'); if(b) b.classList.remove('run'); });
+  hs.addEventListener('mouseleave', function(){ paused = false; tick(); });
+  hs.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowLeft') go(idx-1, true); else if(e.key === 'ArrowRight') go(idx+1, true); });
+  var x0 = null;
+  hs.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX; }, {passive:true});
+  hs.addEventListener('touchend', function(e){
+    if(x0 == null) return;
+    var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if(Math.abs(dx) > 45) go(idx + (dx < 0 ? 1 : -1), true); }, {passive:true});
+  /* 다른 탭에 가 있는 동안 헛돌지 않게 */
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden){ if(timer){ clearTimeout(timer); timer = null; } } else { tick(); } });
+
+  async function init(){
+    CFG = window.PACIFIC_CONFIG || {};
+    IMGBASE = (CFG.SUPABASE_URL||'') + '/storage/v1/object/public/' + (CFG.IMAGE_BUCKET||'product-images') + '/';
+    var got = null;
+    if(CFG.SUPABASE_URL && CFG.SUPABASE_ANON_KEY) try{
+      var r = await fetch(CFG.SUPABASE_URL + '/rest/v1/pr_config?select=v&k=eq.web_banners',
+        { headers:{ apikey:CFG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + CFG.SUPABASE_ANON_KEY } });
+      if(r.ok){
+        var j = await r.json(); var raw = (j[0]||{}).v;
+        if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ raw = null; } }
+        if(Array.isArray(raw)) got = raw.filter(function(s){
+          return s && s.on !== false && (s.title || s.eyebrow); });
+      }
+    }catch(e){}
+    slides = (got && got.length) ? got : HS_FALLBACK;
+    await loadImgs();
+    paint();
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
 
 <div class="marquee-soft">
   <div class="row">

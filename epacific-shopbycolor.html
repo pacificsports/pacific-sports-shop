@@ -68,7 +68,17 @@
   .colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;margin-bottom:50px}
   .swatch{cursor:pointer;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--paper);transition:transform .2s,box-shadow .2s}
   .swatch:hover{transform:translateY(-4px);box-shadow:0 18px 36px -22px rgba(28,28,26,.4)}
-  .swatch .chip{height:96px}
+  .swatch .chip{height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  /* 스와치는 색칠한 알약이 아니라 **그 색의 실제 상품 사진**이다 (2026-09-12) */
+  .swatch .chip img{width:100%;height:100%;object-fit:contain;display:block}
+  .st-card .tee img{width:100%;height:100%;object-fit:contain;border-radius:9px}
+  .picked .ph .big-chip{overflow:hidden;background:#f4f4f0;display:flex;align-items:center;justify-content:center}
+  .picked .ph .big-chip img{width:100%;height:100%;object-fit:contain}
+  .csearch{flex:0 0 240px;margin-left:auto;position:relative}
+  .csearch input{width:100%;border:1.5px solid var(--line-2);border-radius:999px;padding:8px 14px;
+    font-family:var(--body);font-size:13.5px;outline:none;background:var(--paper);color:var(--ink)}
+  .csearch input:focus{border-color:var(--accent)}
+  .fam .cnt{opacity:.55;font-size:12.5px}
   .swatch .lbl{padding:11px 13px}
   .swatch .lbl .nm{font-size:14px;font-weight:500}
   .swatch .lbl .av{font-size:12px;color:var(--faint);margin-top:2px}
@@ -146,86 +156,209 @@
   <div>© 2026 Pacific Sports. Demo redesign concept.</div>
 </footer>
 
-<script>
-  function teeSVG(hex,s){s=s||40;return `<svg viewBox="0 0 100 100" width="${s}" height="${s}"><path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="${hex}" stroke="rgba(0,0,0,.1)" stroke-width="1"/><path d="M30 18 C34 24 42 26 50 26 C58 26 66 24 70 18 C66 21 58 22 50 22 C42 22 34 21 30 18 Z" fill="rgba(0,0,0,.08)"/></svg>`;}
-
-  // 색상 (계열 포함)
-  const COLORS=[
-    ['Natural','#ede6d6','neutral'],['White','#f7f7f4','neutral'],['Sand','#d8c4a0','neutral'],['Tan','#c9a87c','neutral'],['Wheat','#e0cd9a','neutral'],
-    ['Black','#232323','black'],['Charcoal Htr','#595959','black'],['Smoke','#8a9aa0','black'],['Shadow Grey','#6e6e6e','black'],['Pewter','#8c8c86','black'],
-    ['Navy','#27314f','blue'],['Monaco Blue','#2f5b8f','blue'],['Sapphire','#2f4f8f','blue'],['Baby Blue','#a9c9e0','blue'],['Frost Blue','#bcd6dc','blue'],['Royal Htr','#3a4a8c','blue'],
-    ['Clover','#3f7d4f','green'],['Olive','#6b6a3f','green'],['Artichoke','#7d8064','green'],['River Green','#4f8a7a','green'],['Pistachio','#bcd09a','green'],['Bermuda','#5bbcb6','green'],
-    ['Cardinal','#8e2535','red'],['Wine','#5a2733','red'],['Tabasco','#9c2f2f','red'],['Rust','#a85636','red'],['Cinnamon','#b05c33','red'],
-    ['Canary','#f5d935','warm'],['Papaya','#f0905a','warm'],['Cantaloupe','#f0a875','warm'],['Honeycomb','#e8b84a','warm'],['Butter','#f3e3a0','warm'],
-    ['Purple','#5a3f7a','purple'],['Future Dusk','#6a6480','purple'],['Pink Ice','#edc6cf','purple'],['Peach Rose','#e8a99c','purple']
-  ];
-  const FAMILIES=[
-    ['all','All colors',[]],
-    ['neutral','Neutrals','#d8c4a0'],['black','Black & Grey','#595959'],['blue','Blues','#2f5b8f'],
-    ['green','Greens','#3f7d4f'],['red','Reds','#8e2535'],['warm','Yellows & Orange','#f0a875'],['purple','Purple & Pink','#5a3f7a']
-  ];
-  // 이 색을 제공하는 스타일 (데모: 대부분 공통)
-  const STYLES=[
-    ['1368','60:40 Short Sleeve Crew','4.3 oz · XS–3XL'],
-    ['1315','100% Cotton Crew','5.0 oz · XS–3XL'],
-    ['1410','40/1 Crew','4.0 oz · S–2XL'],
-    ['1311','30/1 V-neck','4.3 oz · S–XL'],
-    ['1314','30/1 Tank Top','4.3 oz · S–2XL'],
-    ['1322','30/1 Long Sleeve','4.5 oz · S–2XL']
-  ];
-
-  let activeFam='all';
-  const famEl=document.getElementById('families');
-  const colorsEl=document.getElementById('colors');
-  const pickedEl=document.getElementById('picked');
-
-  function renderFamilies(){
-    famEl.innerHTML=FAMILIES.map(f=>{
-      const sw = f[0]==='all' ? '' : `<span class="sw"><i style="background:${f[2]}"></i></span>`;
-      return `<div class="fam ${f[0]===activeFam?'active':''}" onclick="setFam('${f[0]}')">${sw}${f[1]}</div>`;
-    }).join('');
-  }
-  function setFam(f){ activeFam=f; renderFamilies(); renderColors(); pickedEl.classList.remove('show'); }
-
-  function renderColors(){
-    const list = activeFam==='all' ? COLORS : COLORS.filter(c=>c[2]===activeFam);
-    colorsEl.innerHTML=list.map(c=>{
-      // 데모: 색상별 대략 제공 스타일 수
-      const n = 4 + (c[0].length % 3);
-      return `<div class="swatch" onclick="pickColor('${c[0]}','${c[1]}')">
-        <div class="chip" style="background:${c[1]}"></div>
-        <div class="lbl"><div class="nm">${c[0]}</div><div class="av">${n} styles</div></div>
-      </div>`;
-    }).join('');
-  }
-
-  function pickColor(name,hex){
-    pickedEl.innerHTML=`
-      <div class="ph">
-        <div class="big-chip" style="background:${hex}"></div>
-        <div>
-          <h2>${name}</h2>
-          <div class="sub2">Styles available in ${name}</div>
-        </div>
-        <button class="close" onclick="document.getElementById('picked').classList.remove('show')">✕ Close</button>
-      </div>
-      <div class="styles">
-        ${STYLES.map(s=>`
-          <div class="st-card" onclick="location.href='epacific-product.html?style=${s[0]}'">
-            <div class="tee">${teeSVG(hex,40)}</div>
-            <div class="si"><div class="no">#${s[0]}</div><div class="nm">${s[1]}</div><div class="meta">${s[2]}</div></div>
-          </div>`).join('')}
-      </div>`;
-    pickedEl.classList.add('show');
-    pickedEl.scrollIntoView({behavior:'smooth',block:'center'});
-  }
-
-  renderFamilies();
-  renderColors();
-</script>
+<!-- ⚠ 여기 있던 데모 스크립트(하드코딩 색 36개 · 언제나 같은 스타일 6개 ·
+     "N styles" = 색 이름 길이로 계산)를 지웠다. 진짜 데이터로 그리는 코드는
+     pacific-data.js 뒤에 있다 (2026-09-12). -->
 
 <script src="pacific-config.js"></script>
 <script src="pacific-data.js"></script>
+
+<script>
+/* ═══════════════ 🎨 Shop by Color — 진짜 데이터로 다시 만들었다 (2026-09-12) ═══════════════
+   [stated] 하윤: "이 shop by color는 왜 저렇케 나오는거야?? 우리가 스타일 안올려놓은거도 있고"
+
+   [예전] 이 화면은 **처음부터 끝까지 데모(가짜)** 였다:
+     · 색 36개가 코드에 박혀 있었다
+     · 색을 아무거나 눌러도 **언제나 같은 스타일 6개** — 1368·1315·1410·1311·1314·1322
+       · `1410` 은 우리 카탈로그에 **없는 번호**다
+       · Natural 에 실제로 나오는 건 그 여섯 중 1368 하나뿐이었다
+         (진짜: 1348·1362·1364·1368·2382·2388·8368)
+     · 색마다 붙은 "N styles" 는 **색 이름 길이로 만든 숫자**였다 — `4 + (이름길이 % 3)`
+
+   [이제] 전부 실측 데이터다:
+     · 색 ↔ 스타일 = `skus`(is_active=true) × 카탈로그(`PacificData.getStyles()`)
+       − 숨긴 스타일(`style_settings.is_hidden`)
+     · 스와치 그림 = `product_images` 의 **그 색 실제 사진**
+     · 사이즈 범위 = 그 스타일 SKU 사이즈에서 계산 (박아둔 XS–5XL 이 아니다)
+     · 개수 = 진짜 개수
+
+   ⚠ **사진 없는 색은 목록에 안 낸다.** 카탈로그 색이 250개인데 사진이 있는 건 164개다.
+     사진이 없으면 보여줄 게 없어서 빈 칸이 되고, 그게 바로 "안 올려놓은 것" 처럼 보인다.
+     사진을 올리면 그 색은 **저절로** 목록에 들어온다 (코드 고칠 필요 없음).
+   ⚠ 색 계열(Neutrals·Blues…)은 **이름 낱말로** 가른다 — 250색에 사람이 계열을 달아둔 표가
+     없다. 규칙에 안 걸리는 색은 `Other` 로 모인다(지금 4개: Astro·Excalibur Htr·Patrol·Topaz Htr).
+     엉뚱한 계열에 넣는 것보다 Other 가 정직하다.
+   ⚠ 이 화면은 **손님 눈(anon 키)** 으로 읽는다. `styles` 표는 anon 에게 막혀 있을 수 있어서
+     카탈로그는 `PacificData.getStyles()` 를 쓴다 — 실패하면 pacific-data.js 의 내장 목록으로
+     알아서 물러난다.
+   ⚠ 실패하면 **가짜로 채우지 않는다** — 안내문을 띄운다. 예전 데모가 바로 그 반대였다. */
+(function(){
+  const FAMILIES=[['all','All colors',''],['neutral','Neutrals','#d8c4a0'],['black','Black & Grey','#595959'],
+    ['blue','Blues','#2f5b8f'],['green','Greens','#3f7d4f'],['red','Reds','#8e2535'],
+    ['warm','Yellows & Orange','#f0a875'],['purple','Purple & Pink','#5a3f7a'],['other','Other','#c9c7bf']];
+  /* 순서가 중요하다 — 먼저 걸린 규칙이 이긴다.
+     예) 'RED BLACK HTR' 은 red, 'SNOW BLACK' 은 black, 'PEACH ROSE' 는 purple&pink */
+  const FAM_RULES=[
+    ['red',    /RED|CARDINAL|MAROON|BURGUNDY|WINE|MERLOT|CRANBERRY|POMEGRANATE|SANGRIA|STRAWBERRY|BRICK|TABASCO|CHILI|CRIMSON|SCARLET|RUBY/],
+    ['purple', /PURPLE|VIOLET|LAVENDER|LILAC|PLUM|GRAPE|PINK|ROSE|MAGENTA|FUCHSIA|FLAMINGO|ORCHID|DUSK/],
+    ['blue',   /BLUE|NAVY|ROYAL|SAPPHIRE|DENIM|CHAMBRAY|INDIGO|SKY|AQUA|TEAL|TURQUOISE|COBALT|CYAN|ICEBERG|ABYSS|SEASIDE|MAHI|MAKO|POOL|BLUEBERRY/],
+    ['green',  /GREEN|OLIVE|MOSS|SAGE|MINT|FOREST|KELLY|LIME|PISTACHIO|CLOVER|ARTICHOKE|SHAMROCK|EVERGREEN|SPRUCE|KIWI|DILL|CELADON|SEAFOAM|HONEYDEW|BERMUDA|MILITARY|ARMY|RANGER|CAMO/],
+    ['warm',   /YELLOW|GOLD|ORANGE|PEACH|APRICOT|MUSTARD|CANARY|BANANA|BUTTER|LEMON|HONEYCOMB|PAPAYA|CANTALOUPE|MANGO|CORAL|TANGERINE|AMBER/],
+    ['black',  /BLACK|CHARCOAL|GRAPHITE|GREY|GRAY|SLATE|SHADOW|PEWTER|STEEL|SMOKE|ASH|IRON|GUNMETAL|COAL|SOOT|ONYX|EBONY|CONCRETE|SILVER|METAL|FOG|ECLIPSE|ATHLETIC/],
+    ['neutral',/WHITE|NATURAL|SAND|TAN\b|KHAKI|CREAM|IVORY|BONE|OATMEAL|PUTTY|COCONUT|WHEAT|VANILLA|PFD|BROWN|CHOCOLATE|COFFEE|BRONZE|ROOT BEER|CINNAMON|RUST|CLAY|PEPPER|COYOTE|BISCUIT|LATTE|TAUPE|BEIGE/]
+  ];
+  function famOf(name){
+    const u=String(name).toUpperCase();
+    for(const r of FAM_RULES){ if(r[1].test(u)) return r[0]; }
+    return 'other';
+  }
+  const esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  /* 화면 표기: BLACK → Black · NAVY HTR → Navy Htr · PFD·(HT) 는 대문자 유지 */
+  function title(c){
+    return String(c).toLowerCase().replace(/\b([a-z])/g,(m,x)=>x.toUpperCase())
+      .replace(/\bPfd\b/g,'PFD').replace(/\(Ht\)/g,'(HT)');
+  }
+  function teeSVG(hex,s){s=s||40;return '<svg viewBox="0 0 100 100" width="'+s+'" height="'+s+'"><path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="'+hex+'" stroke="rgba(0,0,0,.1)" stroke-width="1"/></svg>';}
+
+  const el = id => document.getElementById(id);
+  const SZ = (window.PacificData && PacificData.config && PacificData.config.sizeOrder)
+             || ['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+  let DATA=null, activeFam='all', query='';
+
+  function imgUrl(cfg, path){
+    if(!path) return '';
+    if(/^https?:\/\//.test(path)) return path;
+    return cfg.SUPABASE_URL+'/storage/v1/object/public/'+(cfg.IMAGE_BUCKET||'product-images')+'/'+path;
+  }
+
+  async function load(){
+    const cfg=window.PACIFIC_CONFIG||{};
+    const H={apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+cfg.SUPABASE_ANON_KEY};
+    const get=async p=>{
+      const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/'+p,{headers:H});
+      if(!r.ok) throw new Error(p.split('?')[0]+' '+r.status);
+      return r.json();
+    };
+    const styles = await PacificData.getStyles();
+    const [sk, pi, ss] = await Promise.all([
+      get('skus?select=style_number,color,size&is_active=eq.true&limit=200000'),
+      get('product_images?select=style_number,color,image_path,sort_order&order=sort_order.asc&limit=100000'),
+      get('style_settings?select=style_number,is_hidden').catch(()=>[])
+    ]);
+    const meta={};
+    (styles||[]).forEach(x=>{ meta[String(x.no)]={desc:x.desc||'',cat:x.cat||'',sr:x.sr||''}; });
+    const hidden={};
+    (ss||[]).forEach(x=>{ if(x.is_hidden) hidden[String(x.style_number)]=1; });
+    const ok = n => !!meta[n] && !hidden[n];
+
+    const byColor={}, sizesOf={};
+    (sk||[]).forEach(r=>{
+      const n=String(r.style_number), c=String(r.color||'').trim().toUpperCase();
+      if(!c || !ok(n)) return;
+      (byColor[c]=byColor[c]||{})[n]=1;
+      if(r.size) (sizesOf[n]=sizesOf[n]||{})[String(r.size).trim().toUpperCase()]=1;
+    });
+    const photo={};
+    (pi||[]).forEach(r=>{
+      const n=String(r.style_number), c=String(r.color||'').trim().toUpperCase(), u=imgUrl(cfg,r.image_path);
+      if(!u || !ok(n)) return;
+      if(c && !photo[c+'|'+n]) photo[c+'|'+n]=u;   /* 그 색 그 스타일 사진 */
+      if(c && !photo[c])       photo[c]=u;          /* 그 색 대표 사진 */
+      if(!photo['#'+n])        photo['#'+n]=u;      /* 그 스타일 대표 사진 */
+    });
+    DATA={meta:meta,byColor:byColor,sizesOf:sizesOf,photo:photo};
+  }
+
+  function srOf(n){
+    const have=Object.keys(DATA.sizesOf[n]||{});
+    const known=have.filter(z=>SZ.indexOf(z)>=0).sort((a,b)=>SZ.indexOf(a)-SZ.indexOf(b));
+    if(known.length>1) return known[0]+'–'+known[known.length-1];
+    if(known.length===1) return known[0];
+    if(have.length) return have.sort().join(', ');
+    return (DATA.meta[n]&&DATA.meta[n].sr)||'';
+  }
+  function shownColors(){
+    return Object.keys(DATA.byColor).filter(c=>DATA.photo[c]);
+  }
+  function listed(){
+    const q=query.trim().toUpperCase();
+    return shownColors()
+      .filter(c=>(activeFam==='all'||famOf(c)===activeFam) && (!q||c.indexOf(q)>=0))
+      .sort();
+  }
+  function renderFamilies(){
+    const all=shownColors(), cnt={};
+    all.forEach(c=>{ const f=famOf(c); cnt[f]=(cnt[f]||0)+1; });
+    el('families').innerHTML = FAMILIES.filter(f=>f[0]==='all'||cnt[f[0]]).map(f=>{
+      const n = f[0]==='all' ? all.length : cnt[f[0]];
+      const sw = f[0]==='all' ? '' : '<span class="sw"><i style="background:'+f[2]+'"></i></span>';
+      return '<div class="fam'+(f[0]===activeFam?' active':'')+'" data-fam="'+f[0]+'">'
+           + sw + esc(f[1]) + ' <span class="cnt">' + n + '</span></div>';
+    }).join('')
+    + '<div class="csearch"><input id="cSearch" type="text" placeholder="Search a colour…" value="'+esc(query)+'" autocomplete="off"></div>';
+    Array.prototype.forEach.call(el('families').querySelectorAll('.fam'), d=>{
+      d.addEventListener('click',()=>{ activeFam=d.dataset.fam; renderFamilies(); renderColors(); });
+    });
+    const si=el('cSearch');
+    if(si) si.addEventListener('input',()=>{ query=si.value; renderColors();
+      /* 개수 칩은 다시 그리지 않는다 — 입력칸이 날아가면서 글자 입력이 끊긴다 */ });
+  }
+  function renderColors(){
+    const list=listed();
+    if(!list.length){
+      el('colors').innerHTML='<div style="grid-column:1/-1;color:var(--faint);font-size:14px;padding:18px 0">No colours match.</div>';
+      return;
+    }
+    el('colors').innerHTML=list.map(c=>{
+      const n=Object.keys(DATA.byColor[c]).length;
+      return '<div class="swatch" data-c="'+esc(c)+'">'
+        + '<div class="chip"><img src="'+esc(DATA.photo[c])+'" alt="'+esc(title(c))+'" loading="lazy"></div>'
+        + '<div class="lbl"><div class="nm">'+esc(title(c))+'</div>'
+        + '<div class="av">'+n+' style'+(n===1?'':'s')+'</div></div></div>';
+    }).join('');
+    Array.prototype.forEach.call(el('colors').querySelectorAll('.swatch'), d=>{
+      d.addEventListener('click',()=>pick(d.dataset.c));
+    });
+  }
+  function pick(c){
+    const ns=Object.keys(DATA.byColor[c]||{}).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+    const p=el('picked');
+    p.innerHTML='<div class="ph">'
+      + '<div class="big-chip">'+(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':'')+'</div>'
+      + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+ns.length+' style'+(ns.length===1?'':'s')+' in '+esc(title(c))+'</div></div>'
+      + '<button class="close" id="pkClose">✕ Close</button></div>'
+      + '<div class="styles">'+ns.map(n=>{
+          const img=DATA.photo[c+'|'+n]||DATA.photo['#'+n]||'';
+          const m=DATA.meta[n]||{};
+          return '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'
+            + '<div class="tee">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':teeSVG('#d8d6ce',34))+'</div>'
+            + '<div class="si"><div class="no">#'+esc(n)+'</div>'
+            + '<div class="nm">'+esc(m.desc||'')+'</div>'
+            + '<div class="meta">'+esc(srOf(n))+'</div></div></a>';
+        }).join('')+'</div>';
+    const cb=el('pkClose');
+    if(cb) cb.addEventListener('click',()=>p.classList.remove('show'));
+    p.classList.add('show');
+    p.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+
+  async function boot(){
+    try{
+      el('colors').innerHTML='<div style="grid-column:1/-1;color:var(--faint);font-size:14px;padding:18px 0">Loading colours…</div>';
+      await load();
+      renderFamilies();
+      renderColors();
+    }catch(e){
+      console.error('shop by color load failed', e);
+      el('families').innerHTML='';
+      el('colors').innerHTML='<div style="grid-column:1/-1;color:#b04;font-size:14px;padding:18px 0">'
+        +'Could not load the colour list. Please try again shortly.</div>';
+    }
+  }
+  if(window.PacificData && window.PACIFIC_CONFIG) boot();
+  else document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0));
+})();
+</script>
 
 
 

@@ -88,6 +88,18 @@
   .cbar button{border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;
     cursor:pointer;font-family:var(--body);font-size:13px}
   .cbar button.live{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+  /* 색 안의 스타일 목록 편집 (2026-09-12): 감추기 + 끌어서 순서 */
+  .st-card.editing{cursor:grab;position:relative}
+  .st-card.editing:active{cursor:grabbing}
+  .st-card.s-hidden{opacity:.42}
+  .st-card.s-hidden .nm{text-decoration:line-through}
+  .st-card.dragging{opacity:.35}
+  .st-card.drop-before{box-shadow:inset 4px 0 0 var(--accent)}
+  .st-card.drop-after{box-shadow:inset -4px 0 0 var(--accent)}
+  .s-eye{position:absolute;top:6px;right:6px;border:none;border-radius:7px;background:rgba(255,255,255,.92);
+    box-shadow:0 1px 4px rgba(28,28,26,.25);cursor:pointer;font-size:11px;line-height:1;padding:4px 6px}
+  .s-grip{position:absolute;bottom:6px;right:8px;color:var(--faint);font-size:12px;letter-spacing:1px;user-select:none}
+  .s-hint{font-size:11.5px;color:var(--faint);margin-top:10px}
   .st-card .tee img{width:100%;height:100%;object-fit:contain;border-radius:9px}
   .picked .ph .big-chip{overflow:hidden;background:#f4f4f0;display:flex;align-items:center;justify-content:center}
   .picked .ph .big-chip img{width:100%;height:100%;object-fit:contain}
@@ -260,7 +272,7 @@
     const [sk, pi, ss, wc] = await Promise.all([
       get('skus?select=style_number,color,size&is_active=eq.true&limit=200000'),
       get('product_images?select=style_number,color,image_path,sort_order&order=sort_order.asc&limit=100000'),
-      get('style_settings?select=style_number,is_hidden').catch(()=>[]),
+      get('style_settings?select=style_number,is_hidden,color_names').catch(()=>[]),
       /* ⭐ 색칩 색·감춘 색은 **새 표 없이** `style_settings` 의 한 줄에 모아 둔다 (2026-09-12).
          `style_number='__COLORS__'` 짜리 줄 하나:
             color_names   = { 'Navy Htr':'#1f2a44', … }   ← 칩 색
@@ -274,9 +286,27 @@
     ]);
     const meta={};
     (styles||[]).forEach(x=>{ meta[String(x.no)]={desc:x.desc||'',cat:x.cat||'',sr:x.sr||''}; });
-    const hidden={};
-    (ss||[]).forEach(x=>{ if(x.is_hidden) hidden[String(x.style_number)]=1; });
-    const ok = n => !!meta[n] && !hidden[n];
+    /* ⚠ 숨긴 스타일을 여기서 **버리면 Edit 모드에서 되살릴 방법이 없다.** 목록에는 담고
+       화면에서만 가른다 (손님은 안 보이고, 직원 Edit 에서는 흐리게 보인다). */
+    const shid={}, rank={}, cnames={};
+    (ss||[]).forEach(x=>{
+      const n=String(x.style_number);
+      if(x.is_hidden) shid[n]=1;
+      const cn=(x.color_names&&typeof x.color_names==='object')?x.color_names:{};
+      cnames[n]=cn;
+      /* 진열순서는 카테고리 화면과 **같은 자리**를 쓴다 — `color_names.__RANK__`
+         (전용 칸이 없어서 그 화면이 예약 키로 쓰고 있다). 한 곳에서만 정해야 두 화면이 안 어긋난다. */
+      if(typeof cn.__RANK__==='number') rank[n]=cn.__RANK__;
+    });
+    const ok = n => !!meta[n];
+
+    /* rank 가 아직 없는 스타일의 **가짜 순위**. 카테고리 화면은 기본 목록의 번째수를 쓰고
+       마지막 보루로 100000 을 쓴다 — 여기도 같은 크기(0,1,2…)로 맞춘다.
+       ⚠ 1e9 처럼 큰 수를 쓰면 끌어다 놓은 값이 5억쯤으로 튀고, 순위를 공유하는 카테고리
+         화면에서 그 스타일이 맨 뒤로 가버린다. 실제로 그렇게 나왔다. */
+    const drank={};
+    Object.keys(meta).sort((x,y)=>String(x).localeCompare(String(y),undefined,{numeric:true}))
+      .forEach((n,i)=>{ drank[n]=i; });
 
     /* 색 이름 규칙은 상품 페이지와 **같은 것**을 쓴다 (1210 CHARCOAL (HT) → Charcoal 등) */
     const PD=window.PacificData||{};
@@ -311,7 +341,7 @@
     (Array.isArray(row0.hidden_colors)?row0.hidden_colors:[]).forEach(k=>{
       const u=String(k||'').trim().toUpperCase(); if(u) chid[u]=1;
     });
-    DATA={meta,byColor,sizesOf,label,photo,hex,chid};
+    DATA={meta,byColor,sizesOf,label,photo,hex,chid,shid,rank,cnames,drank};
   }
 
   function srOf(n){
@@ -323,12 +353,25 @@
     return (DATA.meta[n]&&DATA.meta[n].sr)||'';
   }
   function title(c){ return (DATA && DATA.label && DATA.label[c]) || c; }
+  /* 그 색의 스타일 — 진열순서(카테고리 화면과 공용)대로. 손님에겐 감춘 스타일을 뺀다 */
+  function stylesOf(c, all){
+    const ns=Object.keys(DATA.byColor[c]||{}).filter(n=>all || !DATA.shid[n]);
+    return ns.sort((a,b)=> (effRank(a)-effRank(b)) || String(a).localeCompare(String(b),undefined,{numeric:true}));
+  }
+  /* 진열순서 — 정해둔 값이 있으면 그것, 없으면 기본 번째수. 카테고리 화면과 같은 규칙이다. */
+  function effRank(n){
+    const r=DATA.rank[n];
+    if(r!=null) return r;
+    const d=DATA.drank?DATA.drank[n]:null;
+    return (d!=null)?d:100000;
+  }
   /* 손님: **칠할 색(hex) 이나 사진**이 있고 감추지 않은 색만 · 직원 Edit: 전부.
      ⚠ 사진 폴백을 빼면 hex 를 아직 안 채운 동안 손님 화면이 **텅 빈다** — 색칩으로 바꾼
      날 바로 그럴 뻔했다. hex 가 들어오면 자동으로 칩이 이긴다. */
   function pool(){
     const all=Object.keys(DATA.byColor);
-    return editOn ? all : all.filter(c=>(DATA.hex[c]||DATA.photo[c]) && !DATA.chid[c]);
+    return editOn ? all
+      : all.filter(c=>(DATA.hex[c]||DATA.photo[c]) && !DATA.chid[c] && stylesOf(c).length);
   }
   function listed(){
     const q=query.trim().toUpperCase();
@@ -358,6 +401,51 @@
     return true;
   }
 
+  /* 스타일 한 줄 저장 — `style_settings` 는 스타일별 줄이라 그 줄만 건드린다.
+     ⚠ 순서(`__RANK__`)는 `color_names` 안에 살고 있어서 **기존 색 이름 규칙을 통째로 들고
+       와서** 거기에 얹어야 한다. 그냥 `{__RANK__:v}` 로 쓰면 그 스타일의 색 이름 바꾼 게
+       전부 날아간다. */
+  async function ssSave(styleNo, patch){
+    if(!staff || !staff.token){ alert('Session expired. Please log in again.'); return false; }
+    const body=Object.assign({style_number:String(styleNo), updated_at:new Date().toISOString()}, patch);
+    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/style_settings?on_conflict=style_number',
+      {method:'POST',
+       headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+staff.token,
+                'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+       body:JSON.stringify([body])});
+    if(!r.ok){ alert('Could not save. ('+r.status+')'); return false; }
+    let back=[]; try{ back=await r.json(); }catch(e){}
+    if(!back.length){ alert('Nothing was saved — your account may not have staff rights.'); return false; }
+    return true;
+  }
+  async function styleHide(n, next){
+    const prev=!!DATA.shid[n];
+    if(next) DATA.shid[n]=1; else delete DATA.shid[n];
+    renderColors(); renderBar(); if(_open) pick(_open, true);
+    const okS=await ssSave(n,{is_hidden:next});
+    if(!okS){ if(prev) DATA.shid[n]=1; else delete DATA.shid[n];
+      renderColors(); renderBar(); if(_open) pick(_open, true); }
+  }
+  /* 끌어다 놓은 자리의 앞·뒤 순위 사이 값을 준다 (카테고리 화면과 같은 방식).
+     맨 앞·맨 뒤면 한 칸 밖의 값을 쓴다. */
+  async function styleReorder(list, dragNo, targetNo, after){
+    const arr=list.filter(n=>n!==dragNo);
+    const ti=arr.indexOf(targetNo); if(ti<0) return;
+    const eff=effRank;
+    const prevNo = after ? targetNo : (arr[ti-1]||null);
+    const nextNo = after ? (arr[ti+1]||null) : targetNo;
+    const pr = (prevNo!=null) ? eff(prevNo) : (eff(nextNo)-1);
+    const nr = (nextNo!=null) ? eff(nextNo) : (eff(prevNo)+1);
+    const v=(pr+nr)/2;
+    const prev=DATA.rank[dragNo];
+    DATA.rank[dragNo]=v;
+    if(_open) pick(_open, true);
+    const cn=Object.assign({}, DATA.cnames[dragNo]||{}); cn.__RANK__=v;
+    const okS=await ssSave(dragNo,{color_names:cn});
+    if(okS){ DATA.cnames[dragNo]=cn; }
+    else { if(prev==null) delete DATA.rank[dragNo]; else DATA.rank[dragNo]=prev; if(_open) pick(_open, true); }
+  }
+
   /* ── 그리기 ───────────────────────────────────────────────────── */
   function renderBar(){
     const bar=el('cbar'); if(!bar) return;
@@ -366,8 +454,10 @@
     const all=Object.keys(DATA?DATA.byColor:{}).length;
     const noHex=DATA?Object.keys(DATA.byColor).filter(c=>!DATA.hex[c]).length:0;
     const hid=DATA?Object.keys(DATA.byColor).filter(c=>DATA.chid[c]).length:0;
+    const shidN=DATA?Object.keys(DATA.shid||{}).length:0;
     el('cbarNote').innerHTML = editOn
-      ? 'Click a swatch to set its colour · the eye hides it from customers. '
+      ? 'Swatch: click to set the colour, eye to hide · open a colour to drag styles into order or hide them ('
+        + shidN + ' style' + (shidN===1?'':'s') + ' hidden). '
         + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden'
       : 'Turn on edit to set swatch colours and hide colours. '
         + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden';
@@ -398,7 +488,7 @@
       return;
     }
     el('colors').innerHTML=list.map(c=>{
-      const n=Object.keys(DATA.byColor[c]).length;
+      const n=stylesOf(c).length;   /* 개수는 손님이 보는 스타일 기준 */
       const hx=DATA.hex[c]||'';
       const hid=!!DATA.chid[c];
       const ph=(!hx && DATA.photo[c]) ? DATA.photo[c] : '';   /* hex 없으면 사진으로 버틴다 */
@@ -442,28 +532,72 @@
       });
     });
   }
-  function pick(c){
-    const ns=Object.keys(DATA.byColor[c]||{}).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+  /* 지금 열려 있는 색 — 저장 뒤 다시 그리기 위해 기억한다 */
+  let _open=null, _dragNo=null;
+  function pick(c, noScroll){
+    _open=c;
+    const ns=stylesOf(c, editOn);                /* Edit 모드에서는 감춘 것도 보여준다 */
+    const vis=stylesOf(c).length;
     const p=el('picked');
     const hx=DATA.hex[c]||'';
     p.innerHTML='<div class="ph">'
       + '<div class="big-chip"'+(hx?' style="background:'+esc(hx)+'"':'')+'>'
         + (hx?'':(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':''))+'</div>'
-      + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+ns.length+' style'+(ns.length===1?'':'s')+' in '+esc(title(c))+'</div></div>'
+      + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+vis+' style'+(vis===1?'':'s')+' in '+esc(title(c))
+        + (editOn && ns.length>vis ? ' · '+(ns.length-vis)+' hidden' : '')+'</div></div>'
       + '<button class="close" id="pkClose">✕ Close</button></div>'
-      + '<div class="styles">'+ns.map(n=>{
+      + '<div class="styles" id="pkStyles">'+ns.map(n=>{
           const img=DATA.photo[c+'|'+n]||DATA.photo['#'+n]||'';
           const m=DATA.meta[n]||{};
-          return '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'
-            + '<div class="tee">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':teeSVG(hx||'#d8d6ce',34))+'</div>'
+          const hid=!!DATA.shid[n];
+          const inner='<div class="tee">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':teeSVG(hx||'#d8d6ce',34))+'</div>'
             + '<div class="si"><div class="no">#'+esc(n)+'</div>'
             + '<div class="nm">'+esc(m.desc||'')+'</div>'
-            + '<div class="meta">'+esc(srOf(n))+'</div></div></a>';
-        }).join('')+'</div>';
+            + '<div class="meta">'+esc(srOf(n))+'</div></div>';
+          /* Edit 모드에서는 링크가 아니라 끌 수 있는 칸이다 — 끌다가 상품 페이지로
+             튀어나가면 순서를 못 바꾼다 */
+          return editOn
+            ? '<div class="st-card editing'+(hid?' s-hidden':'')+'" draggable="true" data-no="'+esc(n)+'">'
+              + inner
+              + '<button type="button" class="s-eye" title="'+(hid?'Show to customers':'Hide from customers')+'">'+(hid?'🚫':'👁')+'</button>'
+              + '<span class="s-grip">⠿</span></div>'
+            : '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+inner+'</a>';
+        }).join('')+'</div>'
+      + (editOn ? '<div class="s-hint">Drag a card to set the order customers see · the eye hides that style everywhere · order is shared with the category pages.</div>' : '');
     const cb=el('pkClose');
-    if(cb) cb.addEventListener('click',()=>p.classList.remove('show'));
+    if(cb) cb.addEventListener('click',()=>{ p.classList.remove('show'); _open=null; });
+
+    if(editOn){
+      const cards=Array.prototype.slice.call(p.querySelectorAll('.st-card.editing'));
+      cards.forEach(card=>{
+        const n=card.dataset.no;
+        const eye=card.querySelector('.s-eye');
+        if(eye) eye.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleHide(n, !DATA.shid[n]); });
+        card.addEventListener('dragstart',e=>{ _dragNo=n; card.classList.add('dragging');
+          try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',n); }catch(_){} });
+        card.addEventListener('dragend',()=>{ _dragNo=null;
+          cards.forEach(x=>x.classList.remove('dragging','drop-before','drop-after')); });
+        card.addEventListener('dragover',e=>{
+          if(!_dragNo || _dragNo===n) return;
+          e.preventDefault();
+          const r=card.getBoundingClientRect();
+          const after=(e.clientX-r.left)>r.width/2;      /* 칸이 옆으로 늘어서 있으니 좌우로 판단 */
+          card._after=after;
+          card.classList.toggle('drop-after',after);
+          card.classList.toggle('drop-before',!after);
+        });
+        card.addEventListener('dragleave',()=>card.classList.remove('drop-before','drop-after'));
+        card.addEventListener('drop',e=>{
+          e.preventDefault();
+          const after=!!card._after;
+          cards.forEach(x=>x.classList.remove('drop-before','drop-after'));
+          if(!_dragNo || _dragNo===n) return;
+          styleReorder(ns, _dragNo, n, after);
+        });
+      });
+    }
     p.classList.add('show');
-    p.scrollIntoView({behavior:'smooth',block:'center'});
+    if(!noScroll) p.scrollIntoView({behavior:'smooth',block:'center'});
   }
 
   async function boot(){
@@ -477,8 +611,11 @@
       const eb=el('cEdit');
       if(eb) eb.addEventListener('click',()=>{
         editOn=!editOn;
-        el('picked').classList.remove('show');
         renderBar(); renderFamilies(); renderColors();
+        /* 열려 있던 색 패널은 닫지 않고 **그 자리에서** 편집 모양으로 바꾼다 —
+           닫아버리면 색을 다시 찾아 눌러야 한다 */
+        if(_open && DATA.byColor[_open]) pick(_open, true);
+        else el('picked').classList.remove('show');
       });
     }catch(e){
       console.error('shop by color load failed', e);

@@ -564,7 +564,7 @@
     });
   }
   /* 지금 열려 있는 색 — 저장 뒤 다시 그리기 위해 기억한다 */
-  let _open=null, _pickNo=null, _dgClick=false;
+  let _open=null, _pickNo=null, _dgClick=false, _dgClickT=0;
 
   /* ── 그 자리에서 고치기 ───────────────────────────────────────────────
      ⚠ 42장짜리 색(Black)에서 pick() 이나 renderColors() 를 다시 부르면 사진이 전부
@@ -685,6 +685,14 @@
     _dg.ghost.style.top =(y-_dg.dy)+'px';
     dgAim();
   }
+  /* 끌기 끝에 딸려오는 click 한 번만 무시한다.
+     ⚠ 그 click 이 **안 올 수도 있다**(손 뗀 자리가 딴 카드면 click 이 카드로 안 온다).
+       그때 표시가 계속 켜져 있으면 다음에 누르는 카드가 안 먹는다 — 그래서 시계로 끈다. */
+  function dgClickGuard(){
+    _dgClick=true;
+    if(_dgClickT) clearTimeout(_dgClickT);
+    _dgClickT=setTimeout(()=>{ _dgClick=false; _dgClickT=0; }, 400);
+  }
   function dgStop(commit){
     if(!_dg) return;
     const d=_dg; _dg=null;
@@ -737,6 +745,9 @@
     });
   }
   function pick(c, noScroll){
+    /* ⚠ 다시 그리면 끌던 카드가 사라진다 — 먼저 끌기를 끝맺어 두지 않으면 상태가 남는다 */
+    if(_dg) dgStop(false);
+    _pickNo=null;
     _open=c;
     const ns=stylesOf(c, editOn);                /* Edit 모드에서는 감춘 것도 보여준다 */
     const vis=stylesOf(c).length;
@@ -778,7 +789,11 @@
           + 'a short click picks a card up so you can scroll first, then click where it goes (Esc cancels) \u00b7 '
           + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '');
     const cb=el('pkClose');
-    if(cb) cb.addEventListener('click',()=>{ p.classList.remove('show'); _open=null; });
+    if(cb) cb.addEventListener('click',()=>{
+      if(_dg) dgStop(false);
+      _pickNo=null; _dgClick=false;
+      p.classList.remove('show'); _open=null;
+    });
 
     if(editOn){
       const cards=Array.prototype.slice.call(p.querySelectorAll('.st-card.editing'));
@@ -795,34 +810,40 @@
           if(e.button!==0) return;
           if(e.target && e.target.closest && e.target.closest('button')) return;
           const sx=e.clientX, sy=e.clientY;
-          let on=false;
-          try{ card.setPointerCapture(e.pointerId); }catch(_){}
-          const mv=ev=>{
-            if(!on){
-              if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy) < 6) return;
-              on=true; _dgClick=true;            /* 뒤따라오는 click 은 무시한다 */
-              dgStart(card, sx, sy);
-            }
-            ev.preventDefault();
-            dgMove(ev.clientX, ev.clientY);
-          };
+          let on=false, done=false;
+          /* ⚠ 손잡이는 **window** 에 건다. 카드에 걸면, 끌던 중에 화면을 다시 그려
+             그 카드가 사라질 때 손잡이도 같이 사라져서 끝맺음(pointerup)이 안 온다.
+             그러면 끌기 상태가 남아서 그 뒤로 누르는 게 안 먹는다. */
           const off=ok=>{
-            card.removeEventListener('pointermove',mv);
-            card.removeEventListener('pointerup',up);
-            card.removeEventListener('pointercancel',cancel);
-            try{ card.releasePointerCapture(e.pointerId); }catch(_){}
+            if(done) return; done=true;
+            window.removeEventListener('pointermove',mv,true);
+            window.removeEventListener('pointerup',up,true);
+            window.removeEventListener('pointercancel',cancel,true);
+            window.removeEventListener('blur',cancel);
             if(on) dgStop(ok);
           };
           const up=()=>off(true);
           const cancel=()=>off(false);
-          card.addEventListener('pointermove',mv);
-          card.addEventListener('pointerup',up);
-          card.addEventListener('pointercancel',cancel);
+          const mv=ev=>{
+            /* 이미 손을 뗀 뒤에 들어온 움직임이면 스스로 끝낸다 (끝맺음을 놓친 경우) */
+            if(typeof ev.buttons==='number' && ev.buttons===0){ off(on); return; }
+            if(!on){
+              if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy) < 6) return;
+              on=true; dgClickGuard();           /* 뒤따라오는 click 한 번만 무시 */
+              dgStart(card, sx, sy);
+            }
+            if(ev.cancelable) ev.preventDefault();
+            dgMove(ev.clientX, ev.clientY);
+          };
+          window.addEventListener('pointermove',mv,true);
+          window.addEventListener('pointerup',up,true);
+          window.addEventListener('pointercancel',cancel,true);
+          window.addEventListener('blur',cancel);
         });
         /* 집기 / 놓기 — 단추가 아닌 곳을 눌렀을 때만 */
         card.addEventListener('click',e=>{
           if(e.target && e.target.closest && e.target.closest('button')) return;
-          if(_dgClick){ _dgClick=false; return; }   /* 끌기 끝에 딸려오는 click */
+          if(_dgClick){ _dgClick=false; if(_dgClickT){ clearTimeout(_dgClickT); _dgClickT=0; } return; }
           if(!_pickNo || _pickNo===n){ pickUp(n); return; }
           const r=card.getBoundingClientRect();
           const after=(e.clientX-r.left)>r.width/2;
@@ -830,15 +851,19 @@
           _pickNo=null;
           styleReorder(domOrder(), moving, n, after);
         });
-        /* 놓을 자리를 눈으로 알려 준다 */
+        /* 놓을 자리를 눈으로 알려 준다 (집어 놓고 누르는 방식용).
+           ⚠ 끌고 있는 동안에는 손대면 안 된다 — 끌기가 칠해 놓은 파란 줄을 이 손잡이가
+             지워 버려서, 끌 때 어디에 들어갈지 아무 표시도 안 보였다 (실측으로 잡았다). */
         card.addEventListener('mousemove',e=>{
+          if(_dg) return;
           if(!_pickNo || _pickNo===n){ card.classList.remove('s-target','s-target-after'); return; }
           const r=card.getBoundingClientRect();
           const after=(e.clientX-r.left)>r.width/2;
           card.classList.toggle('s-target-after', after);
           card.classList.toggle('s-target', !after);
         });
-        card.addEventListener('mouseleave',()=>card.classList.remove('s-target','s-target-after'));
+        card.addEventListener('mouseleave',()=>{ if(_dg) return;
+          card.classList.remove('s-target','s-target-after'); });
       });
       const cb2=el('pkMoveCancel');
       if(cb2) cb2.addEventListener('click',()=>{ _pickNo=null; paintPick(); });
@@ -869,6 +894,8 @@
         renderBar(); renderFamilies(); renderColors();
         /* 열려 있던 색 패널은 닫지 않고 **그 자리에서** 편집 모양으로 바꾼다 —
            닫아버리면 색을 다시 찾아 눌러야 한다 */
+        if(_dg) dgStop(false);
+        _pickNo=null; _dgClick=false;
         if(_open && DATA.byColor[_open]) pick(_open, true);
         else el('picked').classList.remove('show');
       });

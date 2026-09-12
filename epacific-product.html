@@ -171,6 +171,17 @@
   .sg-table td{padding:9px 10px;border-bottom:1px solid var(--line);color:var(--ink)}
   .sg-table tbody tr:last-child td{border-bottom:none}
   .sg-table td:first-child{font-weight:600}
+  /* Edit 모드 사이즈표: 글자를 누르면 그 자리에서 고친다 (2026-09-12) */
+  .sg-table.sg-edit td .sg-c,.sg-table.sg-edit th .sg-h,.sg-edit-note{cursor:text;border-bottom:1px dashed var(--line-2);padding-bottom:1px}
+  .sg-table.sg-edit td .sg-c:hover,.sg-table.sg-edit th .sg-h:hover,.sg-edit-note:hover{border-bottom-color:var(--accent)}
+  .sg-empty{color:var(--line-2)}
+  .sg-colx{background:none;border:none;color:var(--faint);cursor:pointer;font-size:12px;padding:0 0 0 5px;line-height:1}
+  .sg-colx:hover{color:#b04}
+  .sg-coladd{background:none;border:1px dashed var(--line-2);border-radius:999px;color:var(--accent);cursor:pointer;
+    font-family:var(--body);font-size:11px;font-weight:600;padding:3px 9px;white-space:nowrap}
+  .sg-hint{font-size:11.5px;color:var(--faint);margin-top:9px}
+  .sg-in{font-family:var(--body);font-size:14px;border:1px solid var(--accent);border-radius:6px;
+    padding:4px 7px;outline:none;width:100%;max-width:190px;box-sizing:border-box;background:var(--paper);color:var(--ink)}
 
   .flabel{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);margin-bottom:14px;display:flex;align-items:center;gap:9px}
   .flabel .n{background:var(--accent);color:#fff;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
@@ -454,21 +465,10 @@
 
     <div class="sizeguide">
       <button class="sg-toggle" id="sgToggle"><span>📏 Size Guide</span><span class="sg-arrow">▾</span></button>
-      <div class="sg-panel" id="sgPanel">
-        <div class="sg-note">Standard fit · measurements in inches</div>
-        <table class="sg-table">
-          <thead><tr><th>Size</th><th>Chest (½, laid flat)</th><th>Body Length</th></tr></thead>
-          <tbody>
-            <tr><td>XS</td><td>17"</td><td>27"</td></tr>
-            <tr><td>S</td><td>18"</td><td>28"</td></tr>
-            <tr><td>M</td><td>20"</td><td>29"</td></tr>
-            <tr><td>L</td><td>22"</td><td>30.25"</td></tr>
-            <tr><td>XL</td><td>24"</td><td>31.5"</td></tr>
-            <tr><td>2XL</td><td>26"</td><td>32.5"</td></tr>
-            <tr><td>3XL</td><td>28"</td><td>33.5"</td></tr>
-          </tbody>
-        </table>
-      </div>
+      <!-- ⚠ 예전엔 이 표가 HTML 에 **박혀 있었다** — 69개 스타일 전부 같은 XS~3XL
+           숫자를 보여줬고, 고칠 방법이 없었다. 이제 `renderSizeGuide()` 가 그린다:
+           줄은 그 스타일의 사이즈대로, 숫자는 `style_settings.size_guide` 에서 (2026-09-12) -->
+      <div class="sg-panel" id="sgPanel"><div id="sgBody"></div></div>
     </div>
 
     <div class="login-note" id="loginNote">🔒 <span><b>Wholesale pricing</b> is visible after you log in as a registered reseller.</span></div>
@@ -1338,6 +1338,178 @@
     }
   }
 
+  /* ═══════════ 📏 사이즈표도 Edit 모드에서 고친다 (2026-09-12) ═══════════
+     [stated] 하윤: "size guide 숫자도 고칠수있나?"
+
+     [예전 상태] 표가 **HTML 에 박혀 있었다.** 그래서
+       · 69개 스타일이 **전부 같은 숫자**를 보여줬다 (XS 17"/27" … 3XL 28"/33.5")
+       · 후드·탱크·유스도 같은 숫자였다
+       · 1595 는 XS~5XL 인데 표는 3XL 에서 끝났다
+       · 고칠 방법이 아예 없었다
+
+     [이제] 줄은 **그 스타일의 사이즈**를 따르고, 숫자·칸 이름·맨 위 안내문을 전부
+     그 자리에서 고친다. 저장은 `style_settings.size_guide` (스타일별):
+         { note:'…', cols:['Chest (½, laid flat)','Body Length'], rows:{ 'XS':['17"','27"'], … } }
+     칸은 늘리고 줄일 수 있다 (후드는 Sleeve 를 넣는 식).
+
+     ⚠ 숫자는 **글자 그대로** 저장한다 — 인치 기호(")나 `17 1/2` 처럼 적어도 그대로 나간다.
+       내가 단위를 붙이거나 소수로 바꾸지 않는다.
+     ⚠ 아직 아무것도 저장 안 한 스타일은 **옛 표 숫자를 그대로** 보여준다 (SG_DEFAULT).
+       한 칸이라도 저장하면 그때 보이던 값 **전체**를 함께 써서, 나머지 칸이 빈칸이 되지 않는다.
+     ⚠ 손님 화면에서는 **값이 하나도 없는 줄은 감춘다** — 1595 의 4XL·5XL 처럼 숫자를
+       아직 안 넣은 사이즈까지 빈 줄로 보이면 표가 망가져 보인다.
+     ⚠ DB 에 `size_guide` 칸이 없으면 저장이 실패한다 — 그때는 실패 메시지에
+       **무엇을 해야 하는지** 그대로 적어준다 (SQL 한 줄). 읽기 쪽은 칸이 없어도
+       `loadStyleSettings` 가 알아서 물러나므로(아래) 페이지는 멀쩡하다. */
+  const SG_DEFAULT = {
+    note:'Standard fit · measurements in inches',
+    cols:['Chest (½, laid flat)','Body Length'],
+    rows:{ 'XS':['17"','27"'], 'S':['18"','28"'], 'M':['20"','29"'], 'L':['22"','30.25"'],
+           'XL':['24"','31.5"'], '2XL':['26"','32.5"'], '3XL':['28"','33.5"'] }
+  };
+  function sgData(){
+    const g = styleSettings.size_guide;
+    const ok = g && typeof g === 'object';
+    return {
+      saved: !!ok,
+      note: (ok && typeof g.note === 'string') ? g.note : SG_DEFAULT.note,
+      cols: (ok && Array.isArray(g.cols) && g.cols.length) ? g.cols.slice() : SG_DEFAULT.cols.slice(),
+      rows: (ok && g.rows && typeof g.rows === 'object') ? g.rows : {}
+    };
+  }
+  /* 한 칸의 값 — 저장된 것 → (저장 전이면) 옛 표 → 빈칸 */
+  function sgVal(d, size, i){
+    const r = d.rows[size];
+    if(Array.isArray(r) && r[i] != null && String(r[i]).trim() !== '') return String(r[i]);
+    if(!d.saved && SG_DEFAULT.rows[size] && d.cols[i] === SG_DEFAULT.cols[i])
+      return SG_DEFAULT.rows[size][i] || '';
+    return '';
+  }
+  function sgSizes(){
+    return (Array.isArray(sizes) && sizes.length) ? sizes.slice() : Object.keys(SG_DEFAULT.rows);
+  }
+  /* 지금 보이는 값 전체를 표로 굳힌다 — 한 칸만 고쳐도 나머지가 빈칸이 되지 않게 */
+  function sgRowsNow(d){
+    const out = {};
+    sgSizes().forEach(z=>{ out[z] = d.cols.map((c,i)=>sgVal(d,z,i)); });
+    return out;
+  }
+  async function sgSave(patch){
+    const d = sgData();
+    const next = Object.assign({ note:d.note, cols:d.cols.slice(), rows:sgRowsNow(d) }, patch||{});
+    styleSettings.size_guide = next;
+    renderSizeGuide();
+    const ok = await saveSettings(currentStyle, {size_guide: next});
+    if(!ok){
+      alert(/size_guide/.test(String(_ssLastErr||''))
+        ? 'The database is missing the size_guide column, so this could not be saved.\n\n'
+          + 'Run this once in the Supabase SQL editor, then try again:\n\n'
+          + 'alter table public.style_settings add column if not exists size_guide jsonb;'
+        : 'Could not save. Please try again.');
+    }
+  }
+  /* 표 안에서 쓰는 입력칸 (칩의 알약 모양과 달라야 자연스럽다) */
+  function sgInput(el, cur, onDone){
+    const input=document.createElement('input');
+    input.type='text'; input.className='sg-in'; input.value=cur||'';
+    el.replaceWith(input); input.focus(); input.select();
+    let done=false;
+    const finish=(save)=>{ if(done) return; done=true; onDone(save ? input.value.trim() : null); };
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); finish(true); }
+      else if(e.key==='Escape'){ e.preventDefault(); finish(false); }
+    });
+    input.addEventListener('blur',()=>finish(true));
+  }
+  function renderSizeGuide(){
+    const box=document.getElementById('sgBody'); if(!box) return;
+    const d=sgData(), zs=sgSizes();
+    const cells=z=>d.cols.map((c,i)=>sgVal(d,z,i));
+    if(!editOn){
+      /* 손님 화면 — 숫자가 하나도 없는 줄은 감춘다 */
+      const shown=zs.filter(z=>cells(z).some(v=>String(v).trim()!==''));
+      if(!shown.length){ box.innerHTML=''; return; }
+      box.innerHTML='<div class="sg-note">'+chipEsc(d.note)+'</div>'
+        +'<table class="sg-table"><thead><tr><th>Size</th>'
+        + d.cols.map(c=>'<th>'+chipEsc(c)+'</th>').join('')+'</tr></thead><tbody>'
+        + shown.map(z=>'<tr><td>'+chipEsc(z)+'</td>'
+            + cells(z).map(v=>'<td>'+chipEsc(v)+'</td>').join('')+'</tr>').join('')
+        +'</tbody></table>';
+      return;
+    }
+    box.innerHTML='<div class="sg-note sg-edit-note" id="sgNote" title="Click to edit">'+chipEsc(d.note)+'</div>'
+      +'<table class="sg-table sg-edit"><thead><tr><th>Size</th>'
+      + d.cols.map((c,i)=>'<th><span class="sg-h" data-col="'+i+'" title="Click to edit">'+chipEsc(c)+'</span>'
+          + (d.cols.length>1 ? '<button type="button" class="sg-colx" data-col="'+i+'" title="Remove this column">×</button>' : '')
+          + '</th>').join('')
+      +'<th><button type="button" class="sg-coladd" id="sgColAdd">+ Column</button></th></tr></thead><tbody>'
+      + zs.map(z=>'<tr><td>'+chipEsc(z)+'</td>'
+          + cells(z).map((v,i)=>'<td><span class="sg-c" data-size="'+chipEsc(z)+'" data-col="'+i+'" title="Click to edit">'
+              + (String(v).trim() ? chipEsc(v) : '<span class="sg-empty">—</span>')+'</span></td>').join('')
+          +'<td></td></tr>').join('')
+      +'</tbody></table>'
+      +'<div class="sg-hint">Rows follow this style\'s sizes. Click the note, a column name, or any number to change it · Enter saves · Esc cancels.</div>';
+
+    /* 안내문 */
+    const note=box.querySelector('#sgNote');
+    if(note) note.addEventListener('click',()=>{
+      sgInput(note, d.note, v=>{
+        if(v===null || v===d.note){ renderSizeGuide(); return; }
+        sgSave({ note: v || SG_DEFAULT.note });
+      });
+    });
+    /* 칸 이름 */
+    box.querySelectorAll('.sg-h').forEach(h=>{
+      const i=+h.dataset.col;
+      h.addEventListener('click',()=>{
+        sgInput(h, d.cols[i], v=>{
+          if(v===null || !v || v===d.cols[i]){ renderSizeGuide(); return; }
+          const cols=d.cols.slice(); cols[i]=v;
+          sgSave({ cols: cols, rows: sgRowsNow(d) });
+        });
+      });
+    });
+    /* 칸 빼기 */
+    box.querySelectorAll('.sg-colx').forEach(b=>{
+      b.addEventListener('click',e=>{
+        e.stopPropagation();
+        const i=+b.dataset.col, cols=d.cols.slice(), rows=sgRowsNow(d);
+        cols.splice(i,1);
+        Object.keys(rows).forEach(z=>{ rows[z]=rows[z].filter((_,j)=>j!==i); });
+        sgSave({ cols: cols, rows: rows });
+      });
+    });
+    /* 칸 늘리기 */
+    const add=box.querySelector('#sgColAdd');
+    if(add) add.addEventListener('click',()=>{
+      sgInput(add, '', v=>{
+        if(!v){ renderSizeGuide(); return; }
+        const cols=d.cols.concat([v]), rows=sgRowsNow(d);
+        Object.keys(rows).forEach(z=>{ rows[z]=rows[z].concat(['']); });
+        sgSave({ cols: cols, rows: rows });
+      });
+    });
+    /* 숫자 */
+    box.querySelectorAll('.sg-c').forEach(c=>{
+      const z=c.dataset.size, i=+c.dataset.col;
+      c.addEventListener('click',()=>{
+        sgInput(c, sgVal(d,z,i), v=>{
+          if(v===null){ renderSizeGuide(); return; }
+          const rows=sgRowsNow(d);
+          if(!rows[z]) rows[z]=d.cols.map(()=> '');
+          rows[z][i]=v;
+          sgSave({ rows: rows });
+        });
+      });
+    });
+  }
+  /* 데이터가 안 와도 표는 옛 숫자로 보인다 (접혀 있어서 번쩍임 없음).
+     ⚠⚠ **여기서 그냥 `renderSizeGuide()` 를 부르면 페이지 전체가 죽는다.**
+     `styleSettings` 는 이 아래에서 `let` 으로 선언된다 → TDZ 라
+     "Cannot access 'styleSettings' before initialization" 이 터지고, 그 순간 이 스크립트가
+     멈춰서 `init()` 도 안 돌고 **상품 페이지가 백지가 된다.** (2026-09-12 실측으로 잡음)
+     `setTimeout(…,0)` 으로 스크립트가 다 읽힌 뒤에 부른다. */
+  setTimeout(()=>{ try{ renderSizeGuide(); }catch(e){} }, 0);
   /* ===== 제품 설명 (스타일별 수정) ===== */
   /* 기본 문구는 화면이 아니라 `data-default` 에서 읽는다 — 위 HTML 주석 참고 (2026-09-12) */
   const DEFAULT_DESC=(()=>{ const p=document.getElementById('pDesc');
@@ -1571,11 +1743,21 @@
   // ── 스타일별 표시 설정 (style_settings 테이블: 숨긴 사이즈/색상, 색 이름) ──
   const _SBcfg=window.PACIFIC_CONFIG||{};
   let styleSettings={ hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null };
+  /* ⚠ `size_guide` 칸이 아직 없는 DB 에서도 페이지가 멀쩡해야 한다. 칸 이름을 넣고
+     조회했다가 실패하면 **한 번만** 옛 목록으로 물러나 다시 조회한다. 안 그러면 400 이
+     떨어지면서 숨긴 사이즈·색 이름·설명까지 **전부** 기본값으로 돌아간다 (2026-09-12). */
+  const SS_COLS_FULL='hidden_sizes,hidden_colors,color_names,spec_chips,description,default_color,size_guide';
+  const SS_COLS_BASE='hidden_sizes,hidden_colors,color_names,spec_chips,description,default_color';
+  let _ssCols=SS_COLS_FULL;
+  let _ssLastErr='';
+  const SS_EMPTY={ hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null, default_color:null, size_guide:null };
   async function loadStyleSettings(style){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select=hidden_sizes,hidden_colors,color_names,spec_chips,description,default_color',
+      const get=cols=>fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?style_number=eq.'+encodeURIComponent(style)+'&select='+cols,
         {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY}});
-      if(!r.ok) return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null, default_color:null };
+      let r=await get(_ssCols);
+      if(!r.ok && _ssCols===SS_COLS_FULL){ _ssCols=SS_COLS_BASE; r=await get(_ssCols); }
+      if(!r.ok) return Object.assign({}, SS_EMPTY);
       const d=await r.json();
       const row=(d&&d[0])||{};
       return {
@@ -1584,9 +1766,10 @@
         color_names: (row.color_names&&typeof row.color_names==='object')?row.color_names:{},
         spec_chips: Array.isArray(row.spec_chips)?row.spec_chips:null,
         description: (typeof row.description==='string'&&row.description.trim())?row.description:null,
-        default_color: (typeof row.default_color==='string'&&row.default_color.trim())?row.default_color:null
+        default_color: (typeof row.default_color==='string'&&row.default_color.trim())?row.default_color:null,
+        size_guide: (row.size_guide && typeof row.size_guide==='object')?row.size_guide:null
       };
-    }catch(e){ return { hidden_sizes:[], hidden_colors:[], color_names:{}, spec_chips:null, description:null, default_color:null }; }
+    }catch(e){ return Object.assign({}, SS_EMPTY); }
   }
   async function loadHiddenSizes(style){ return (await loadStyleSettings(style)).hidden_sizes; }
   // 부분 저장 (바뀐 칸만 merge)
@@ -1597,6 +1780,8 @@
     const body=Object.assign({style_number:style, updated_at:new Date().toISOString()}, patch);
     const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
       {method:'POST',headers:H,body:JSON.stringify(body)});
+    /* 실패 이유를 남겨둔다 — 부르는 쪽이 "무엇을 해야 하는지" 를 말해줄 수 있게 */
+    if(!r.ok){ try{ _ssLastErr=await r.text(); }catch(e){ _ssLastErr=''; } } else { _ssLastErr=''; }
     return r.ok;
   }
   async function saveHiddenSizes(style,hidden){ return saveSettings(style,{hidden_sizes:hidden}); }
@@ -1738,6 +1923,7 @@
       setupGallery();
       renderSpecChips();
       applyDescription();
+      renderSizeGuide();
       // 자동 칩 = 바로가기: 색상 칩 → 색칩으로, 사이즈 칩 → Size Guide로
       const ccChip=document.getElementById('colorCountChip');
       if(ccChip){ ccChip.style.cursor='pointer'; ccChip.title='See all colors';
@@ -1796,6 +1982,7 @@
     if(_renderSwatchesFn) _renderSwatchesFn();
     renderSpecChips();
     applyDescription();
+    renderSizeGuide();
     buildAllRows();
     recalc();
   });

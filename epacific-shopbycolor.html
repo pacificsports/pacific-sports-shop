@@ -89,8 +89,19 @@
     cursor:pointer;font-family:var(--body);font-size:13px}
   .cbar button.live{border-color:var(--ink);background:var(--ink);color:var(--bg)}
   /* 색 안의 스타일 목록 편집 (2026-09-12): 감추기 + 끌어서 순서 */
-  /* 순서는 **누르기**로 바꾼다 (끌기는 크롬에서 죽었다 — 아래 s-moving 참고) */
-  .st-card.editing{cursor:pointer;position:relative;user-select:none;-webkit-user-select:none}
+  /* 끌기는 우리가 직접 만든다 (pointer 이벤트) — 브라우저 드래그 판은 안 쓴다.
+     touch-action:none : 태블릿에서 끌 때 화면이 같이 쓸려 내려가지 않게. */
+  .st-card.editing{cursor:grab;position:relative;user-select:none;-webkit-user-select:none;
+    touch-action:none}
+  .st-card.editing:active{cursor:grabbing}
+  /* 손을 따라오는 카드 모양 */
+  .s-ghost{position:fixed;z-index:9999;pointer-events:none;margin:0;
+    background:var(--paper);border:1.5px solid var(--accent);border-radius:13px;
+    box-shadow:0 14px 30px rgba(28,28,26,.28);transform:rotate(-1.5deg);opacity:.95}
+  .s-ghost .s-mv,.s-ghost .s-eye{display:none}
+  .st-card.s-lifted{opacity:.3}
+  body.s-dragging{cursor:grabbing}
+  body.s-dragging .st-card.editing{cursor:grabbing}
   .st-card.s-hidden{opacity:.42}
   .st-card.s-hidden .nm{text-decoration:line-through}
   .st-card.picked{border-color:var(--accent);background:var(--accent-soft);
@@ -476,7 +487,7 @@
     const hid=DATA?Object.keys(DATA.byColor).filter(c=>DATA.chid[c]).length:0;
     const shidN=DATA?Object.keys(DATA.shid||{}).length:0;
     el('cbarNote').innerHTML = editOn
-      ? 'Swatch: click to set the colour, eye to hide \u00b7 open a colour to reorder or hide styles ('
+      ? 'Swatch: click to set the colour, eye to hide \u00b7 open a colour to drag styles into order or hide them ('
         + shidN + ' style' + (shidN===1?'':'s') + ' hidden). '
         + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden'
       : 'Turn on edit to set swatch colours and hide colours. '
@@ -553,7 +564,7 @@
     });
   }
   /* 지금 열려 있는 색 — 저장 뒤 다시 그리기 위해 기억한다 */
-  let _open=null, _pickNo=null;
+  let _open=null, _pickNo=null, _dgClick=false;
 
   /* ── 그 자리에서 고치기 ───────────────────────────────────────────────
      ⚠ 42장짜리 색(Black)에서 pick() 이나 renderColors() 를 다시 부르면 사진이 전부
@@ -597,7 +608,96 @@
     sub.textContent = vis+' style'+(vis===1?'':'s')+' in '+title(_open)
       + ((editOn && all>vis) ? (' \u00b7 '+(all-vis)+' hidden') : '');
   }
-  /* 집어 든 스타일 — 누르기 방식이라 브라우저 드래그 판을 안 쓴다 */
+  /* 놓을 자리 찾기 — 칸의 **가장자리**까지의 거리로 재야 눈에 보이는 대로 골라진다
+     (가운데까지의 거리로 재면 한 줄 위 카드가 뽑힌다 — 실측으로 확인함). */
+  function nearestCard(cont, x, y, skipNo){
+    let best=null;
+    Array.prototype.forEach.call(cont.querySelectorAll('.st-card'), c=>{
+      if(skipNo && c.dataset.no===String(skipNo)) return;
+      const r=c.getBoundingClientRect();
+      const dx=Math.max(r.left-x, 0, x-r.right);
+      const dy=Math.max(r.top-y, 0, y-r.bottom);
+      const d=dx*dx+dy*dy;
+      if(!best || d<best.d) best={d:d, el:c, after:x>(r.left+r.right)/2};
+    });
+    return best;
+  }
+
+  /* ── 끌어서 옮기기 (직접 만든 것) ─────────────────────────────────────
+     ⚠ 브라우저 내장 HTML5 드래그는 쓰지 않는다. 하윤 크롬에서 dragstart 뒤 dragover 가
+       2번만 오고 drop 이 아예 안 왔고, 그 뒤 화면이 클릭을 안 받았다(실측). pointer
+       이벤트는 그 판을 건드리지 않으므로 그런 일이 없다. */
+  let _dg=null;
+  function markTarget(cont, near){
+    Array.prototype.forEach.call(cont.querySelectorAll('.st-card'),
+      c=>c.classList.remove('s-target','s-target-after'));
+    if(!near) return;
+    near.el.classList.toggle('s-target-after', near.after);
+    near.el.classList.toggle('s-target', !near.after);
+  }
+  function dgAim(){
+    if(!_dg) return;
+    const cont=el('pkStyles'); if(!cont) return;
+    /* 손이 아직 **잡은 카드 안**에 있으면 놓을 자리가 없다. 이걸 안 보면 살짝만
+       움찔해도 옆 카드가 뽑혀서 순서가 바뀐다 (실측으로 잡았다). */
+    const own=_dg.el.getBoundingClientRect();
+    if(_dg.x>=own.left && _dg.x<=own.right && _dg.y>=own.top && _dg.y<=own.bottom){
+      markTarget(cont, null); _dg.target=null; return;
+    }
+    const near=nearestCard(cont, _dg.x, _dg.y, _dg.no);
+    markTarget(cont, near);
+    _dg.target = near ? near.el.dataset.no : null;
+    _dg.after  = near ? near.after : false;
+  }
+  /* 끌고 있는 동안, 손이 화면 끝에 있을 때만 화면을 따라 움직인다 */
+  function dgTick(){
+    if(!_dg) return;
+    const h=window.innerHeight, y=_dg.y;
+    let dy=0;
+    if(y<110) dy=-Math.ceil((110-y)/6);
+    else if(y>h-110) dy=Math.ceil((y-(h-110))/6);
+    if(dy){
+      const b4=window.scrollY;
+      window.scrollBy(0,dy);
+      if(window.scrollY!==b4) dgAim();      /* 화면이 밀렸으면 놓을 자리를 다시 잡는다 */
+    }
+    _dg.raf=requestAnimationFrame(dgTick);
+  }
+  function dgStart(card, sx, sy){
+    const r=card.getBoundingClientRect();
+    const g=card.cloneNode(true);
+    g.classList.add('s-ghost');
+    g.classList.remove('picked','s-target','s-target-after','s-lifted');
+    g.style.width=r.width+'px'; g.style.height=r.height+'px';
+    g.style.left=r.left+'px';   g.style.top=r.top+'px';
+    document.body.appendChild(g);
+    _dg={no:card.dataset.no, el:card, ghost:g,
+         dx:sx-r.left, dy:sy-r.top, x:sx, y:sy, target:null, after:false, raf:0};
+    card.classList.add('s-lifted');
+    document.body.classList.add('s-dragging');
+    _pickNo=null; paintPick();            /* 집어 둔 게 있었으면 푼다 */
+    dgTick();
+  }
+  function dgMove(x, y){
+    if(!_dg) return;
+    _dg.x=x; _dg.y=y;
+    _dg.ghost.style.left=(x-_dg.dx)+'px';
+    _dg.ghost.style.top =(y-_dg.dy)+'px';
+    dgAim();
+  }
+  function dgStop(commit){
+    if(!_dg) return;
+    const d=_dg; _dg=null;
+    if(d.raf) cancelAnimationFrame(d.raf);
+    if(d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+    d.el.classList.remove('s-lifted');
+    document.body.classList.remove('s-dragging');
+    const cont=el('pkStyles');
+    if(cont) markTarget(cont, null);
+    if(commit && d.target && d.target!==d.no) styleReorder(domOrder(), d.no, d.target, d.after);
+  }
+
+  /* 집어 든 스타일 — 짧게 누르기만 했을 때 (긴 목록에서 집어놓고 스크롤하는 용도) */
   function pickUp(n){
     _pickNo = (_pickNo===String(n)) ? null : String(n);
     paintPick();
@@ -673,8 +773,9 @@
               + '</span></div>'
             : '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+inner+'</a>';
         }).join('')+'</div>'
-      + (editOn ? '<div class="s-hint">\u21E4 sends a style to the front, \u25C0 \u25B6 move it one place \u00b7 '
-          + 'or click a card to pick it up and click where it should go (Esc cancels) \u00b7 '
+      + (editOn ? '<div class="s-hint">Drag a card where you want it \u2014 left half of a card drops it before, '
+          + 'right half after \u00b7 \u21E4 sends it to the front, \u25C0 \u25B6 move one place \u00b7 '
+          + 'a short click picks a card up so you can scroll first, then click where it goes (Esc cancels) \u00b7 '
           + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '');
     const cb=el('pkClose');
     if(cb) cb.addEventListener('click',()=>{ p.classList.remove('show'); _open=null; });
@@ -689,9 +790,39 @@
         if(fb) fb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,'front'); });
         if(lb) lb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,-1); });
         if(rb) rb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,+1); });
+        /* 끌기 — 누른 채 6px 이상 움직이면 시작한다. 그 미만이면 그냥 누른 것(집기). */
+        card.addEventListener('pointerdown',e=>{
+          if(e.button!==0) return;
+          if(e.target && e.target.closest && e.target.closest('button')) return;
+          const sx=e.clientX, sy=e.clientY;
+          let on=false;
+          try{ card.setPointerCapture(e.pointerId); }catch(_){}
+          const mv=ev=>{
+            if(!on){
+              if(Math.abs(ev.clientX-sx)+Math.abs(ev.clientY-sy) < 6) return;
+              on=true; _dgClick=true;            /* 뒤따라오는 click 은 무시한다 */
+              dgStart(card, sx, sy);
+            }
+            ev.preventDefault();
+            dgMove(ev.clientX, ev.clientY);
+          };
+          const off=ok=>{
+            card.removeEventListener('pointermove',mv);
+            card.removeEventListener('pointerup',up);
+            card.removeEventListener('pointercancel',cancel);
+            try{ card.releasePointerCapture(e.pointerId); }catch(_){}
+            if(on) dgStop(ok);
+          };
+          const up=()=>off(true);
+          const cancel=()=>off(false);
+          card.addEventListener('pointermove',mv);
+          card.addEventListener('pointerup',up);
+          card.addEventListener('pointercancel',cancel);
+        });
         /* 집기 / 놓기 — 단추가 아닌 곳을 눌렀을 때만 */
         card.addEventListener('click',e=>{
           if(e.target && e.target.closest && e.target.closest('button')) return;
+          if(_dgClick){ _dgClick=false; return; }   /* 끌기 끝에 딸려오는 click */
           if(!_pickNo || _pickNo===n){ pickUp(n); return; }
           const r=card.getBoundingClientRect();
           const after=(e.clientX-r.left)>r.width/2;
@@ -728,7 +859,9 @@
       renderColors();
       /* 집어 든 걸 Esc 로 놓는다 */
       document.addEventListener('keydown', e=>{
-        if(e.key==='Escape' && _pickNo){ _pickNo=null; paintPick(); }
+        if(e.key!=='Escape') return;
+        if(_dg){ dgStop(false); return; }        /* 끌던 것을 없던 일로 */
+        if(_pickNo){ _pickNo=null; paintPick(); }
       });
       const eb=el('cEdit');
       if(eb) eb.addEventListener('click',()=>{

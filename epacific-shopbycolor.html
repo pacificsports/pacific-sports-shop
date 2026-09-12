@@ -68,9 +68,26 @@
   .colors{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:16px;margin-bottom:50px}
   .swatch{cursor:pointer;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--paper);transition:transform .2s,box-shadow .2s}
   .swatch:hover{transform:translateY(-4px);box-shadow:0 18px 36px -22px rgba(28,28,26,.4)}
-  .swatch .chip{height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-  /* 스와치는 색칠한 알약이 아니라 **그 색의 실제 상품 사진**이다 (2026-09-12) */
+  .swatch .chip{height:96px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+  /* 스와치는 **색칩**이다 (2026-09-12 오후 · [stated] "셔츠 말고 color chip 같은게 더 난거 같에").
+     색은 `web_colors.hex` — 내가 그 색 실제 상품 사진에서 뽑아 넣은 값이고, Edit 모드에서 고친다.
+     사진은 색을 누르고 들어간 뒤(스타일 목록)에서 쓴다. */
   .swatch .chip img{width:100%;height:100%;object-fit:contain;display:block}
+  .swatch .chip.nohex{background:repeating-linear-gradient(45deg,#f1f0ec,#f1f0ec 7px,#e6e5df 7px,#e6e5df 14px)}
+  .swatch.c-hidden{opacity:.42}
+  .swatch.c-hidden .lbl .nm{text-decoration:line-through}
+  .c-eye{position:absolute;top:7px;right:7px;border:none;border-radius:7px;background:rgba(255,255,255,.9);
+    box-shadow:0 1px 4px rgba(28,28,26,.25);cursor:pointer;font-size:12px;line-height:1;padding:5px 7px}
+  .c-eye:hover{background:#fff}
+  .c-pick{position:absolute;bottom:7px;left:7px;border:none;border-radius:7px;background:rgba(255,255,255,.9);
+    box-shadow:0 1px 4px rgba(28,28,26,.25);cursor:pointer;font-size:11px;line-height:1;padding:5px 7px}
+  .c-hexin{position:absolute;inset:auto 7px 7px 7px;width:calc(100% - 14px);border:none;height:26px;cursor:pointer}
+  .cbar{display:none;margin-bottom:18px;padding:11px 16px;background:var(--accent-soft);border:1px solid var(--line);
+    border-radius:10px;font-size:13.5px;color:var(--soft-ink);align-items:center;gap:12px;flex-wrap:wrap}
+  .cbar.on{display:flex}
+  .cbar button{border:1px solid var(--line-2);background:var(--paper);padding:6px 14px;border-radius:7px;
+    cursor:pointer;font-family:var(--body);font-size:13px}
+  .cbar button.live{border-color:var(--ink);background:var(--ink);color:var(--bg)}
   .st-card .tee img{width:100%;height:100%;object-fit:contain;border-radius:9px}
   .picked .ph .big-chip{overflow:hidden;background:#f4f4f0;display:flex;align-items:center;justify-content:center}
   .picked .ph .big-chip img{width:100%;height:100%;object-fit:contain}
@@ -145,6 +162,12 @@
 
   <div class="families rise" id="families"></div>
 
+  <!-- 직원 바: 색 감추기·색칩 색 고치기 (2026-09-12) -->
+  <div class="cbar" id="cbar">
+    <span><b>Staff</b> · <span id="cbarNote"></span></span>
+    <button id="cEdit">Edit colours</button>
+  </div>
+
   <!-- 선택된 색 → 스타일 -->
   <div class="picked" id="picked"></div>
 
@@ -161,37 +184,35 @@
      pacific-data.js 뒤에 있다 (2026-09-12). -->
 
 <script src="pacific-config.js"></script>
+<!-- 직원 권한 판정 (Edit 모드) — 이 페이지는 데모 시절엔 필요 없어서 안 불렀다 (2026-09-12) -->
+<script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
 
 <script>
-/* ═══════════════ 🎨 Shop by Color — 진짜 데이터로 다시 만들었다 (2026-09-12) ═══════════════
-   [stated] 하윤: "이 shop by color는 왜 저렇케 나오는거야?? 우리가 스타일 안올려놓은거도 있고"
+/* ═══════════════ 🎨 Shop by Color — 색칩 + 직원이 감추고 고친다 ═══════════════
+   [stated] 하윤: "이거 저렇케 셔츠 말고 아까 color chip같은게 더 난거 같에. 저런느낌으로"
+            "누르고 들어가면 우리가 그 칼라 보유하고 있는 스타일 나오게"
+            "이것도 우리가 자유자재로 수정할수있게하자 hide unhide 할수있게"
 
-   [예전] 이 화면은 **처음부터 끝까지 데모(가짜)** 였다:
-     · 색 36개가 코드에 박혀 있었다
-     · 색을 아무거나 눌러도 **언제나 같은 스타일 6개** — 1368·1315·1410·1311·1314·1322
-       · `1410` 은 우리 카탈로그에 **없는 번호**다
-       · Natural 에 실제로 나오는 건 그 여섯 중 1368 하나뿐이었다
-         (진짜: 1348·1362·1364·1368·2382·2388·8368)
-     · 색마다 붙은 "N styles" 는 **색 이름 길이로 만든 숫자**였다 — `4 + (이름길이 % 3)`
+   [역사] 이 화면은 원래 **처음부터 끝까지 데모(가짜)** 였다 — 색 36개가 코드에 박혀 있고,
+   어떤 색을 눌러도 언제나 같은 스타일 6개(1368·1315·**1410**·1311·1314·1322)가 나왔다.
+   `1410` 은 카탈로그에 없는 번호였고, "N styles" 는 색 이름 길이로 만든 숫자였다.
+   2026-09-12 오전에 실제 데이터로 바꾸고, 오후에 **색칩 + 편집**으로 다시 다듬었다.
 
-   [이제] 전부 실측 데이터다:
-     · 색 ↔ 스타일 = `skus`(is_active=true) × 카탈로그(`PacificData.getStyles()`)
-       − 숨긴 스타일(`style_settings.is_hidden`)
-     · 스와치 그림 = `product_images` 의 **그 색 실제 사진**
-     · 사이즈 범위 = 그 스타일 SKU 사이즈에서 계산 (박아둔 XS–5XL 이 아니다)
-     · 개수 = 진짜 개수
+   [지금 구조]
+     · 색 ↔ 스타일 : `skus`(is_active) × 카탈로그(`PacificData.getStyles()`)
+                     − 숨긴 스타일(`style_settings.is_hidden`), 색 이름 규칙은 상품 페이지와 공용
+                     (`PacificData.colorDisplay/colorHidden`)
+     · 색칩 색     : **`web_colors.hex`** — 그 색 실제 상품 사진에서 뽑은 값. Edit 모드에서 고친다
+     · 감추기      : `web_colors.is_hidden` — Edit 모드에서 눈 단추로 켜고 끈다
+     · 색을 누르면  : 그 색을 **실제로 보유한 스타일**만 (사진·번호·설명·사이즈 범위)
 
-   ⚠ **사진 없는 색은 목록에 안 낸다.** 카탈로그 색이 250개인데 사진이 있는 건 164개다.
-     사진이 없으면 보여줄 게 없어서 빈 칸이 되고, 그게 바로 "안 올려놓은 것" 처럼 보인다.
-     사진을 올리면 그 색은 **저절로** 목록에 들어온다 (코드 고칠 필요 없음).
-   ⚠ 색 계열(Neutrals·Blues…)은 **이름 낱말로** 가른다 — 250색에 사람이 계열을 달아둔 표가
-     없다. 규칙에 안 걸리는 색은 `Other` 로 모인다(지금 4개: Astro·Excalibur Htr·Patrol·Topaz Htr).
-     엉뚱한 계열에 넣는 것보다 Other 가 정직하다.
-   ⚠ 이 화면은 **손님 눈(anon 키)** 으로 읽는다. `styles` 표는 anon 에게 막혀 있을 수 있어서
-     카탈로그는 `PacificData.getStyles()` 를 쓴다 — 실패하면 pacific-data.js 의 내장 목록으로
-     알아서 물러난다.
-   ⚠ 실패하면 **가짜로 채우지 않는다** — 안내문을 띄운다. 예전 데모가 바로 그 반대였다. */
+   ⚠ 손님에게는 **hex 가 있고 감추지 않은 색만** 보인다. hex 가 없으면 칠할 색이 없어서
+     회색 빗금 칩이 되는데, 그건 "아직 정리 안 된 색" 이라 손님이 볼 이유가 없다.
+     직원 Edit 모드에서는 **전부** 보이고(감춘 것은 흐리게), 색을 넣는 순간 손님 화면에 들어온다.
+   ⚠ `web_colors` 표가 아직 없어도 페이지는 멀쩡하다 — 읽기 실패는 빈 목록으로 넘기고,
+     저장할 때만 **무엇을 실행해야 하는지** 알려준다.
+   ⚠ 실패하면 가짜로 채우지 않는다. 예전 데모가 바로 그 반대였다. */
 (function(){
   const FAMILIES=[['all','All colors',''],['neutral','Neutrals','#d8c4a0'],['black','Black & Grey','#595959'],
     ['blue','Blues','#2f5b8f'],['green','Greens','#3f7d4f'],['red','Reds','#8e2535'],
@@ -213,39 +234,34 @@
     return 'other';
   }
   const esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  /* 화면 표기: BLACK → Black · NAVY HTR → Navy Htr · PFD·(HT) 는 대문자 유지 */
-  function title(c){
-    /* 규칙이 정한 표기가 있으면 그것을 쓴다 (예: 1390 `PFD (J)` → `30/1 PFD`) */
-    if(DATA && DATA.label && DATA.label[c]) return DATA.label[c];
-    return String(c).toLowerCase().replace(/\b([a-z])/g,(m,x)=>x.toUpperCase())
-      .replace(/\bPfd\b/g,'PFD').replace(/\(Ht\)/g,'(HT)');
-  }
   function teeSVG(hex,s){s=s||40;return '<svg viewBox="0 0 100 100" width="'+s+'" height="'+s+'"><path d="M30 18 L20 26 L14 40 L22 46 L26 40 L26 84 L74 84 L74 40 L78 46 L86 40 L80 26 L70 18 C66 24 58 26 50 26 C42 26 34 24 30 18 Z" fill="'+hex+'" stroke="rgba(0,0,0,.1)" stroke-width="1"/></svg>';}
-
   const el = id => document.getElementById(id);
   const SZ = (window.PacificData && PacificData.config && PacificData.config.sizeOrder)
              || ['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
-  let DATA=null, activeFam='all', query='';
+  const HEXRE=/^#[0-9a-fA-F]{6}$/;
 
-  function imgUrl(cfg, path){
+  let DATA=null, activeFam='all', query='', staff=null, editOn=false, CFG={};
+
+  function imgUrl(path){
     if(!path) return '';
     if(/^https?:\/\//.test(path)) return path;
-    return cfg.SUPABASE_URL+'/storage/v1/object/public/'+(cfg.IMAGE_BUCKET||'product-images')+'/'+path;
+    return CFG.SUPABASE_URL+'/storage/v1/object/public/'+(CFG.IMAGE_BUCKET||'product-images')+'/'+path;
+  }
+  const H = () => ({apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+CFG.SUPABASE_ANON_KEY});
+  async function get(p){
+    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/'+p,{headers:H()});
+    if(!r.ok) throw new Error(p.split('?')[0]+' '+r.status);
+    return r.json();
   }
 
   async function load(){
-    const cfg=window.PACIFIC_CONFIG||{};
-    const H={apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+cfg.SUPABASE_ANON_KEY};
-    const get=async p=>{
-      const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/'+p,{headers:H});
-      if(!r.ok) throw new Error(p.split('?')[0]+' '+r.status);
-      return r.json();
-    };
+    CFG=window.PACIFIC_CONFIG||{};
     const styles = await PacificData.getStyles();
-    const [sk, pi, ss] = await Promise.all([
+    const [sk, pi, ss, wc] = await Promise.all([
       get('skus?select=style_number,color,size&is_active=eq.true&limit=200000'),
       get('product_images?select=style_number,color,image_path,sort_order&order=sort_order.asc&limit=100000'),
-      get('style_settings?select=style_number,is_hidden').catch(()=>[])
+      get('style_settings?select=style_number,is_hidden').catch(()=>[]),
+      get('web_colors?select=color,hex,is_hidden').catch(()=>[])   /* 표가 아직 없어도 굴러간다 */
     ]);
     const meta={};
     (styles||[]).forEach(x=>{ meta[String(x.no)]={desc:x.desc||'',cat:x.cat||'',sr:x.sr||''}; });
@@ -253,12 +269,11 @@
     (ss||[]).forEach(x=>{ if(x.is_hidden) hidden[String(x.style_number)]=1; });
     const ok = n => !!meta[n] && !hidden[n];
 
-    /* ⚠ 색은 **상품 페이지와 같은 규칙**을 태워서 모은다 (`colorHidden`/`colorDisplay`).
-       raw 그대로 모으면 1210 의 `CHARCOAL (HT)` 가 `Charcoal` 과 **따로 한 칸** 더 생기고,
-       숨긴 색(1390 `PFD (L)`·`PFD (S)`)까지 손님 화면에 나온다. */
+    /* 색 이름 규칙은 상품 페이지와 **같은 것**을 쓴다 (1210 CHARCOAL (HT) → Charcoal 등) */
     const PD=window.PacificData||{};
     const hideC=(n,c)=> typeof PD.colorHidden==='function' ? PD.colorHidden(n,c) : false;
     const showC=(n,c)=> typeof PD.colorDisplay==='function' ? PD.colorDisplay(n,c) : String(c);
+
     const byColor={}, sizesOf={}, label={};
     (sk||[]).forEach(r=>{
       const n=String(r.style_number), raw=String(r.color||'').trim();
@@ -270,14 +285,20 @@
     });
     const photo={};
     (pi||[]).forEach(r=>{
-      const n=String(r.style_number), raw=String(r.color||'').trim(), u=imgUrl(cfg,r.image_path);
+      const n=String(r.style_number), raw=String(r.color||'').trim(), u=imgUrl(r.image_path);
       if(!u || !ok(n) || (raw && hideC(n,raw))) return;
       const key=raw?showC(n,raw).toUpperCase():'';
-      if(key && !photo[key+'|'+n]) photo[key+'|'+n]=u;   /* 그 색 그 스타일 사진 */
-      if(key && !photo[key])       photo[key]=u;          /* 그 색 대표 사진 */
-      if(!photo['#'+n])            photo['#'+n]=u;        /* 그 스타일 대표 사진 */
+      if(key && !photo[key+'|'+n]) photo[key+'|'+n]=u;
+      if(key && !photo[key])       photo[key]=u;
+      if(!photo['#'+n])            photo['#'+n]=u;
     });
-    DATA={meta:meta,byColor:byColor,sizesOf:sizesOf,photo:photo,label:label};
+    const hex={}, chid={};
+    (wc||[]).forEach(r=>{
+      const k=String(r.color||'').trim().toUpperCase(); if(!k) return;
+      if(HEXRE.test(String(r.hex||''))) hex[k]=String(r.hex);
+      if(r.is_hidden) chid[k]=1;
+    });
+    DATA={meta,byColor,sizesOf,label,photo,hex,chid};
   }
 
   function srOf(n){
@@ -288,17 +309,62 @@
     if(have.length) return have.sort().join(', ');
     return (DATA.meta[n]&&DATA.meta[n].sr)||'';
   }
-  function shownColors(){
-    return Object.keys(DATA.byColor).filter(c=>DATA.photo[c]);
+  function title(c){ return (DATA && DATA.label && DATA.label[c]) || c; }
+  /* 손님: **칠할 색(hex) 이나 사진**이 있고 감추지 않은 색만 · 직원 Edit: 전부.
+     ⚠ 사진 폴백을 빼면 hex 를 아직 안 채운 동안 손님 화면이 **텅 빈다** — 색칩으로 바꾼
+     날 바로 그럴 뻔했다. hex 가 들어오면 자동으로 칩이 이긴다. */
+  function pool(){
+    const all=Object.keys(DATA.byColor);
+    return editOn ? all : all.filter(c=>(DATA.hex[c]||DATA.photo[c]) && !DATA.chid[c]);
   }
   function listed(){
     const q=query.trim().toUpperCase();
-    return shownColors()
+    return pool()
       .filter(c=>(activeFam==='all'||famOf(c)===activeFam) && (!q||c.indexOf(q)>=0))
-      .sort();
+      .sort((a,b)=>title(a).localeCompare(title(b)));
+  }
+
+  /* ── 저장 ─────────────────────────────────────────────────────── */
+  async function wcSave(colorKey, patch){
+    if(!staff || !staff.token){ alert('Session expired. Please log in again.'); return false; }
+    const body=Object.assign({color:title(colorKey), updated_at:new Date().toISOString()}, patch);
+    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/web_colors?on_conflict=color',
+      {method:'POST',
+       headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+staff.token,
+                'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
+       body:JSON.stringify([body])});
+    if(!r.ok){
+      let t=''; try{ t=await r.text(); }catch(e){}
+      alert(/web_colors/.test(t) && r.status===404
+        ? 'The web_colors table does not exist yet, so this could not be saved.\n\nRun the one-time SQL in the Supabase SQL editor first.'
+        : 'Could not save. ('+r.status+')');
+      return false;
+    }
+    /* ⚠ 200 만 믿지 않는다 — 돌아온 줄이 비면 RLS 가 막은 것이다 */
+    let back=[]; try{ back=await r.json(); }catch(e){}
+    if(!back.length){ alert('Nothing was saved — your account may not have staff rights.'); return false; }
+    return true;
+  }
+
+  /* ── 그리기 ───────────────────────────────────────────────────── */
+  function renderBar(){
+    const bar=el('cbar'); if(!bar) return;
+    if(!staff){ bar.classList.remove('on'); return; }
+    bar.classList.add('on');
+    const all=Object.keys(DATA?DATA.byColor:{}).length;
+    const noHex=DATA?Object.keys(DATA.byColor).filter(c=>!DATA.hex[c]).length:0;
+    const hid=DATA?Object.keys(DATA.byColor).filter(c=>DATA.chid[c]).length:0;
+    el('cbarNote').innerHTML = editOn
+      ? 'Click a swatch to set its colour · the eye hides it from customers. '
+        + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden'
+      : 'Turn on edit to set swatch colours and hide colours. '
+        + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden';
+    const b=el('cEdit');
+    b.textContent = editOn ? 'Done editing' : 'Edit colours';
+    b.classList.toggle('live', editOn);
   }
   function renderFamilies(){
-    const all=shownColors(), cnt={};
+    const all=pool(), cnt={};
     all.forEach(c=>{ const f=famOf(c); cnt[f]=(cnt[f]||0)+1; });
     el('families').innerHTML = FAMILIES.filter(f=>f[0]==='all'||cnt[f[0]]).map(f=>{
       const n = f[0]==='all' ? all.length : cnt[f[0]];
@@ -311,8 +377,7 @@
       d.addEventListener('click',()=>{ activeFam=d.dataset.fam; renderFamilies(); renderColors(); });
     });
     const si=el('cSearch');
-    if(si) si.addEventListener('input',()=>{ query=si.value; renderColors();
-      /* 개수 칩은 다시 그리지 않는다 — 입력칸이 날아가면서 글자 입력이 끊긴다 */ });
+    if(si) si.addEventListener('input',()=>{ query=si.value; renderColors(); });
   }
   function renderColors(){
     const list=listed();
@@ -322,27 +387,63 @@
     }
     el('colors').innerHTML=list.map(c=>{
       const n=Object.keys(DATA.byColor[c]).length;
-      return '<div class="swatch" data-c="'+esc(c)+'">'
-        + '<div class="chip"><img src="'+esc(DATA.photo[c])+'" alt="'+esc(title(c))+'" loading="lazy"></div>'
+      const hx=DATA.hex[c]||'';
+      const hid=!!DATA.chid[c];
+      const ph=(!hx && DATA.photo[c]) ? DATA.photo[c] : '';   /* hex 없으면 사진으로 버틴다 */
+      return '<div class="swatch'+(hid?' c-hidden':'')+'" data-c="'+esc(c)+'">'
+        + '<div class="chip'+(hx||ph?'':' nohex')+'"'+(hx?' style="background:'+esc(hx)+'"':'')+'>'
+        + (ph?'<img src="'+esc(ph)+'" alt="'+esc(title(c))+'" loading="lazy">':'')
+        + (editOn
+            ? '<button type="button" class="c-eye" title="'+(hid?'Show to customers':'Hide from customers')+'">'+(hid?'🚫':'👁')+'</button>'
+              + '<input type="color" class="c-hexin" value="'+esc(hx||'#cccccc')+'" title="Set this swatch colour">'
+            : '')
+        + '</div>'
         + '<div class="lbl"><div class="nm">'+esc(title(c))+'</div>'
-        + '<div class="av">'+n+' style'+(n===1?'':'s')+'</div></div></div>';
+        + '<div class="av">'+n+' style'+(n===1?'':'s')+(editOn&&!hx?' · no colour':'')+'</div></div></div>';
     }).join('');
     Array.prototype.forEach.call(el('colors').querySelectorAll('.swatch'), d=>{
-      d.addEventListener('click',()=>pick(d.dataset.c));
+      const key=d.dataset.c;
+      const eye=d.querySelector('.c-eye'), hexin=d.querySelector('.c-hexin');
+      if(eye) eye.addEventListener('click', async e=>{
+        e.stopPropagation();
+        const next=!DATA.chid[key];
+        if(next) DATA.chid[key]=1; else delete DATA.chid[key];
+        renderColors(); renderBar();
+        const okSave=await wcSave(key,{is_hidden:next});
+        if(!okSave){ if(next) delete DATA.chid[key]; else DATA.chid[key]=1; renderColors(); renderBar(); }
+      });
+      if(hexin){
+        hexin.addEventListener('click', e=>e.stopPropagation());
+        hexin.addEventListener('change', async e=>{
+          e.stopPropagation();
+          const v=String(hexin.value||'').toLowerCase();
+          if(!HEXRE.test(v)) return;
+          const prev=DATA.hex[key];
+          DATA.hex[key]=v; renderColors(); renderBar();
+          const okSave=await wcSave(key,{hex:v});
+          if(!okSave){ if(prev) DATA.hex[key]=prev; else delete DATA.hex[key]; renderColors(); renderBar(); }
+        });
+      }
+      d.addEventListener('click',e=>{
+        if(e.target.closest('.c-eye') || e.target.closest('.c-hexin')) return;
+        pick(key);
+      });
     });
   }
   function pick(c){
     const ns=Object.keys(DATA.byColor[c]||{}).sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
     const p=el('picked');
+    const hx=DATA.hex[c]||'';
     p.innerHTML='<div class="ph">'
-      + '<div class="big-chip">'+(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':'')+'</div>'
+      + '<div class="big-chip"'+(hx?' style="background:'+esc(hx)+'"':'')+'>'
+        + (hx?'':(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':''))+'</div>'
       + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+ns.length+' style'+(ns.length===1?'':'s')+' in '+esc(title(c))+'</div></div>'
       + '<button class="close" id="pkClose">✕ Close</button></div>'
       + '<div class="styles">'+ns.map(n=>{
           const img=DATA.photo[c+'|'+n]||DATA.photo['#'+n]||'';
           const m=DATA.meta[n]||{};
           return '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'
-            + '<div class="tee">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':teeSVG('#d8d6ce',34))+'</div>'
+            + '<div class="tee">'+(img?'<img src="'+esc(img)+'" alt="" loading="lazy">':teeSVG(hx||'#d8d6ce',34))+'</div>'
             + '<div class="si"><div class="no">#'+esc(n)+'</div>'
             + '<div class="nm">'+esc(m.desc||'')+'</div>'
             + '<div class="meta">'+esc(srOf(n))+'</div></div></a>';
@@ -357,8 +458,16 @@
     try{
       el('colors').innerHTML='<div style="grid-column:1/-1;color:var(--faint);font-size:14px;padding:18px 0">Loading colours…</div>';
       await load();
+      try{ staff = window.PacificAuth ? await PacificAuth.currentStaff() : null; }catch(e){ staff=null; }
+      renderBar();
       renderFamilies();
       renderColors();
+      const eb=el('cEdit');
+      if(eb) eb.addEventListener('click',()=>{
+        editOn=!editOn;
+        el('picked').classList.remove('show');
+        renderBar(); renderFamilies(); renderColors();
+      });
     }catch(e){
       console.error('shop by color load failed', e);
       el('families').innerHTML='';

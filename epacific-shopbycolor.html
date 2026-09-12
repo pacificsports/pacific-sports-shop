@@ -215,6 +215,8 @@
   const esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   /* 화면 표기: BLACK → Black · NAVY HTR → Navy Htr · PFD·(HT) 는 대문자 유지 */
   function title(c){
+    /* 규칙이 정한 표기가 있으면 그것을 쓴다 (예: 1390 `PFD (J)` → `30/1 PFD`) */
+    if(DATA && DATA.label && DATA.label[c]) return DATA.label[c];
     return String(c).toLowerCase().replace(/\b([a-z])/g,(m,x)=>x.toUpperCase())
       .replace(/\bPfd\b/g,'PFD').replace(/\(Ht\)/g,'(HT)');
   }
@@ -251,22 +253,31 @@
     (ss||[]).forEach(x=>{ if(x.is_hidden) hidden[String(x.style_number)]=1; });
     const ok = n => !!meta[n] && !hidden[n];
 
-    const byColor={}, sizesOf={};
+    /* ⚠ 색은 **상품 페이지와 같은 규칙**을 태워서 모은다 (`colorHidden`/`colorDisplay`).
+       raw 그대로 모으면 1210 의 `CHARCOAL (HT)` 가 `Charcoal` 과 **따로 한 칸** 더 생기고,
+       숨긴 색(1390 `PFD (L)`·`PFD (S)`)까지 손님 화면에 나온다. */
+    const PD=window.PacificData||{};
+    const hideC=(n,c)=> typeof PD.colorHidden==='function' ? PD.colorHidden(n,c) : false;
+    const showC=(n,c)=> typeof PD.colorDisplay==='function' ? PD.colorDisplay(n,c) : String(c);
+    const byColor={}, sizesOf={}, label={};
     (sk||[]).forEach(r=>{
-      const n=String(r.style_number), c=String(r.color||'').trim().toUpperCase();
-      if(!c || !ok(n)) return;
-      (byColor[c]=byColor[c]||{})[n]=1;
+      const n=String(r.style_number), raw=String(r.color||'').trim();
+      if(!raw || !ok(n) || hideC(n,raw)) return;
+      const disp=showC(n,raw), key=disp.toUpperCase();
+      (byColor[key]=byColor[key]||{})[n]=1;
+      if(!label[key]) label[key]=disp;
       if(r.size) (sizesOf[n]=sizesOf[n]||{})[String(r.size).trim().toUpperCase()]=1;
     });
     const photo={};
     (pi||[]).forEach(r=>{
-      const n=String(r.style_number), c=String(r.color||'').trim().toUpperCase(), u=imgUrl(cfg,r.image_path);
-      if(!u || !ok(n)) return;
-      if(c && !photo[c+'|'+n]) photo[c+'|'+n]=u;   /* 그 색 그 스타일 사진 */
-      if(c && !photo[c])       photo[c]=u;          /* 그 색 대표 사진 */
-      if(!photo['#'+n])        photo['#'+n]=u;      /* 그 스타일 대표 사진 */
+      const n=String(r.style_number), raw=String(r.color||'').trim(), u=imgUrl(cfg,r.image_path);
+      if(!u || !ok(n) || (raw && hideC(n,raw))) return;
+      const key=raw?showC(n,raw).toUpperCase():'';
+      if(key && !photo[key+'|'+n]) photo[key+'|'+n]=u;   /* 그 색 그 스타일 사진 */
+      if(key && !photo[key])       photo[key]=u;          /* 그 색 대표 사진 */
+      if(!photo['#'+n])            photo['#'+n]=u;        /* 그 스타일 대표 사진 */
     });
-    DATA={meta:meta,byColor:byColor,sizesOf:sizesOf,photo:photo};
+    DATA={meta:meta,byColor:byColor,sizesOf:sizesOf,photo:photo,label:label};
   }
 
   function srOf(n){

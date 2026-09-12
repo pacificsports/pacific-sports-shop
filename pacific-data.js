@@ -491,6 +491,15 @@ window.PacificData = (function () {
       return SOURCE === 'supabase' ? _supabaseProduct(styleNo) : _mockProduct(styleNo);
     },
 
+    /* 색 이름 규칙을 바깥에서도 쓴다 (2026-09-12).
+       Shop by Color 처럼 **여러 스타일의 색을 한 자리에 모으는** 화면은 상품 페이지와
+       똑같은 규칙을 써야 한다 — 안 그러면 1210 의 `CHARCOAL (HT)` 가 `Charcoal` 과
+       따로 떠서 같은 색이 두 칸으로 보이고, 숨긴 색(1390 `PFD (L)`)까지 나온다.
+       규칙은 위 `COLOR_RULES` 한 곳에만 둔다 — 베끼면 반드시 어긋난다. */
+    colorDisplay: function (styleNo, raw) { return displayColorName(String(styleNo), raw); },
+    colorHidden:  function (styleNo, raw) { return isHiddenColor(String(styleNo), raw); },
+    colorPretty:  function (raw) { return prettyColor(raw); },
+
     // 전체 스타일 목록 (제품 목록/카테고리 화면용)
     getStyles: async function () {
       if (SOURCE === 'supabase') {

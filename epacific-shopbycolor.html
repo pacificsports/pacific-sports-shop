@@ -203,15 +203,15 @@
      · 색 ↔ 스타일 : `skus`(is_active) × 카탈로그(`PacificData.getStyles()`)
                      − 숨긴 스타일(`style_settings.is_hidden`), 색 이름 규칙은 상품 페이지와 공용
                      (`PacificData.colorDisplay/colorHidden`)
-     · 색칩 색     : **`web_colors.hex`** — 그 색 실제 상품 사진에서 뽑은 값. Edit 모드에서 고친다
-     · 감추기      : `web_colors.is_hidden` — Edit 모드에서 눈 단추로 켜고 끈다
+     · 색칩 색     : `style_settings['__COLORS__'].color_names[색이름]` — 그 색 실제 상품
+                     사진에서 뽑은 hex. Edit 모드에서 고친다 (새 표를 안 만든 이유는 load() 주석)
+     · 감추기      : 같은 줄의 `hidden_colors` — Edit 모드에서 눈 단추로 켜고 끈다
      · 색을 누르면  : 그 색을 **실제로 보유한 스타일**만 (사진·번호·설명·사이즈 범위)
 
    ⚠ 손님에게는 **hex 가 있고 감추지 않은 색만** 보인다. hex 가 없으면 칠할 색이 없어서
      회색 빗금 칩이 되는데, 그건 "아직 정리 안 된 색" 이라 손님이 볼 이유가 없다.
      직원 Edit 모드에서는 **전부** 보이고(감춘 것은 흐리게), 색을 넣는 순간 손님 화면에 들어온다.
-   ⚠ `web_colors` 표가 아직 없어도 페이지는 멀쩡하다 — 읽기 실패는 빈 목록으로 넘기고,
-     저장할 때만 **무엇을 실행해야 하는지** 알려준다.
+   ⚠ 읽기가 실패해도 페이지는 멀쩡하다 — 빈 목록으로 넘기고 사진 폴백으로 버틴다.
    ⚠ 실패하면 가짜로 채우지 않는다. 예전 데모가 바로 그 반대였다. */
 (function(){
   const FAMILIES=[['all','All colors',''],['neutral','Neutrals','#d8c4a0'],['black','Black & Grey','#595959'],
@@ -261,7 +261,16 @@
       get('skus?select=style_number,color,size&is_active=eq.true&limit=200000'),
       get('product_images?select=style_number,color,image_path,sort_order&order=sort_order.asc&limit=100000'),
       get('style_settings?select=style_number,is_hidden').catch(()=>[]),
-      get('web_colors?select=color,hex,is_hidden').catch(()=>[])   /* 표가 아직 없어도 굴러간다 */
+      /* ⭐ 색칩 색·감춘 색은 **새 표 없이** `style_settings` 의 한 줄에 모아 둔다 (2026-09-12).
+         `style_number='__COLORS__'` 짜리 줄 하나:
+            color_names   = { 'Navy Htr':'#1f2a44', … }   ← 칩 색
+            hidden_colors = [ 'Wheat', … ]                 ← 감춘 색
+         왜 이렇게 했나: 새 표(`web_colors`)를 만들려면 DDL 이 필요하고 그건 하윤이 SQL
+         에디터에서 직접 돌려야 한다. 그 사이 화면은 계속 셔츠 사진이었다 — [stated] "제대로
+         안된거 같은데". 이 줄은 기존 표·정책을 그대로 쓰므로 **기다릴 게 없다**.
+         ⚠ `__COLORS__` 는 스타일 번호가 아니라서 상품 페이지는 절대 읽지 않는다. 카테고리
+         화면의 진열순서(`color_names.__RANK__`)도 이 줄엔 없으니 그냥 지나친다 — 실측 확인함. */
+      get('style_settings?style_number=eq.__COLORS__&select=color_names,hidden_colors').catch(()=>[])
     ]);
     const meta={};
     (styles||[]).forEach(x=>{ meta[String(x.no)]={desc:x.desc||'',cat:x.cat||'',sr:x.sr||''}; });
@@ -293,10 +302,14 @@
       if(!photo['#'+n])            photo['#'+n]=u;
     });
     const hex={}, chid={};
-    (wc||[]).forEach(r=>{
-      const k=String(r.color||'').trim().toUpperCase(); if(!k) return;
-      if(HEXRE.test(String(r.hex||''))) hex[k]=String(r.hex);
-      if(r.is_hidden) chid[k]=1;
+    const row0=(wc&&wc[0])||{};
+    const cmap=(row0.color_names&&typeof row0.color_names==='object')?row0.color_names:{};
+    Object.keys(cmap).forEach(k=>{
+      const v=String(cmap[k]||'');
+      if(HEXRE.test(v)) hex[String(k).trim().toUpperCase()]=v.toLowerCase();
+    });
+    (Array.isArray(row0.hidden_colors)?row0.hidden_colors:[]).forEach(k=>{
+      const u=String(k||'').trim().toUpperCase(); if(u) chid[u]=1;
     });
     DATA={meta,byColor,sizesOf,label,photo,hex,chid};
   }
@@ -325,21 +338,20 @@
   }
 
   /* ── 저장 ─────────────────────────────────────────────────────── */
-  async function wcSave(colorKey, patch){
+  /* `__COLORS__` 줄을 통째로 다시 쓴다 — 화면이 들고 있는 값이 정본이다.
+     ⚠ 한 사람이 한 화면에서 고치는 것을 전제로 한다(직원 편집). 두 사람이 동시에 고치면
+       나중 저장이 이긴다 — 색칩 정도에 잠금까지 걸 이유는 없다. */
+  async function wcSave(){
     if(!staff || !staff.token){ alert('Session expired. Please log in again.'); return false; }
-    const body=Object.assign({color:title(colorKey), updated_at:new Date().toISOString()}, patch);
-    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/web_colors?on_conflict=color',
+    const cmap={}; Object.keys(DATA.hex).forEach(k=>{ cmap[title(k)]=DATA.hex[k]; });
+    const hidden=Object.keys(DATA.chid).map(k=>title(k));
+    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/style_settings?on_conflict=style_number',
       {method:'POST',
        headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+staff.token,
                 'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},
-       body:JSON.stringify([body])});
-    if(!r.ok){
-      let t=''; try{ t=await r.text(); }catch(e){}
-      alert(/web_colors/.test(t) && r.status===404
-        ? 'The web_colors table does not exist yet, so this could not be saved.\n\nRun the one-time SQL in the Supabase SQL editor first.'
-        : 'Could not save. ('+r.status+')');
-      return false;
-    }
+       body:JSON.stringify([{style_number:'__COLORS__', color_names:cmap, hidden_colors:hidden,
+                             updated_at:new Date().toISOString()}])});
+    if(!r.ok){ alert('Could not save. ('+r.status+')'); return false; }
     /* ⚠ 200 만 믿지 않는다 — 돌아온 줄이 비면 RLS 가 막은 것이다 */
     let back=[]; try{ back=await r.json(); }catch(e){}
     if(!back.length){ alert('Nothing was saved — your account may not have staff rights.'); return false; }
@@ -409,7 +421,7 @@
         const next=!DATA.chid[key];
         if(next) DATA.chid[key]=1; else delete DATA.chid[key];
         renderColors(); renderBar();
-        const okSave=await wcSave(key,{is_hidden:next});
+        const okSave=await wcSave();
         if(!okSave){ if(next) delete DATA.chid[key]; else DATA.chid[key]=1; renderColors(); renderBar(); }
       });
       if(hexin){
@@ -420,7 +432,7 @@
           if(!HEXRE.test(v)) return;
           const prev=DATA.hex[key];
           DATA.hex[key]=v; renderColors(); renderBar();
-          const okSave=await wcSave(key,{hex:v});
+          const okSave=await wcSave();
           if(!okSave){ if(prev) DATA.hex[key]=prev; else delete DATA.hex[key]; renderColors(); renderBar(); }
         });
       }

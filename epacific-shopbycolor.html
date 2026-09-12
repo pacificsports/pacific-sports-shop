@@ -89,17 +89,28 @@
     cursor:pointer;font-family:var(--body);font-size:13px}
   .cbar button.live{border-color:var(--ink);background:var(--ink);color:var(--bg)}
   /* 색 안의 스타일 목록 편집 (2026-09-12): 감추기 + 끌어서 순서 */
-  /* 글씨를 잡고 끌면 글자 선택이 시작돼서 드래그가 안 걸린다 — 편집 중엔 선택을 끈다 */
-  .st-card.editing{cursor:grab;position:relative;user-select:none;-webkit-user-select:none}
-  .st-card.editing:active{cursor:grabbing}
+  /* 순서는 **누르기**로 바꾼다 (끌기는 크롬에서 죽었다 — 아래 s-moving 참고) */
+  .st-card.editing{cursor:pointer;position:relative;user-select:none;-webkit-user-select:none}
   .st-card.s-hidden{opacity:.42}
   .st-card.s-hidden .nm{text-decoration:line-through}
-  .st-card.dragging{opacity:.35}
-  .st-card.drop-before{box-shadow:inset 4px 0 0 var(--accent)}
-  .st-card.drop-after{box-shadow:inset -4px 0 0 var(--accent)}
+  .st-card.picked{border-color:var(--accent);background:var(--accent-soft);
+    box-shadow:0 0 0 2px var(--accent) inset}
+  .st-card.s-target{box-shadow:inset 4px 0 0 var(--accent)}
+  .st-card.s-target-after{box-shadow:inset -4px 0 0 var(--accent)}
+  .s-moving{display:none;align-items:center;gap:10px;margin:0 0 12px;padding:9px 13px;border-radius:9px;
+    background:var(--accent-soft);border:1px solid var(--line-2);font-size:13px;color:var(--soft-ink)}
+  .s-moving.on{display:flex}
+  .s-moving b{color:var(--ink)}
+  .s-moving button{margin-left:auto;border:1px solid var(--line-2);background:var(--paper);
+    padding:5px 12px;border-radius:7px;cursor:pointer;font-family:var(--body);font-size:12.5px}
+  .s-mv{position:absolute;bottom:5px;right:6px;display:flex;gap:3px}
+  .s-mv button{border:1px solid var(--line-2);background:rgba(255,255,255,.92);border-radius:6px;
+    cursor:pointer;font-size:11px;line-height:1;padding:3px 6px;color:var(--soft-ink)}
+  .s-mv button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  .s-mv button:disabled{opacity:.3;cursor:default}
   .s-eye{position:absolute;top:6px;right:6px;border:none;border-radius:7px;background:rgba(255,255,255,.92);
     box-shadow:0 1px 4px rgba(28,28,26,.25);cursor:pointer;font-size:11px;line-height:1;padding:4px 6px}
-  .s-grip{position:absolute;bottom:6px;right:8px;color:var(--faint);font-size:12px;letter-spacing:1px;user-select:none}
+  .st-card.editing .si{padding-right:4px}
   .s-hint{font-size:11.5px;color:var(--faint);margin-top:10px}
   .st-card .tee img{width:100%;height:100%;object-fit:contain;border-radius:9px}
   .picked .ph .big-chip{overflow:hidden;background:#f4f4f0;display:flex;align-items:center;justify-content:center}
@@ -447,6 +458,7 @@
       if(after) b.parentNode.insertBefore(a, b.nextSibling);
       else      b.parentNode.insertBefore(a, b);
     }
+    syncMoveButtons(); paintPick();
     const cn=Object.assign({}, DATA.cnames[dragNo]||{}); cn.__RANK__=v;
     const okS=await ssSave(dragNo,{color_names:cn});
     if(okS){ DATA.cnames[dragNo]=cn; }
@@ -464,7 +476,7 @@
     const hid=DATA?Object.keys(DATA.byColor).filter(c=>DATA.chid[c]).length:0;
     const shidN=DATA?Object.keys(DATA.shid||{}).length:0;
     el('cbarNote').innerHTML = editOn
-      ? 'Swatch: click to set the colour, eye to hide · open a colour to drag styles into order or hide them ('
+      ? 'Swatch: click to set the colour, eye to hide \u00b7 open a colour to reorder or hide styles ('
         + shidN + ' style' + (shidN===1?'':'s') + ' hidden). '
         + '<b>'+all+'</b> colours · <b>'+noHex+'</b> without a colour yet · <b>'+hid+'</b> hidden'
       : 'Turn on edit to set swatch colours and hide colours. '
@@ -541,7 +553,7 @@
     });
   }
   /* 지금 열려 있는 색 — 저장 뒤 다시 그리기 위해 기억한다 */
-  let _open=null, _dragNo=null;
+  let _open=null, _pickNo=null;
 
   /* ── 그 자리에서 고치기 ───────────────────────────────────────────────
      ⚠ 42장짜리 색(Black)에서 pick() 이나 renderColors() 를 다시 부르면 사진이 전부
@@ -585,32 +597,44 @@
     sub.textContent = vis+' style'+(vis===1?'':'s')+' in '+title(_open)
       + ((editOn && all>vis) ? (' \u00b7 '+(all-vis)+' hidden') : '');
   }
-  /* 끌고 있는 동안 화면 위·아래 끝에서 저절로 스크롤.
-     ⚠ 이게 없으면 화면보다 긴 목록에서 위쪽 카드에 닿을 수 없고, 브라우저가 대신
-       스크롤하면 잡고 있던 카드가 딴 것으로 바뀐다 (실측으로 잡은 사고다). */
-  function bindDragScroll(){
-    if(window.__sbcDragScroll) return; window.__sbcDragScroll=true;
-    document.addEventListener('dragover', e=>{
-      if(!_dragNo) return;
-      const y=e.clientY, h=window.innerHeight;
-      if(y<120) window.scrollBy(0, -Math.ceil((120-y)/4));
-      else if(y>h-120) window.scrollBy(0, Math.ceil((y-(h-120))/4));
-    });
+  /* 집어 든 스타일 — 누르기 방식이라 브라우저 드래그 판을 안 쓴다 */
+  function pickUp(n){
+    _pickNo = (_pickNo===String(n)) ? null : String(n);
+    paintPick();
   }
-  /* 카드 사이 빈틈에 놓았을 때 — 가장 가까운 카드를 기준으로 삼는다.
-     ⚠ 가운데까지의 거리로 재면 **한 줄 위 카드**가 뽑힐 수 있다(실측). 눈에 보이는 대로
-       고르려면 칸의 **가장자리**까지의 거리로 재야 한다 — 빈틈 왼쪽에 놓으면 왼쪽 카드,
-       오른쪽에 놓으면 오른쪽 카드. */
-  function nearestCard(cont, x, y){
-    let best=null;
+  function paintPick(){
+    const cont=el('pkStyles'); if(!cont) return;
     Array.prototype.forEach.call(cont.querySelectorAll('.st-card'), c=>{
-      const r=c.getBoundingClientRect();
-      const dx=Math.max(r.left-x, 0, x-r.right);
-      const dy=Math.max(r.top-y, 0, y-r.bottom);
-      const d=dx*dx+dy*dy;
-      if(!best || d<best.d) best={d:d, el:c, after:x>(r.left+r.right)/2};
+      c.classList.toggle('picked', _pickNo && c.dataset.no===_pickNo);
+      c.classList.remove('s-target','s-target-after');
     });
-    return best;
+    const bar=el('pkMoving');
+    if(bar){
+      bar.classList.toggle('on', !!_pickNo);
+      const lab=el('pkMovingWhat');
+      if(lab && _pickNo) lab.textContent='#'+_pickNo;
+    }
+  }
+  /* 한 칸씩 / 맨 앞으로 */
+  function styleNudge(n, dir){
+    const order=domOrder();
+    const i=order.indexOf(String(n));
+    if(i<0) return;
+    if(dir==='front'){ if(i===0) return; return styleReorder(order, String(n), order[0], false); }
+    const j=i+dir;
+    if(j<0 || j>=order.length) return;
+    return styleReorder(order, String(n), order[j], dir>0);
+  }
+  /* 양 끝에서는 그쪽 단추를 끈다 */
+  function syncMoveButtons(){
+    const cont=el('pkStyles'); if(!cont) return;
+    const cards=Array.prototype.slice.call(cont.querySelectorAll('.st-card'));
+    cards.forEach((c,i)=>{
+      const f=c.querySelector('.s-front'), l=c.querySelector('.s-left'), r=c.querySelector('.s-right');
+      if(f) f.disabled = (i===0);
+      if(l) l.disabled = (i===0);
+      if(r) r.disabled = (i===cards.length-1);
+    });
   }
   function pick(c, noScroll){
     _open=c;
@@ -624,6 +648,9 @@
       + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+vis+' style'+(vis===1?'':'s')+' in '+esc(title(c))
         + (editOn && ns.length>vis ? ' · '+(ns.length-vis)+' hidden' : '')+'</div></div>'
       + '<button class="close" id="pkClose">✕ Close</button></div>'
+      + (editOn ? '<div class="s-moving" id="pkMoving">Moving <b id="pkMovingWhat"></b> \u00b7 '
+          + 'now click the card you want it to sit next to \u2014 left half puts it before, right half after.'
+          + '<button type="button" id="pkMoveCancel">Cancel</button></div>' : '')
       + '<div class="styles" id="pkStyles">'+ns.map(n=>{
           const img=DATA.photo[c+'|'+n]||DATA.photo['#'+n]||'';
           const m=DATA.meta[n]||{};
@@ -633,16 +660,22 @@
             + '<div class="si"><div class="no">#'+esc(n)+'</div>'
             + '<div class="nm">'+esc(m.desc||'')+'</div>'
             + '<div class="meta">'+esc(srOf(n))+'</div></div>';
-          /* Edit 모드에서는 링크가 아니라 끌 수 있는 칸이다 — 끌다가 상품 페이지로
-             튀어나가면 순서를 못 바꾼다 */
+          /* Edit 모드에서는 링크가 아니라 **누르는** 칸이다 (상품 페이지로 튀면 안 된다).
+             끌기는 안 쓴다 — 크롬에서 드래그 판이 시작되자마자 죽었다(실측). */
           return editOn
-            ? '<div class="st-card editing'+(hid?' s-hidden':'')+'" draggable="true" data-no="'+esc(n)+'">'
+            ? '<div class="st-card editing'+(hid?' s-hidden':'')+'" data-no="'+esc(n)+'">'
               + inner
               + '<button type="button" class="s-eye" title="'+(hid?'Show to customers':'Hide from customers')+'">'+(hid?'🚫':'👁')+'</button>'
-              + '<span class="s-grip">⠿</span></div>'
+              + '<span class="s-mv">'
+                + '<button type="button" class="s-front" title="Move to the front">\u21E4</button>'
+                + '<button type="button" class="s-left" title="Move one place earlier">\u25C0</button>'
+                + '<button type="button" class="s-right" title="Move one place later">\u25B6</button>'
+              + '</span></div>'
             : '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+inner+'</a>';
         }).join('')+'</div>'
-      + (editOn ? '<div class="s-hint">Drag a card to set the order customers see · the eye hides that style everywhere · order is shared with the category pages.</div>' : '');
+      + (editOn ? '<div class="s-hint">\u21E4 sends a style to the front, \u25C0 \u25B6 move it one place \u00b7 '
+          + 'or click a card to pick it up and click where it should go (Esc cancels) \u00b7 '
+          + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '');
     const cb=el('pkClose');
     if(cb) cb.addEventListener('click',()=>{ p.classList.remove('show'); _open=null; });
 
@@ -652,41 +685,34 @@
         const n=card.dataset.no;
         const eye=card.querySelector('.s-eye');
         if(eye) eye.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleHide(n, !DATA.shid[n]); });
-        card.addEventListener('dragstart',e=>{ _dragNo=n; card.classList.add('dragging');
-          try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',n); }catch(_){} });
-        card.addEventListener('dragend',()=>{ _dragNo=null;
-          cards.forEach(x=>x.classList.remove('dragging','drop-before','drop-after')); });
-        card.addEventListener('dragover',e=>{
-          if(!_dragNo || _dragNo===n) return;
-          e.preventDefault();
+        const fb=card.querySelector('.s-front'), lb=card.querySelector('.s-left'), rb=card.querySelector('.s-right');
+        if(fb) fb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,'front'); });
+        if(lb) lb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,-1); });
+        if(rb) rb.addEventListener('click',e=>{ e.stopPropagation(); e.preventDefault(); styleNudge(n,+1); });
+        /* 집기 / 놓기 — 단추가 아닌 곳을 눌렀을 때만 */
+        card.addEventListener('click',e=>{
+          if(e.target && e.target.closest && e.target.closest('button')) return;
+          if(!_pickNo || _pickNo===n){ pickUp(n); return; }
           const r=card.getBoundingClientRect();
-          const after=(e.clientX-r.left)>r.width/2;      /* 칸이 옆으로 늘어서 있으니 좌우로 판단 */
-          card._after=after;
-          card.classList.toggle('drop-after',after);
-          card.classList.toggle('drop-before',!after);
+          const after=(e.clientX-r.left)>r.width/2;
+          const moving=_pickNo;
+          _pickNo=null;
+          styleReorder(domOrder(), moving, n, after);
         });
-        card.addEventListener('dragleave',()=>card.classList.remove('drop-before','drop-after'));
-        card.addEventListener('drop',e=>{
-          e.preventDefault();
-          const after=!!card._after;
-          cards.forEach(x=>x.classList.remove('drop-before','drop-after'));
-          if(!_dragNo || _dragNo===n) return;
-          styleReorder(domOrder(), _dragNo, n, after);   /* ns 는 이미 옛 순서다 */
+        /* 놓을 자리를 눈으로 알려 준다 */
+        card.addEventListener('mousemove',e=>{
+          if(!_pickNo || _pickNo===n){ card.classList.remove('s-target','s-target-after'); return; }
+          const r=card.getBoundingClientRect();
+          const after=(e.clientX-r.left)>r.width/2;
+          card.classList.toggle('s-target-after', after);
+          card.classList.toggle('s-target', !after);
         });
+        card.addEventListener('mouseleave',()=>card.classList.remove('s-target','s-target-after'));
       });
-      /* 카드 사이 빈틈(gap 16px)에 놓아도 받아 준다 — 전엔 아무 일도 안 났다 */
-      const cont=el('pkStyles');
-      if(cont){
-        cont.addEventListener('dragover', e=>{ if(_dragNo) e.preventDefault(); });
-        cont.addEventListener('drop', e=>{
-          if(!_dragNo) return;
-          if(e.target && e.target.closest && e.target.closest('.st-card')) return;  /* 카드가 처리 */
-          e.preventDefault();
-          const near=nearestCard(cont, e.clientX, e.clientY);
-          if(!near || near.el.dataset.no===_dragNo) return;
-          styleReorder(domOrder(), _dragNo, near.el.dataset.no, near.after);
-        });
-      }
+      const cb2=el('pkMoveCancel');
+      if(cb2) cb2.addEventListener('click',()=>{ _pickNo=null; paintPick(); });
+      syncMoveButtons();
+      paintPick();
     }
     p.classList.add('show');
     if(!noScroll) p.scrollIntoView({behavior:'smooth',block:'center'});
@@ -700,7 +726,10 @@
       renderBar();
       renderFamilies();
       renderColors();
-      bindDragScroll();
+      /* 집어 든 걸 Esc 로 놓는다 */
+      document.addEventListener('keydown', e=>{
+        if(e.key==='Escape' && _pickNo){ _pickNo=null; paintPick(); }
+      });
       const eb=el('cEdit');
       if(eb) eb.addEventListener('click',()=>{
         editOn=!editOn;

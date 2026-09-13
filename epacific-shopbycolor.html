@@ -135,16 +135,13 @@
   /* 카트 뱃지 — 상품 페이지와 같은 모양 */
   .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;
     min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
-  /* 사진 / 주문 전환 (.close 가 margin-left:auto 를 갖고 있어서 이게 먼저 밀어낸다) */
-  .picked .ph .vw{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;
-    overflow:hidden;margin-left:auto}
-  .picked .ph .vw button{border:none;background:var(--paper);padding:7px 14px;font-family:var(--body);
-    font-size:12.5px;cursor:pointer;color:var(--soft-ink)}
-  .picked .ph .vw button.on{background:var(--ink);color:#fff}
-  /* ── 주문 블록 : 스타일 하나 = 블록 하나 ──────────────────────────────── */
-  .obar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 2px}
-  .obar .ohint{font-size:12px;color:var(--faint)}
-  .obar .ofold{margin-left:auto;border:1px solid var(--line-2);background:var(--paper);
+  /* ── 주문 블록 : 사진 아래에, 스타일 하나 = 블록 하나 ─────────────────── */
+  /* 사진 칸과 주문 칸 사이를 줄로 갈라 준다 — 한 화면에 둘이 같이 있으니까 */
+  .osec{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    margin:28px 0 2px;padding-top:20px;border-top:1px solid var(--line)}
+  .osec h3{font-family:var(--display);font-weight:400;font-size:21px;line-height:1}
+  .osec .ohint{font-size:12px;color:var(--faint)}
+  .osec .ofold{margin-left:auto;border:1px solid var(--line-2);background:var(--paper);
     border-radius:8px;padding:6px 12px;font-family:var(--body);font-size:12.5px;cursor:pointer;color:var(--soft-ink)}
   .oload{padding:26px 4px;color:var(--faint);font-size:14px}
   .blk{border:1px solid var(--line);border-radius:14px;margin-top:16px;overflow:hidden;background:var(--paper)}
@@ -724,7 +721,7 @@
      직원이거나 승인된 거래처만. 한 번의 customer_applications 조회로 승인 여부와
      거래처 번호(내 가격표를 찾는 데 쓴다)를 함께 얻는다. 권한이 없으면 전환 단추 자체를
      안 만든다 — 눌러도 안 되는 단추를 보여주는 것보다 없는 게 낫다. */
-  let canOrder=false, myCid=null, _view='cards';
+  let canOrder=false, myCid=null;
   async function loadOrderRight(){
     try{
       if(staff) canOrder=true;
@@ -740,8 +737,8 @@
         }
       }
     }catch(e){}
-    try{ const v=localStorage.getItem('pacific_sbc_view'); if(v==='order'||v==='cards') _view=v; }catch(e){}
-    if(!canOrder) _view='cards';
+    /* 예전에 쓰던 사진/주문 전환 기억은 이제 필요 없다 — 둘이 한 화면에 같이 있다 */
+    try{ localStorage.removeItem('pacific_sbc_view'); }catch(e){}
   }
 
   /* ── 그 자리에서 고치기 ───────────────────────────────────────────────
@@ -1204,7 +1201,7 @@
     if(!m){ host.innerHTML='<div class="oload">Could not load prices and stock. Please try again shortly.</div>'; return; }
     _obModel=m;
     if(!m.rows.length){ host.innerHTML='<div class="oload">Nothing orderable in this colour yet.</div>'; return; }
-    host.innerHTML='<div class="obar">'
+    host.innerHTML='<div class="osec"><h3>Order</h3>'
       + '<span class="ohint">Your prices are above each size \u00b7 stock under each box '
         + '\u00b7 above 3,000 we show a band, not the exact count</span>'
       + '<button type="button" class="ofold" id="obFold">Collapse all</button></div>'
@@ -1221,8 +1218,9 @@
     _pickNo=null;
     _open=c;
     const ns=stylesOf(c, editOn);                /* Edit 모드에서는 감춘 것도 보여준다 */
-    /* Edit 모드는 카드를 정리하는 화면이다 — 그때는 주문 블록을 쓰지 않는다 */
-    const view = (canOrder && !editOn) ? _view : 'cards';
+    /* 사진은 늘 위에 그대로 두고, 주문 블록을 그 **아래**에 붙인다.
+       Edit 모드는 카드를 정리하는 화면이라 그때는 주문 블록을 안 그린다. */
+    const showOrder = canOrder && !editOn;
     const vis=stylesOf(c).length;
     const p=el('picked');
     const hx=DATA.hex[c]||'';
@@ -1231,17 +1229,11 @@
         + (hx?'':(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':''))+'</div>'
       + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+vis+' style'+(vis===1?'':'s')+' in '+esc(title(c))
         + (editOn && ns.length>vis ? ' · '+(ns.length-vis)+' hidden' : '')+'</div></div>'
-      + ((canOrder && !editOn) ? '<div class="vw" id="pkView">'
-          + '<button type="button" class="'+(view==='cards'?'on':'')+'" data-v="cards">\uc0ac\uc9c4</button>'
-          + '<button type="button" class="'+(view==='order'?'on':'')+'" data-v="order">\uc8fc\ubb38</button>'
-        + '</div>' : '')
       + '<button class="close" id="pkClose">\u2715 Close</button></div>'
       + (editOn ? '<div class="s-moving" id="pkMoving">Moving <b id="pkMovingWhat"></b> \u00b7 '
           + 'now click the card you want it to sit next to \u2014 left half puts it before, right half after.'
           + '<button type="button" id="pkMoveCancel">Cancel</button></div>' : '')
-      + (view==='order' ? '<div id="pkOrder"></div>' : '')
-      + '<div class="styles" id="pkStyles"'+(view==='order'?' style="display:none"':'')+'>'
-      + (view==='order'?[]:ns).map(n=>{
+      + '<div class="styles" id="pkStyles">'+ns.map(n=>{
           /* ⚠ 그 색 사진이 없을 때 **그 스타일의 아무 사진이나** 갖다 쓰면 안 된다.
              White 를 열었는데 1364 가 하늘색으로 나왔다 — 1364 는 흰 사진이 없고 첫 사진이
              FROST BLUE 였다. 색을 보러 들어온 화면에서 딴 색 셔츠를 보여주는 건 거짓말이다.
@@ -1269,18 +1261,12 @@
               + '</span></div>'
             : '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+inner+'</a>';
         }).join('')+'</div>'
-      + (editOn && view!=='order' ? '<div class="s-hint">Drag a card where you want it \u2014 left half of a card drops it before, '
+      + (editOn ? '<div class="s-hint">Drag a card where you want it \u2014 left half of a card drops it before, '
           + 'right half after \u00b7 \u21E4 sends it to the front, \u25C0 \u25B6 move one place \u00b7 '
           + 'a short click picks a card up so you can scroll first, then click where it goes (Esc cancels) \u00b7 '
-          + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '');
-    const vw=el('pkView');
-    if(vw) vw.addEventListener('click', e=>{
-      const b=e.target.closest('button'); if(!b) return;
-      const v=b.dataset.v; if(!v || v===_view) return;
-      _view=v;
-      try{ localStorage.setItem('pacific_sbc_view', v); }catch(_){}
-      pick(c, true);                            /* 그 자리에서 모양만 바꾼다 */
-    });
+          + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '')
+      /* 주문 블록은 사진 **아래**에 온다 */
+      + (showOrder ? '<div id="pkOrder"></div>' : '');
     const cb=el('pkClose');
     if(cb) cb.addEventListener('click',()=>{
       if(_dg) dgStop(false);
@@ -1363,7 +1349,7 @@
       syncMoveButtons();
       paintPick();
     }
-    if(view==='order') obRender(c, ns);
+    if(showOrder) obRender(c, ns);
     p.classList.add('show');
     if(!noScroll) p.scrollIntoView({behavior:'smooth',block:'center'});
   }

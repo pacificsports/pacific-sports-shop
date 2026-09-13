@@ -132,6 +132,122 @@
     box-shadow:0 1px 4px rgba(28,28,26,.25);cursor:pointer;font-size:11px;line-height:1;padding:4px 6px}
   .st-card.editing .si{padding-right:4px}
   .s-hint{font-size:11.5px;color:var(--faint);margin-top:10px}
+  /* 카트 뱃지 — 상품 페이지와 같은 모양 */
+  .cart-c{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;font-weight:600;
+    min-width:19px;height:19px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+  /* 사진 / 주문 전환 (.close 가 margin-left:auto 를 갖고 있어서 이게 먼저 밀어낸다) */
+  .picked .ph .vw{display:inline-flex;border:1px solid var(--line-2);border-radius:9px;
+    overflow:hidden;margin-left:auto}
+  .picked .ph .vw button{border:none;background:var(--paper);padding:7px 14px;font-family:var(--body);
+    font-size:12.5px;cursor:pointer;color:var(--soft-ink)}
+  .picked .ph .vw button.on{background:var(--ink);color:#fff}
+  /* ── 주문 블록 : 스타일 하나 = 블록 하나 ──────────────────────────────── */
+  .obar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 2px}
+  .obar .ohint{font-size:12px;color:var(--faint)}
+  .obar .ofold{margin-left:auto;border:1px solid var(--line-2);background:var(--paper);
+    border-radius:8px;padding:6px 12px;font-family:var(--body);font-size:12.5px;cursor:pointer;color:var(--soft-ink)}
+  .oload{padding:26px 4px;color:var(--faint);font-size:14px}
+  .blk{border:1px solid var(--line);border-radius:14px;margin-top:16px;overflow:hidden;background:var(--paper)}
+  .blk.has-qty{border-color:var(--accent)}
+  .blkhd{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#fcfcfa;
+    border-bottom:1px solid var(--line)}
+  .blkhd .bchev{border:none;background:none;cursor:pointer;font-size:12px;color:var(--faint);
+    line-height:1;padding:2px 4px;transition:transform .15s}
+  .blkhd .bt{cursor:pointer}
+  .blkhd .bt b{font-size:13px;color:var(--accent);font-weight:600;margin-right:8px}
+  .blkhd .bt span{font-size:13.5px;color:var(--soft-ink)}
+  .blkhd .bopen{margin-left:auto;font-size:12px;color:var(--faint);border-bottom:1px solid transparent}
+  .blkhd .bopen:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  .badd{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 18px;
+    font-family:var(--body);font-size:13px;font-weight:600;cursor:pointer}
+  .badd:disabled{background:#c8cfc9;cursor:default}
+  .blk.fold .bbody{display:none}
+  .blk.fold .bchev{transform:rotate(-90deg)}
+  .otable-scroll2{overflow-x:auto}
+  .ofoot{position:sticky;bottom:0;z-index:5;margin-top:18px;padding:12px 2px;display:flex;
+    align-items:center;gap:14px;flex-wrap:wrap;background:rgba(255,255,255,.94);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+  .ofoot .osum{font-size:13.5px;color:var(--soft-ink);font-variant-numeric:tabular-nums}
+  .ofoot .osum b{color:var(--ink)}
+  .ofoot .oadd{margin-left:auto;background:var(--accent);color:#fff;border:none;border-radius:10px;
+    padding:11px 22px;font-family:var(--body);font-size:13.5px;font-weight:600;cursor:pointer}
+  .ofoot .oadd:disabled{background:#c8cfc9;cursor:default}
+  .otoast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--ink);
+    color:#fff;padding:12px 20px;border-radius:11px;font-size:13.5px;opacity:0;pointer-events:none;
+    transition:.25s;z-index:9998}
+  .otoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .otoast a{color:#fff;text-decoration:underline}
+  /* ↓ 여기부터는 **상품 페이지에서 그대로 가져온** 주문표 CSS. 베낀 게 아니라 옮긴 것이다 —
+       두 화면이 똑같이 보여야 하므로 손으로 고치지 말고 상품 페이지에서 다시 뽑아 올 것. */
+  .otable th.whcol{width:42px}
+  .otable th.szh{padding:13px 6px}
+  .whcell{text-align:center;vertical-align:top}
+  .whwrap{display:flex;align-items:center;justify-content:center;height:38px}
+  .whbadge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.03em;padding:3px 8px;border-radius:6px}
+  .whbadge.wh-SC{background:#e7eef3;color:#2f5b7a}
+  .whbadge.wh-CA{background:#f1ece0;color:#8a6a3a}
+  .otable .colcell-td{vertical-align:top;background:var(--paper);padding:0}
+  .cellwrap{display:flex;flex-direction:column;align-items:center;gap:3px}
+  .stock{font-size:10px;color:var(--faint);line-height:1.1;white-space:nowrap}
+  .stock.low{color:#c0853b}
+  .stock.out{color:var(--faint);font-weight:400;font-size:10px;line-height:1.1;white-space:nowrap}
+  .otable{width:100%;border-collapse:collapse}
+  .otable thead th{position:sticky;top:0;z-index:2;background:var(--paper);font-family:var(--body);font-weight:600;font-size:12px;letter-spacing:.04em;color:var(--faint);text-transform:uppercase;padding:13px 8px;text-align:center;border-bottom:1px solid var(--line)}
+  .otable thead th.colcol{text-align:center;padding-left:8px;width:200px;min-width:200px;max-width:200px}
+  .otable tbody td{padding:9px 6px;text-align:center;border-bottom:1px solid var(--line)}
+  .otable tbody tr:last-child td{border-bottom:none}
+  .otable tbody tr{transition:background .15s}
+  .otable tbody tr.active-row{background:var(--accent-soft)}
+  .colcell{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:center;cursor:pointer;transition:background .12s}
+  .colcell:hover{background:var(--accent-soft)}
+  .colcell .cimg{flex:1 1 0;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .colcell .cimg svg{display:block;width:100%;height:100%}
+  .colcell .cn{font-size:14px;font-weight:600;white-space:normal;line-height:1.2}
+  .otable input::-webkit-outer-spin-button,.otable input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  .otable input[type=number]{-moz-appearance:textfield;appearance:textfield}
+  .otable input{width:68px;text-align:center;font-size:15px;font-weight:500;font-family:var(--body);padding:8px 6px;border:1.5px solid var(--line-2);border-radius:9px;background:var(--paper);transition:border .15s,background .15s}
+  .otable input:disabled{cursor:not-allowed}
+  .otable input:focus{outline:none;border-color:var(--accent);background:#fff}
+  .otable input.has{border-color:var(--accent);background:#fff;font-weight:700;color:var(--accent)}
+  .rowtotal{font-weight:600;font-size:15px;font-family:var(--display);min-width:40px}
+  .otable tbody tr.stock-total>td{padding-top:2px;padding-bottom:5px;border-bottom:1.5px solid var(--line-2)}
+  .otable tbody tr.stock-total .stock{font-size:12px;font-weight:700;color:var(--ink,#1c1c1a);opacity:.75}
+  .otable tbody tr.stock-total .stock.out{opacity:.3;font-weight:500}
+  .otable tbody tr.stock-total .stock.low{color:#c0392b;opacity:1}
+  .whbadge.wh-ALL{background:#e8e8e2;color:#6b6b63;font-size:9.5px;letter-spacing:.02em;padding-left:6px;padding-right:6px}
+  .stockgrand{font-family:var(--display);font-size:13px;font-weight:600;color:var(--faint);font-variant-numeric:tabular-nums}
+  .otable input{width:58px;font-size:14px}
+  .otable thead th .szp{display:block;font-size:12.5px;font-weight:700;color:var(--ink,#1c1c1a);
+  letter-spacing:0;text-transform:none;line-height:1.25;margin-bottom:1px}
+  .otable thead th .szp .was{display:block;font-size:9.5px;font-weight:500;color:var(--faint,#8e8e85);text-decoration:line-through}
+  .otable thead th.on-sale .szp{color:#c0392b}
+  .otable thead th .szn{display:block}
+  .cellprice{display:block;font-size:9.5px;line-height:1.3;color:#c0392b;font-weight:700;margin-top:1px}
+  /* ⚠ 이 덮어쓰기들은 위의 **가져온 CSS 뒤에** 와야 한다. 먼저 오면 .cimg{flex:1 1 0} 에
+       져서 사진칸 높이가 0 이 된다 (실측으로 잡았다). */
+  .otable .colcell-td{vertical-align:middle}
+  .blk .colcell{height:auto;gap:6px;padding:8px 6px;cursor:default}
+  .blk .colcell:hover{background:none}
+  .blk .colcell .cimg{flex:0 0 auto;height:120px;width:100%;cursor:default}
+  .blk .colcell .cimg img{width:100%;height:100%;object-fit:contain;display:block}
+  .blk .colcell .cimg svg{width:100%;height:100%;display:block}
+  .blk .colcell .cn{font-size:13px;color:var(--accent);font-weight:600;padding:0}
+  .otable thead th.colcol{width:170px;min-width:170px;max-width:170px}
+  .altslot{min-height:12px}
+  @media (max-width:760px){
+    .otable thead th.colcol{width:106px;min-width:106px;max-width:106px}
+    .blk .colcell .cimg{height:80px}
+    .otable input{width:52px;font-size:14px}
+    .otable thead th{padding:9px 5px}
+    .otable tbody td{padding:7px 4px}
+    /* 좁은 화면에서 블록 머리줄이 세 줄로 찢어지지 않게 — 제목이 한 줄을 다 쓰고
+       단추는 그 아래 오른쪽으로 내려간다 */
+    .blkhd{flex-wrap:wrap;row-gap:8px}
+    .blkhd .bt{flex:1 1 auto;min-width:0}
+    .blkhd .bopen{flex:0 0 auto;margin-left:auto}
+    .blkhd .badd{order:9;flex:0 0 auto;margin-left:auto;white-space:nowrap}
+    .ofoot .oadd{padding:10px 16px}
+  }
   .st-card .tee img{width:100%;height:100%;object-fit:contain;border-radius:9px}
   .picked .ph .big-chip{overflow:hidden;background:#f4f4f0;display:flex;align-items:center;justify-content:center}
   .picked .ph .big-chip img{width:100%;height:100%;object-fit:contain}
@@ -209,7 +325,7 @@
       <button id="hdAcct" style="display:none" onclick="location.href='epacific-account.html'">My Account</button>
       <button id="hdLogin" style="display:none" onclick="location.href='epacific-login.html'">Log in</button>
       <button id="hdOut" style="display:none" onclick="pacLogout()" title="Log out">Log out</button>
-      <button class="primary">Cart</button>
+      <button class="primary">Cart <span class="cart-c" id="cartCount">0</span></button>
     </div>
   </div>
 </header>
@@ -322,7 +438,7 @@
     const [sk, pi, ss, wc] = await Promise.all([
       get('skus?select=style_number,color,size&is_active=eq.true&limit=200000'),
       get('product_images?select=style_number,color,image_path,sort_order&order=sort_order.asc&limit=100000'),
-      get('style_settings?select=style_number,is_hidden,color_names').catch(()=>[]),
+      get('style_settings?select=style_number,is_hidden,color_names,hidden_sizes').catch(()=>[]),
       /* ⭐ 색칩 색·감춘 색은 **새 표 없이** `style_settings` 의 한 줄에 모아 둔다 (2026-09-12).
          `style_number='__COLORS__'` 짜리 줄 하나:
             color_names   = { 'Navy Htr':'#1f2a44', … }   ← 칩 색
@@ -338,7 +454,7 @@
     (styles||[]).forEach(x=>{ meta[String(x.no)]={desc:x.desc||'',cat:x.cat||'',sr:x.sr||''}; });
     /* ⚠ 숨긴 스타일을 여기서 **버리면 Edit 모드에서 되살릴 방법이 없다.** 목록에는 담고
        화면에서만 가른다 (손님은 안 보이고, 직원 Edit 에서는 흐리게 보인다). */
-    const shid={}, rank={}, cnames={};
+    const shid={}, rank={}, cnames={}, hsz={};
     (ss||[]).forEach(x=>{
       const n=String(x.style_number);
       if(x.is_hidden) shid[n]=1;
@@ -347,6 +463,10 @@
       /* 진열순서는 카테고리 화면과 **같은 자리**를 쓴다 — `color_names.__RANK__`
          (전용 칸이 없어서 그 화면이 예약 키로 쓰고 있다). 한 곳에서만 정해야 두 화면이 안 어긋난다. */
       if(typeof cn.__RANK__==='number') rank[n]=cn.__RANK__;
+      /* 감춘 사이즈는 상품 페이지와 **같이** 감춘다. 주문 블록에 상품 페이지엔 없는
+         사이즈 칸이 생기면 손님이 못 사는 걸 주문하게 된다. */
+      const hs=Array.isArray(x.hidden_sizes)?x.hidden_sizes:[];
+      if(hs.length){ const o={}; hs.forEach(z=>{ o[String(z).trim().toUpperCase()]=1; }); hsz[n]=o; }
     });
     const ok = n => !!meta[n];
 
@@ -368,7 +488,13 @@
       const n=String(r.style_number), raw=String(r.color||'').trim();
       if(!raw || !ok(n) || hideC(n,raw)) return;
       const disp=showC(n,raw), key=disp.toUpperCase();
-      (byColor[key]=byColor[key]||{})[n]=1;
+      /* ⚠ 값에 **원래 색 이름**을 담는다. 패널 제목은 보여주는 이름(Charcoal)이지만
+         재고·카트는 원래 이름(CHARCOAL (HT))으로 찾아야 한다. 한 보여주는 이름에 원래
+         이름이 여러 개 붙을 수 있어서 배열이다. (키는 그대로 스타일 번호라서
+         Object.keys() 로 스타일 목록을 뽑는 기존 코드는 그대로 돈다.) */
+      const slot=(byColor[key]=byColor[key]||{});
+      if(!slot[n]) slot[n]=[];
+      if(slot[n].indexOf(raw)<0) slot[n].push(raw);
       if(!label[key]) label[key]=disp;
       if(r.size) (sizesOf[n]=sizesOf[n]||{})[String(r.size).trim().toUpperCase()]=1;
     });
@@ -392,7 +518,7 @@
     (Array.isArray(row0.hidden_colors)?row0.hidden_colors:[]).forEach(k=>{
       const u=String(k||'').trim().toUpperCase(); if(u) chid[u]=1;
     });
-    DATA={meta,byColor,sizesOf,label,photo,hex,chid,shid,rank,cnames,drank};
+    DATA={meta,byColor,sizesOf,label,photo,hex,chid,shid,rank,cnames,drank,hsz};
   }
 
   function srOf(n){
@@ -594,6 +720,30 @@
   /* 지금 열려 있는 색 — 저장 뒤 다시 그리기 위해 기억한다 */
   let _open=null, _pickNo=null, _dgClick=false, _dgClickT=0;
 
+  /* ══ 주문 권한 — 상품 페이지와 **같은 규칙** ═══════════════════════════════
+     직원이거나 승인된 거래처만. 한 번의 customer_applications 조회로 승인 여부와
+     거래처 번호(내 가격표를 찾는 데 쓴다)를 함께 얻는다. 권한이 없으면 전환 단추 자체를
+     안 만든다 — 눌러도 안 되는 단추를 보여주는 것보다 없는 게 낫다. */
+  let canOrder=false, myCid=null, _view='cards';
+  async function loadOrderRight(){
+    try{
+      if(staff) canOrder=true;
+      const ss=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+      if(ss && ss.token && ss.userId){
+        const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/customer_applications'
+          +'?user_id=eq.'+encodeURIComponent(ss.userId)+'&select=customer_id,status',
+          {headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+ss.token}});
+        if(r.ok){
+          const rows=await r.json();
+          const ap=(rows||[]).filter(x=>x.status==='approved')[0];
+          if(ap){ canOrder=true; myCid=ap.customer_id||null; }
+        }
+      }
+    }catch(e){}
+    try{ const v=localStorage.getItem('pacific_sbc_view'); if(v==='order'||v==='cards') _view=v; }catch(e){}
+    if(!canOrder) _view='cards';
+  }
+
   /* ── 그 자리에서 고치기 ───────────────────────────────────────────────
      ⚠ 42장짜리 색(Black)에서 pick() 이나 renderColors() 를 다시 부르면 사진이 전부
        다시 떠서 눈에 보이게 멈춘다. 바뀐 것만 손댄다. */
@@ -772,12 +922,307 @@
       if(r) r.disabled = (i===cards.length-1);
     });
   }
+  /* ══ 주문 블록 ════════════════════════════════════════════════════════════
+     스타일 하나 = 블록 하나. 안쪽은 상품 페이지의 주문표와 **같은 표**다 (사진 rowspan,
+     SC·CA·SC+CA 세 줄, 사이즈 머리칸에 단가, 칸 아래 재고, 오른쪽 PIECES).
+     한 색에 스타일이 33~42개 들어간다 — 가격·재고는 in.(...) 으로 **한 번에** 받는다. */
+  let _obModel=null, _obColor=null, _obToast=null;
+
+  function obFmt(n){ return Number(n).toLocaleString('en-US'); }
+  function obMoney(v){ return '$'+Number(v).toFixed(2); }
+  /* 상품 페이지의 재고 표시 규칙 — 그대로 옮겼다. 3,000 위는 서버가 구간값만 내려준다. */
+  function obStockTxt(n){
+    if(!(n>0)) n=0;
+    if(n>7500) return {t:'7,500+',cls:''};
+    if(n>5000) return {t:'5,000+',cls:''};
+    if(n>3000) return {t:'3,000+',cls:''};
+    if(n<=72)  return {t:obFmt(n),cls:'low'};
+    return {t:obFmt(n),cls:''};
+  }
+  async function obFetch(path){
+    const ss=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+    const tok=(ss&&ss.token)||CFG.SUPABASE_ANON_KEY;
+    const r=await fetch(CFG.SUPABASE_URL+'/rest/v1/'+path,
+      {headers:{apikey:CFG.SUPABASE_ANON_KEY,Authorization:'Bearer '+tok}});
+    if(!r.ok) throw new Error(String(path).split('?')[0]+' '+r.status);
+    return r.json();
+  }
+  /* 이 색에서 그 스타일의 **원래 색 이름들** */
+  function rawsOf(c, n){
+    const v=(DATA.byColor[c]||{})[n];
+    return Array.isArray(v) ? v : [];
+  }
+  async function obLoad(c, ns){
+    if(!ns.length) return {rows:[], qty:{}};
+    const list=ns.join(',');
+    const raws=[]; ns.forEach(n=>rawsOf(c,n).forEach(r=>{ if(raws.indexOf(r)<0) raws.push(r); }));
+    if(!raws.length) return {rows:[], qty:{}};
+    /* 원래 색 이름에는 공백·괄호가 들어간다 — in.() 안에서는 "" 로 감싸야 한다 */
+    const cl=raws.map(r=>'"'+String(r).replace(/"/g,'')+'"').join(',');
+    const [sk, inv, sp, cp, sale, wh] = await Promise.all([
+      obFetch('skus?style_number=in.('+list+')&color=in.('+cl+')&is_active=eq.true'
+              +'&select=style_number,color,size&limit=20000'),
+      obFetch('inventory?style_number=in.('+list+')&color=in.('+cl+')'
+              +'&select=style_number,color,size,qty_on_hand,warehouse_id&limit=20000'),
+      obFetch('style_prices?style_number=in.('+list+')&select=*'),
+      myCid ? obFetch('customer_prices?customer_id=eq.'+encodeURIComponent(myCid)
+                      +'&style_number=in.('+list+')&select=*').catch(()=>[]) : Promise.resolve([]),
+      obFetch('sale_prices?style_number=in.('+list+')&select=*').catch(()=>[]),
+      obFetch('warehouses?select=id,code')
+    ]);
+    const WHC={}; (wh||[]).forEach(w=>{ WHC[w.id]=String(w.code||'').toUpperCase(); });
+    const qty={}, tot={};
+    (inv||[]).forEach(r=>{
+      const n=String(r.style_number), rw=String(r.color||'').trim();
+      const z=String(r.size||'').trim().toUpperCase(), w=WHC[r.warehouse_id]||'';
+      if(!z||!w) return;
+      const k=n+'|'+rw+'|'+w+'|'+z;
+      qty[k]=(qty[k]||0)+(Number(r.qty_on_hand)||0);
+      tot[n+'|'+rw]=(tot[n+'|'+rw]||0)+(Number(r.qty_on_hand)||0);
+    });
+    const szOf={};
+    (sk||[]).forEach(r=>{
+      const n=String(r.style_number), rw=String(r.color||'').trim();
+      const z=String(r.size||'').trim().toUpperCase(); if(!z) return;
+      (szOf[n+'|'+rw]=szOf[n+'|'+rw]||{})[z]=1;
+    });
+    const base={}, cust={}, sales={};
+    (sp||[]).forEach(r=>{ base[String(r.style_number)]=r; });
+    (cp||[]).forEach(r=>{ cust[String(r.style_number)]=r; });
+    (sale||[]).forEach(r=>{ const n=String(r.style_number); (sales[n]=sales[n]||[]).push(r); });
+    const rows=ns.map(n=>{
+      const cand=rawsOf(c,n);
+      if(!cand.length) return null;
+      /* ⚠ 한 보여주는 이름에 원래 이름이 여러 개 붙을 수 있다. 재고를 합쳐 보여주고
+         카트엔 하나만 담으면 없는 물건을 파는 셈이다. 재고가 가장 많은 이름 하나를 골라
+         **그 색만** 센다 — 보이는 수와 담기는 색이 늘 같다. */
+      let raw=cand[0];
+      cand.forEach(r2=>{ if((tot[n+'|'+r2]||0) > (tot[n+'|'+raw]||0)) raw=r2; });
+      const hz=(DATA.hsz&&DATA.hsz[n])||{};
+      const have=SZ.filter(z=>(szOf[n+'|'+raw]||{})[z] && !hz[z]);
+      if(!have.length) return null;
+      const m=DATA.meta[n]||{};
+      return { no:n, desc:m.desc||'', raw:raw, sizes:have,
+               img:DATA.photo[c+'|'+n]||'',
+               P:{ base:base[n]||null, cust:cust[n]||null, sales:sales[n]||[], cat:String(m.cat||'') } };
+    }).filter(Boolean);
+    return { rows:rows, qty:qty };
+  }
+  function obQ(r, w, z){ return (_obModel && _obModel.qty[r.no+'|'+r.raw+'|'+w+'|'+z]) || 0; }
+  /* 가격은 상품 페이지와 **같은 함수**로 구한다. 여기서 규칙을 다시 쓰면 값이 어긋난다. */
+  function obPrice(r, z, withColor){
+    const PD=window.PacificData;
+    if(!PD || typeof PD.priceOf!=='function') return null;
+    try{ return PD.priceOf(r.P, withColor?r.raw:null, z); }catch(e){ return null; }
+  }
+  function obBlock(r){
+    const head=r.sizes.map(z=>{
+      const p=obPrice(r,z,false);
+      const top=(p && p.price!=null)
+        ? '<span class="szp">'+(p.onSale?'<span class="was">'+obMoney(p.list)+'</span>':'')+obMoney(p.price)+'</span>'
+        : '';
+      return '<th class="szh'+((p&&p.onSale)?' on-sale':'')+'">'+top+'<span class="szn">'+esc(z)+'</span></th>';
+    }).join('');
+    const cells=w=>r.sizes.map(z=>{
+      const q=obQ(r,w,z), out=!(q>0);
+      const cpp=obPrice(r,z,true), rpp=obPrice(r,z,false);
+      const pv=(cpp&&cpp.price!=null)?cpp.price:null;
+      /* 색까지 걸린 세일만 칸 밑에 따로 쓴다 — 머리칸 값과 같으면 두 번 안 쓴다 */
+      const extra=(pv!=null && rpp && rpp.price!=null && pv!==rpp.price)
+        ? '<span class="cellprice">'+obMoney(pv)+'</span>' : '';
+      const f=obStockTxt(q);
+      const st=out ? '<span class="stock out">0</span>'
+                   : '<span class="stock '+f.cls+'">'+f.t+'</span>';
+      return '<td class="szcol'+(out?' is-out':'')+'" data-sz="'+esc(z)+'" data-max="'+q+'"'
+        + ' data-p="'+(pv==null?'':pv)+'"><div class="cellwrap">'
+        + '<input type="number" min="0" inputmode="numeric" autocomplete="off" placeholder="'
+          + (out?'\u2013':'0')+'"'+(out?' disabled title="Out of stock"':'')+'>'
+        + st + '<div class="altslot">'+extra+'</div></div></td>';
+    }).join('');
+    let grand=0;
+    const tots=r.sizes.map(z=>{
+      const t=obQ(r,'SC',z)+obQ(r,'CA',z); grand+=t;
+      const f=obStockTxt(t);
+      return '<td class="szcol"><span class="stock '+(t>0?f.cls:'out')+'">'+(t>0?f.t:'0')+'</span></td>';
+    }).join('');
+    /* ⚠ 그 색 사진이 없으면 **그 색으로 칠한 실루엣**을 보여준다. 딴 색 사진을 갖다 쓰면
+       White 를 열었는데 하늘색 셔츠가 나온다 (1364 로 실제로 그랬다). */
+    const thumb=r.img ? '<img src="'+esc(r.img)+'" alt="" loading="lazy" draggable="false">'
+                      : teeSVG(DATA.hex[_obColor]||'#d8d6ce',34);
+    return '<div class="blk" data-st="'+esc(r.no)+'">'
+      + '<div class="blkhd">'
+        + '<button type="button" class="bchev" title="Collapse / expand">\u25BE</button>'
+        + '<div class="bt"><b>#'+esc(r.no)+'</b><span>'+esc(r.desc)+'</span></div>'
+        + '<a class="bopen" href="epacific-product.html?style='+encodeURIComponent(r.no)+'">Details \u2197</a>'
+        + '<button type="button" class="badd" disabled>Add to cart</button>'
+      + '</div>'
+      + '<div class="bbody"><div class="otable-scroll2"><table class="otable"><thead><tr>'
+        + '<th class="colcol">STYLE</th><th class="whcol">WH</th>'+head+'<th>PIECES</th>'
+      + '</tr></thead><tbody>'
+      + '<tr class="wh-row" data-wh="SC">'
+        + '<td class="colcell-td" rowspan="3"><div class="colcell"><span class="cimg">'+thumb+'</span>'
+        + '<span class="cn-wrap"><span class="cn">#'+esc(r.no)+'</span></span></div></td>'
+        + '<td class="whcell"><div class="whwrap"><span class="whbadge wh-SC">SC</span></div></td>'
+        + cells('SC')+'<td><span class="rowtotal">0</span></td></tr>'
+      + '<tr class="wh-row" data-wh="CA">'
+        + '<td class="whcell"><div class="whwrap"><span class="whbadge wh-CA">CA</span></div></td>'
+        + cells('CA')+'<td><span class="rowtotal">0</span></td></tr>'
+      + '<tr class="stock-total">'
+        + '<td class="whcell"><div class="whwrap"><span class="whbadge wh-ALL">SC+CA</span></div></td>'
+        + tots+'<td><span class="stockgrand">'+obFmt(grand)+'</span></td></tr>'
+      + '</tbody></table></div></div></div>';
+  }
+  function obRecalcBlock(blk){
+    let pcs=0, amt=0, known=true;
+    Array.prototype.forEach.call(blk.querySelectorAll('tr.wh-row'), tr=>{
+      let rp=0;
+      Array.prototype.forEach.call(tr.querySelectorAll('td.szcol'), td=>{
+        const inp=td.querySelector('input'); if(!inp) return;
+        let q=parseInt(inp.value,10)||0;
+        const max=parseInt(td.dataset.max,10)||0;
+        /* 상품 페이지와 같은 규칙: 재고 3,000 **미만**인 칸만 재고까지 깎는다. 그 위는
+           서버가 구간값만 주니 여기서 막으면 팔 수 있는 걸 못 판다 — 진짜 상한은 DB
+           트리거(web_orders_stock_guard)가 본다. */
+        if(max<3000 && q>max){ q=max; inp.value=max||''; }
+        inp.classList.toggle('has', q>0);
+        if(q<=0) return;
+        rp+=q;
+        const p=td.dataset.p;
+        if(p==='') known=false; else amt+=parseFloat(p)*q;
+      });
+      const rt=tr.querySelector('.rowtotal'); if(rt) rt.textContent = rp?obFmt(rp):'0';
+      tr.classList.toggle('active-row', rp>0);
+      pcs+=rp;
+    });
+    const ab=blk.querySelector('.badd'); if(ab) ab.disabled = (pcs===0);
+    blk.dataset.pcs=String(pcs);
+    blk.dataset.amt=known?amt.toFixed(2):'';
+    blk.classList.toggle('has-qty', pcs>0);
+    obRecalcAll();
+  }
+  function obRecalcAll(){
+    const host=el('pkOrder'); if(!host) return;
+    let pcs=0, amt=0, known=true;
+    Array.prototype.forEach.call(host.querySelectorAll('.blk'), b=>{
+      const bp=parseInt(b.dataset.pcs||'0',10)||0;
+      pcs+=bp;
+      if(bp>0 && b.dataset.amt==='') known=false;
+      else amt+=parseFloat(b.dataset.amt||'0')||0;
+    });
+    const p1=el('obPcs'), a1=el('obAmt'), ad=el('obAdd');
+    if(p1) p1.textContent=obFmt(pcs);
+    if(a1) a1.textContent = pcs ? (known?obMoney(amt):'\u2014') : '\u2014';
+    if(ad) ad.disabled = (pcs===0);
+  }
+  function obToast(html){
+    if(!_obToast){ _obToast=document.createElement('div'); _obToast.className='otoast'; document.body.appendChild(_obToast); }
+    _obToast.innerHTML=html;
+    _obToast.classList.add('show');
+    setTimeout(()=>{ if(_obToast) _obToast.classList.remove('show'); }, 4500);
+  }
+  function obItems(blk){
+    const r=((_obModel&&_obModel.rows)||[]).filter(x=>x.no===blk.dataset.st)[0];
+    const items=[];
+    Array.prototype.forEach.call(blk.querySelectorAll('tr.wh-row'), tr=>{
+      const w=tr.dataset.wh;
+      Array.prototype.forEach.call(tr.querySelectorAll('td.szcol'), td=>{
+        const inp=td.querySelector('input'); if(!inp) return;
+        const q=parseInt(inp.value,10)||0; if(q<=0) return;
+        items.push({ style:blk.dataset.st, styleName:(r&&r.desc)||'', color:(r&&r.raw)||'',
+                     wh:w, size:td.dataset.sz, qty:q,
+                     unit_price: td.dataset.p===''?null:parseFloat(td.dataset.p) });
+      });
+    });
+    return items;
+  }
+  function obClear(blk){
+    Array.prototype.forEach.call(blk.querySelectorAll('input'), i=>{ i.value=''; i.classList.remove('has'); });
+  }
+  /* 카트는 pacific-nav.js 의 PacificCart 를 쓴다 — 상품 페이지와 같은 카트, 같은 합치기 규칙 */
+  function obPut(items, what){
+    if(!items.length) return;
+    if(!(window.PacificCart && typeof PacificCart.add==='function')){
+      obToast('Could not add to cart \u2014 please reload the page.'); return;
+    }
+    PacificCart.add(items);
+    const pcs=items.reduce((a,b)=>a+b.qty,0);
+    obToast('\u2713 '+what+' \u2014 '+obFmt(pcs)+' pcs \u00b7 '+items.length
+      +' line'+(items.length>1?'s':'')+' \u2014 <a href="epacific-cart.html">Review order \u2192</a>');
+  }
+  function obWire(c){
+    const host=el('pkOrder'); if(!host) return;
+    host.addEventListener('input', e=>{
+      const t=e.target; if(!t || !t.matches || !t.matches('input')) return;
+      const blk=t.closest('.blk'); if(blk) obRecalcBlock(blk);
+    });
+    host.addEventListener('keydown', e=>{
+      const t=e.target; if(!t || !t.matches || !t.matches('input')) return;
+      const blk=t.closest('.blk'); if(!blk) return;
+      const all=Array.prototype.slice.call(blk.querySelectorAll('input:not([disabled])'));
+      const i=all.indexOf(t);
+      if(e.key==='Enter'||e.key==='ArrowDown'){ e.preventDefault(); (all[i+1]||all[0]).focus(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); (all[i-1]||all[all.length-1]).focus(); }
+    });
+    host.addEventListener('click', e=>{
+      const ad=e.target.closest && e.target.closest('.badd');
+      if(ad){
+        const blk=ad.closest('.blk'); if(!blk) return;
+        const items=obItems(blk);
+        if(!items.length) return;
+        obPut(items, '#'+blk.dataset.st);
+        obClear(blk); obRecalcBlock(blk);
+        return;
+      }
+      const ch=e.target.closest && (e.target.closest('.bchev') || e.target.closest('.blkhd .bt'));
+      if(ch){ const blk=ch.closest('.blk'); if(blk) blk.classList.toggle('fold'); }
+    });
+    const fa=el('obFold');
+    if(fa) fa.addEventListener('click', ()=>{
+      const blks=Array.prototype.slice.call(host.querySelectorAll('.blk'));
+      const anyOpen=blks.some(b=>!b.classList.contains('fold'));
+      blks.forEach(b=>b.classList.toggle('fold', anyOpen));
+      fa.textContent = anyOpen ? 'Expand all' : 'Collapse all';
+    });
+    const aa=el('obAdd');
+    if(aa) aa.addEventListener('click', ()=>{
+      const blks=Array.prototype.slice.call(host.querySelectorAll('.blk'));
+      let items=[], styles=0;
+      blks.forEach(b=>{ const it=obItems(b); if(it.length){ styles++; items=items.concat(it); } });
+      if(!items.length) return;
+      obPut(items, styles+' style'+(styles>1?'s':''));
+      blks.forEach(b=>{ obClear(b); obRecalcBlock(b); });
+    });
+  }
+  async function obRender(c, ns){
+    const host=el('pkOrder'); if(!host) return;
+    host.innerHTML='<div class="oload">Loading your prices and live stock\u2026</div>';
+    _obColor=c;
+    let m=null;
+    try{ m=await obLoad(c, ns); }catch(e){ m=null; }
+    /* 그 사이 다른 색을 열었거나 화면을 다시 그렸다 — 낡은 답을 붙이면 안 된다 */
+    if(_obColor!==c || el('pkOrder')!==host) return;
+    if(!m){ host.innerHTML='<div class="oload">Could not load prices and stock. Please try again shortly.</div>'; return; }
+    _obModel=m;
+    if(!m.rows.length){ host.innerHTML='<div class="oload">Nothing orderable in this colour yet.</div>'; return; }
+    host.innerHTML='<div class="obar">'
+      + '<span class="ohint">Your prices are above each size \u00b7 stock under each box '
+        + '\u00b7 above 3,000 we show a band, not the exact count</span>'
+      + '<button type="button" class="ofold" id="obFold">Collapse all</button></div>'
+      + m.rows.map(obBlock).join('')
+      + '<div class="ofoot"><span class="osum">Selected <b id="obPcs">0</b> pcs \u00b7 <b id="obAmt">\u2014</b></span>'
+      + '<button type="button" class="oadd" id="obAdd" disabled>Add all to cart</button></div>';
+    obWire(c);
+    obRecalcAll();
+  }
+
   function pick(c, noScroll){
     /* ⚠ 다시 그리면 끌던 카드가 사라진다 — 먼저 끌기를 끝맺어 두지 않으면 상태가 남는다 */
     if(_dg) dgStop(false);
     _pickNo=null;
     _open=c;
     const ns=stylesOf(c, editOn);                /* Edit 모드에서는 감춘 것도 보여준다 */
+    /* Edit 모드는 카드를 정리하는 화면이다 — 그때는 주문 블록을 쓰지 않는다 */
+    const view = (canOrder && !editOn) ? _view : 'cards';
     const vis=stylesOf(c).length;
     const p=el('picked');
     const hx=DATA.hex[c]||'';
@@ -786,11 +1231,17 @@
         + (hx?'':(DATA.photo[c]?'<img src="'+esc(DATA.photo[c])+'" alt="">':''))+'</div>'
       + '<div><h2>'+esc(title(c))+'</h2><div class="sub2">'+vis+' style'+(vis===1?'':'s')+' in '+esc(title(c))
         + (editOn && ns.length>vis ? ' · '+(ns.length-vis)+' hidden' : '')+'</div></div>'
-      + '<button class="close" id="pkClose">✕ Close</button></div>'
+      + ((canOrder && !editOn) ? '<div class="vw" id="pkView">'
+          + '<button type="button" class="'+(view==='cards'?'on':'')+'" data-v="cards">\uc0ac\uc9c4</button>'
+          + '<button type="button" class="'+(view==='order'?'on':'')+'" data-v="order">\uc8fc\ubb38</button>'
+        + '</div>' : '')
+      + '<button class="close" id="pkClose">\u2715 Close</button></div>'
       + (editOn ? '<div class="s-moving" id="pkMoving">Moving <b id="pkMovingWhat"></b> \u00b7 '
           + 'now click the card you want it to sit next to \u2014 left half puts it before, right half after.'
           + '<button type="button" id="pkMoveCancel">Cancel</button></div>' : '')
-      + '<div class="styles" id="pkStyles">'+ns.map(n=>{
+      + (view==='order' ? '<div id="pkOrder"></div>' : '')
+      + '<div class="styles" id="pkStyles"'+(view==='order'?' style="display:none"':'')+'>'
+      + (view==='order'?[]:ns).map(n=>{
           /* ⚠ 그 색 사진이 없을 때 **그 스타일의 아무 사진이나** 갖다 쓰면 안 된다.
              White 를 열었는데 1364 가 하늘색으로 나왔다 — 1364 는 흰 사진이 없고 첫 사진이
              FROST BLUE 였다. 색을 보러 들어온 화면에서 딴 색 셔츠를 보여주는 건 거짓말이다.
@@ -818,10 +1269,18 @@
               + '</span></div>'
             : '<a class="st-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+inner+'</a>';
         }).join('')+'</div>'
-      + (editOn ? '<div class="s-hint">Drag a card where you want it \u2014 left half of a card drops it before, '
+      + (editOn && view!=='order' ? '<div class="s-hint">Drag a card where you want it \u2014 left half of a card drops it before, '
           + 'right half after \u00b7 \u21E4 sends it to the front, \u25C0 \u25B6 move one place \u00b7 '
           + 'a short click picks a card up so you can scroll first, then click where it goes (Esc cancels) \u00b7 '
           + 'the eye hides that style everywhere \u00b7 order is shared with the category pages.</div>' : '');
+    const vw=el('pkView');
+    if(vw) vw.addEventListener('click', e=>{
+      const b=e.target.closest('button'); if(!b) return;
+      const v=b.dataset.v; if(!v || v===_view) return;
+      _view=v;
+      try{ localStorage.setItem('pacific_sbc_view', v); }catch(_){}
+      pick(c, true);                            /* 그 자리에서 모양만 바꾼다 */
+    });
     const cb=el('pkClose');
     if(cb) cb.addEventListener('click',()=>{
       if(_dg) dgStop(false);
@@ -904,6 +1363,7 @@
       syncMoveButtons();
       paintPick();
     }
+    if(view==='order') obRender(c, ns);
     p.classList.add('show');
     if(!noScroll) p.scrollIntoView({behavior:'smooth',block:'center'});
   }
@@ -913,6 +1373,8 @@
       el('colors').innerHTML='<div style="grid-column:1/-1;color:var(--faint);font-size:14px;padding:18px 0">Loading colours…</div>';
       await load();
       try{ staff = window.PacificAuth ? await PacificAuth.currentStaff() : null; }catch(e){ staff=null; }
+      await loadOrderRight();        /* 주문 권한 — 상품 페이지와 같은 규칙 */
+      try{ if(window.PacificCart && PacificCart.refresh) PacificCart.refresh(); }catch(e){}
       renderBar();
       renderFamilies();
       renderColors();

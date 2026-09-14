@@ -55,11 +55,16 @@ window.PacificData = (function () {
       hide: ['CHARCOAL (DS)'],
       rename: { 'CHARCOAL (HT)': 'Charcoal' }
     },
-    // PFD 스타일: 실번수 붙인 이름으로 통일 표시
-    '1290': { hide: [], rename: { 'PFD (F)': '20/1 PFD' } },
-    // 1390: 1급 로트 (J)+(L) 합쳐 '30/1 PFD' 하나로 표시(재고는 'PFD (J)' 행에 합산). 세컨(S)/중복(L)은 숨김.
-    '1390': { hide: ['PFD (L)', 'PFD (S)'], rename: { 'PFD (J)': '30/1 PFD' } },
-    '1690': { hide: [], rename: { 'PFD': '16/1 PFD' } }
+    /* PFD 스타일: 색 이름에 실번수를 **붙이지 않는다** (2026-09-14).
+       [stated] 하윤: "16/1 pfd는 pfd안에 들어가야하는거 아닌가?? 따로 16/1 Pfd로 나오는게 아니라"
+       실번수는 스타일 이름에 이미 들어 있다(#1690 Adult 16/1 …). 색까지 나누면 Shop by
+       Color 에서 'Pfd' 와 '16/1 PFD' 가 딴 칩으로 갈라져 같은 색이 두 군데로 보인다.
+       ⚠ **숨기는 규칙은 그대로 둔다.** 세컨(S)·중복(L) 로트는 손님에게 보이면 안 된다 —
+         이름을 합치는 것과는 다른 이야기다.
+       참고: `skus` 는 이 스타일들 색이 모두 `PFD` 이고, `inventory_web` 뷰도 이름을
+         정규화해 `PFD` 로 내려준다 — 그래서 (F)/(J) 로 이름을 바꾸던 규칙은 이미
+         아무것도 걸리지 않는 죽은 규칙이었다 (실측 확인). */
+    '1390': { hide: ['PFD (L)', 'PFD (S)'], rename: {} }
   };
   function colorRules(style){ return COLOR_RULES[style] || { hide:[], rename:{} }; }
   function isHiddenColor(style, raw){

@@ -956,56 +956,67 @@
     if(!raws.length) return {rows:[], qty:{}};
     /* 원래 색 이름에는 공백·괄호가 들어간다 — in.() 안에서는 "" 로 감싸야 한다 */
     const cl=raws.map(r=>'"'+String(r).replace(/"/g,'')+'"').join(',');
-    const [sk, inv, sp, cp, sale, wh] = await Promise.all([
+    /* 색 이름 규칙은 상품 페이지와 **같은 것**을 쓴다 */
+    const PDx=window.PacificData||{};
+    const showC=(n,x)=> typeof PDx.colorDisplay==='function' ? PDx.colorDisplay(n,x) : String(x);
+    const hideC=(n,x)=> typeof PDx.colorHidden==='function' ? PDx.colorHidden(n,x) : false;
+    const [sk, inv, sp, cp, sale] = await Promise.all([
       obFetch('skus?style_number=in.('+list+')&color=in.('+cl+')&is_active=eq.true'
               +'&select=style_number,color,size&limit=20000'),
-      obFetch('inventory?style_number=in.('+list+')&color=in.('+cl+')'
-              +'&select=style_number,color,size,qty_on_hand,warehouse_id&limit=20000'),
+      /* ⚠ 재고는 **inventory_web** 뷰에서 읽는다. `inventory` 는 버린 IMS 표라서
+           2026-08-18 에 갱신이 멈췄고 270만 장이 어긋난다 (pacific-data.js 주석 참고).
+           상품 페이지가 쓰는 것과 **같은 자리**여야 두 화면 숫자가 같다.
+         ⚠ 색으로 걸러 부르지 않는다. 뷰가 색 이름을 정규화하기 때문에 `skus` 의 이름
+           (`PFD (F)` 같은 것)으로 걸면 한 줄도 안 걸려서 **조용히 재고 0** 으로 나온다.
+           실제로 1290·1292·1390·1392 가 그렇게 0 으로 나왔다. 스타일로만 걸고
+           나머지는 아래에서 보여주는 이름으로 가른다. */
+      obFetch('inventory_web?style_number=in.('+list+')'
+              +'&select=style_number,color,size,wh,qty_on_hand&limit=50000'),
       obFetch('style_prices?style_number=in.('+list+')&select=*'),
       myCid ? obFetch('customer_prices?customer_id=eq.'+encodeURIComponent(myCid)
                       +'&style_number=in.('+list+')&select=*').catch(()=>[]) : Promise.resolve([]),
-      obFetch('sale_prices?style_number=in.('+list+')&select=*').catch(()=>[]),
-      obFetch('warehouses?select=id,code')
+      obFetch('sale_prices?style_number=in.('+list+')&select=*').catch(()=>[])
     ]);
-    const WHC={}; (wh||[]).forEach(w=>{ WHC[w.id]=String(w.code||'').toUpperCase(); });
-    const qty={}, tot={};
+    /* 재고는 스타일 + **보여주는 이름** + 창고 + 사이즈로 센다. 원래 이름으로 세면
+       표마다 이름이 달라서 못 찾는다 — 보여주는 이름이 두 표를 잇는 다리다. */
+    const qty={};
     (inv||[]).forEach(r=>{
       const n=String(r.style_number), rw=String(r.color||'').trim();
-      const z=String(r.size||'').trim().toUpperCase(), w=WHC[r.warehouse_id]||'';
-      if(!z||!w) return;
-      const k=n+'|'+rw+'|'+w+'|'+z;
+      if(!rw || hideC(n,rw)) return;                 /* 감춘 색(세컨 로트 등)의 재고는 뺀다 */
+      const z=String(r.size||'').trim().toUpperCase();
+      const w=(String(r.wh||'').toUpperCase()==='CA')?'CA':'SC';
+      if(!z) return;
+      const k=n+'|'+showC(n,rw).toUpperCase()+'|'+w+'|'+z;
       qty[k]=(qty[k]||0)+(Number(r.qty_on_hand)||0);
-      tot[n+'|'+rw]=(tot[n+'|'+rw]||0)+(Number(r.qty_on_hand)||0);
     });
     const szOf={};
     (sk||[]).forEach(r=>{
       const n=String(r.style_number), rw=String(r.color||'').trim();
+      if(!rw || hideC(n,rw) || showC(n,rw).toUpperCase()!==c) return;
       const z=String(r.size||'').trim().toUpperCase(); if(!z) return;
-      (szOf[n+'|'+rw]=szOf[n+'|'+rw]||{})[z]=1;
+      (szOf[n]=szOf[n]||{})[z]=1;
     });
     const base={}, cust={}, sales={};
     (sp||[]).forEach(r=>{ base[String(r.style_number)]=r; });
     (cp||[]).forEach(r=>{ cust[String(r.style_number)]=r; });
     (sale||[]).forEach(r=>{ const n=String(r.style_number); (sales[n]=sales[n]||[]).push(r); });
+    /* 가격·재고·카트 모두 **보여주는 이름** 하나로 간다 (상품 페이지와 똑같이).
+       상품 페이지는 카트에 'Navy Htr' 를 담는다 — 여기서 'NAVY HTR' 를 담으면 같은
+       물건이 카트에서 두 줄로 갈라진다. */
+    const disp=title(c);
     const rows=ns.map(n=>{
-      const cand=rawsOf(c,n);
-      if(!cand.length) return null;
-      /* ⚠ 한 보여주는 이름에 원래 이름이 여러 개 붙을 수 있다. 재고를 합쳐 보여주고
-         카트엔 하나만 담으면 없는 물건을 파는 셈이다. 재고가 가장 많은 이름 하나를 골라
-         **그 색만** 센다 — 보이는 수와 담기는 색이 늘 같다. */
-      let raw=cand[0];
-      cand.forEach(r2=>{ if((tot[n+'|'+r2]||0) > (tot[n+'|'+raw]||0)) raw=r2; });
+      if(!rawsOf(c,n).length) return null;
       const hz=(DATA.hsz&&DATA.hsz[n])||{};
-      const have=SZ.filter(z=>(szOf[n+'|'+raw]||{})[z] && !hz[z]);
+      const have=SZ.filter(z=>(szOf[n]||{})[z] && !hz[z]);
       if(!have.length) return null;
       const m=DATA.meta[n]||{};
-      return { no:n, desc:m.desc||'', raw:raw, sizes:have,
+      return { no:n, desc:m.desc||'', raw:disp, sizes:have,
                img:DATA.photo[c+'|'+n]||'',
                P:{ base:base[n]||null, cust:cust[n]||null, sales:sales[n]||[], cat:String(m.cat||'') } };
     }).filter(Boolean);
     return { rows:rows, qty:qty };
   }
-  function obQ(r, w, z){ return (_obModel && _obModel.qty[r.no+'|'+r.raw+'|'+w+'|'+z]) || 0; }
+  function obQ(r, w, z){ return (_obModel && _obModel.qty[r.no+'|'+_obColor+'|'+w+'|'+z]) || 0; }
   /* 가격은 상품 페이지와 **같은 함수**로 구한다. 여기서 규칙을 다시 쓰면 값이 어긋난다. */
   function obPrice(r, z, withColor){
     const PD=window.PacificData;

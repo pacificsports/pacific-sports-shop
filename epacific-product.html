@@ -860,6 +860,131 @@
     fitTable();
     fitJumpTail();
     fitColorCells();
+    fitThumbs();                                   /* 사진 크기 맞추기 (2026-09-14) */
+    if(!_thumbFitInit){ _thumbFitInit = 1; setTimeout(initThumbFit, 0); }
+  }
+
+  /* ═══════════ 색 썸네일 티셔츠 크기 맞추기 (2026-09-14) ═══════════
+     [stated] 하윤: "사진에 나오는 티셔츠 크기가 좀 다 다른거 같은데 ... 저 사이즈로 다 바꿀수는
+     있는건가?" → 실측해 보니 CSS 칸이 아니라 **사진 파일** 문제였다. 사진 안에서 티셔츠가
+     차지하는 높이가 5310 은 71%, 대부분은 80%, 1350·1214·1314 는 97% 다 — 같은 칸에 넣으면
+     1.4배까지 차이 나 보인다. 같은 스타일 안에서는 4% 안쪽으로 같아서 스타일마다 한 번만
+     재면 된다.
+     여기서는 사진을 재서 **화면에서만** scale() 로 맞춘다. 사진 파일은 건드리지 않는다.
+     ⚠ 못 재면(CORS·로드 실패) 아무것도 하지 않는다 — 지금 모습 그대로 나온다. */
+  const THUMB_FILL = 0.92;                       // 티셔츠가 칸 높이의 92% 를 차지하게
+  const SVG_TEE_FRAME = { h:0.70, c:0.49, w:0.72 };   // 그려주는 티셔츠 그림의 테두리 (viewBox 고정값)
+  let _thumbFit = null, _thumbFitInit = 0;
+
+  function thumbFitKey(){ return 'psFit1:' + currentStyle; }
+  function thumbFitRead(){
+    try{
+      const j = JSON.parse(localStorage.getItem(thumbFitKey()) || 'null');
+      /* 30일 지나면 다시 잰다 — 그 사이 사진을 바꿨을 수 있다 */
+      if(j && j.h > 0.2 && j.h <= 1.02 && (Date.now() - (j.at||0)) < 30*864e5) return j;
+    }catch(e){}
+    return null;
+  }
+  function thumbFitWrite(f){
+    try{ localStorage.setItem(thumbFitKey(), JSON.stringify({h:f.h, c:f.c, w:f.w, at:Date.now()})); }catch(e){}
+  }
+
+  /* 사진 한 장의 티셔츠 테두리를 잰다 → {h:높이비율, c:세로중심, w:폭비율}
+     흰 배경(243 이상) 과 투명은 배경으로 본다. 160px 로 줄여 재므로 오차는 0.6% 다. */
+  function measureFrame(url){
+    return new Promise(res=>{
+      const g = new Image(); g.crossOrigin = 'anonymous';
+      g.onerror = ()=>res(null);
+      g.onload = ()=>{
+        try{
+          const w = Math.min(160, g.naturalWidth); if(!w) return res(null);
+          const h = Math.max(1, Math.round(g.naturalHeight * w / g.naturalWidth));
+          const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+          const cx = cv.getContext('2d', {willReadFrequently:true}); cx.drawImage(g, 0, 0, w, h);
+          const d = cx.getImageData(0, 0, w, h).data;
+          let y0 = -1, y1 = -1, x0 = w, x1 = -1;
+          for(let y=0; y<h; y++){
+            let hit = false;
+            for(let x=0; x<w; x++){
+              const i = (y*w + x) * 4;
+              if(d[i+3] >= 16 && !(d[i] > 243 && d[i+1] > 243 && d[i+2] > 243)){
+                hit = true; if(x < x0) x0 = x; if(x > x1) x1 = x;
+              }
+            }
+            if(hit){ if(y0 < 0) y0 = y; y1 = y; }
+          }
+          if(y0 < 0) return res(null);           // 온통 흰 사진 — 손대지 않는다
+          res({ h:(y1-y0+1)/h, c:((y0+y1+1)/2)/h, w:(x1-x0+1)/w });
+        }catch(e){ res(null); }                  // 캔버스가 막히면(CORS) 여기로 온다
+      };
+      g.src = url;
+    });
+  }
+
+  /* 한 칸에 transform 을 건다. object-fit:contain 으로 **실제 그려지는** 크기에서 계산한다 —
+     칸(200x180)과 사진(정사각)이 달라서 그려지는 건 180x180 이다. */
+  function setThumbTf(box, node, f){
+    if(!f || !f.h) return;
+    const bw = box.clientWidth, bh = box.clientHeight;
+    if(!bw || !bh) return;
+    let nw = 1, nh = 1;
+    if(node.tagName === 'IMG'){
+      if(!node.complete || !node.naturalWidth){
+        /* 아직 안 받아온 사진 — 오면 다시 건다 */
+        node.addEventListener('load', ()=>{ try{ setThumbTf(box, node, f); }catch(e){} }, {once:true});
+        return;
+      }
+      nw = node.naturalWidth; nh = node.naturalHeight;
+    }
+    const ar = nw / nh;
+    const dw = (bw / bh > ar) ? bh * ar : bw;    // 그려지는 폭
+    const dh = dw / ar;                          // 그려지는 높이
+    let k = THUMB_FILL / f.h;
+    /* ⚠ 옆으로 넘치면 소매가 잘린다. 칸 폭의 98% 에서 묶는다. */
+    if(f.w){
+      const kMax = (bw * 0.98) / (f.w * dw);
+      if(k > kMax) k = kMax;
+    }
+    const dy = -(f.c - 0.5) * dh * k;            // 세로 중심 맞추기 (키운 뒤의 px)
+    node.style.transformOrigin = '50% 50%';
+    node.style.transform = 'translateY(' + dy.toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+  }
+
+  let _thumbRetry = 0;
+  function fitThumbs(){
+    const boxes = [...document.querySelectorAll('#rows .colcell .cimg')];
+    if(!boxes.length) return;
+    /* ⚠ 주문 영역은 권한이 풀릴 때까지 display:none 이다. 그때는 칸 크기가 0 이라
+       계산이 안 된다 — 보일 때 다시 한다 (최대 10번, 1.5초). 이걸 안 하면 순서가
+       조금만 어긋나도 사진이 영영 안 맞춰진다. */
+    if(!boxes[0].clientHeight){
+      if(_thumbRetry++ < 10) setTimeout(fitThumbs, 150);
+      return;
+    }
+    _thumbRetry = 0;
+    boxes.forEach(box=>{
+      const im = box.querySelector('img'), sv = box.querySelector('svg');
+      if(im && _thumbFit) setThumbTf(box, im, _thumbFit);
+      if(sv) setThumbTf(box, sv, SVG_TEE_FRAME);   // 그림은 재지 않아도 크기를 안다
+    });
+  }
+
+  /* 첫 방문에만 한 번 잰다. 사진 3장(첫·중간·끝)의 **중간값** — 한 장이 유별나도 흔들리지 않게. */
+  async function initThumbFit(){
+    const cached = thumbFitRead();
+    if(cached){ _thumbFit = cached; fitThumbs(); return; }
+    const urls = [...document.querySelectorAll('#rows .colcell .cimg img')]
+                   .map(i=>i.currentSrc || i.src).filter(Boolean);
+    if(!urls.length){ fitThumbs(); return; }       // 사진이 없는 스타일 — 그림만 맞춘다
+    const pick = [urls[0], urls[Math.floor(urls.length/2)], urls[urls.length-1]]
+                   .filter((v,i,a)=>a.indexOf(v) === i);
+    const got = [];
+    for(const u of pick){ const f = await measureFrame(u); if(f) got.push(f); }
+    if(!got.length) return;                        // 못 쟀다 — 지금 모습 그대로 둔다
+    got.sort((a,b)=>a.h - b.h);
+    _thumbFit = got[Math.floor(got.length/2)];
+    thumbFitWrite(_thumbFit);
+    fitThumbs();
   }
 
   /* 색상 칸을 세로로 꽉 채운다 (2026-09-05).
@@ -921,7 +1046,7 @@
       if(tail) tail.style.height=(ft?Math.round(ft.getBoundingClientRect().height):380)+'px';
     }catch(e){}
   }
-  window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); }catch(e){} });
+  window.addEventListener('resize', ()=>{ try{ fitTable(); fitJumpTail(); fitColorCells(); fitThumbs(); }catch(e){} });
   /* 색칩 줄 높이는 스타일마다 다르다(색 개수 → 2줄/3줄) 그리고 칩 그림이 늦게 들어온다.
      한 번만 재면 합계바가 색칩 줄 뒤에 숨는다 — 실제로 8368(3줄)에서 그랬다.
      높이가 바뀔 때마다 다시 재게 감시한다. */
@@ -2054,7 +2179,8 @@
       const url=SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+path+'?t='+Date.now();
       const cell=ov.closest('.cimg');
       if(cell){ cell.querySelector('img')?.remove(); cell.querySelector('svg')?.remove();
-        cell.insertAdjacentHTML('afterbegin',`<img src="${url}" alt="${color}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`); }
+        cell.insertAdjacentHTML('afterbegin',`<img src="${url}" alt="${color}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`);
+        try{ fitThumbs(); }catch(e){} }
       ov.innerHTML='Replace<br>photo';
     }catch(e){ ov.textContent=prev; alert('Failed: '+e.message); }
   }
@@ -2113,7 +2239,8 @@
             const nm=cell.querySelector('.cn'); if(nm && nm.textContent.trim()===matched.name){
               const cimg=cell.querySelector('.cimg');
               if(cimg){ cimg.querySelector('img')?.remove(); cimg.querySelector('svg')?.remove();
-                cimg.insertAdjacentHTML('afterbegin',`<img src="${url}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`); }
+                cimg.insertAdjacentHTML('afterbegin',`<img src="${url}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`);
+                try{ fitThumbs(); }catch(e){} }
             }
           });
           matched.img=url;

@@ -153,6 +153,12 @@
   .desc-editable:hover{outline-color:var(--accent)}
   /* 글자가 늦게 들어와도 페이지가 튀지 않게 두 줄 자리를 미리 잡는다 (2026-09-12) */
   .desc{min-height:53px}
+  /* 직원이 넣은 **빈 줄(문단 나눔)을 그대로 보여준다** (2026-09-15).
+     [stated] 하윤: "문구쪽을 이렇케 뛰어서 나오게 해야하는데 ... 그냥 줄로 쭉 이어지는 느낌"
+     줄바꿈은 DB 에 저장돼 있었고(8368 실측), 화면이 기본값 white-space:normal 로
+     **공백 한 칸으로 뭉개고** 있었다. ⚠ pre / pre-wrap 은 쓰지 말 것 — 앞뒤 공백까지
+     살아나 들여쓰기가 제멋대로 생긴다. pre-line 이 줄바꿈만 살린다. */
+  .desc{white-space:pre-line}
   .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
 
   .login-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:12px;padding:14px 18px;font-size:14px;color:var(--accent);margin-bottom:28px;display:flex;align-items:center;gap:10px}

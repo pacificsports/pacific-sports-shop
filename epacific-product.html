@@ -1639,11 +1639,19 @@
   /* 기본 문구는 화면이 아니라 `data-default` 에서 읽는다 — 위 HTML 주석 참고 (2026-09-12) */
   const DEFAULT_DESC=(()=>{ const p=document.getElementById('pDesc');
     return p ? (p.dataset.default || p.textContent || '') : ''; })();
-  /* ⏱ 안전망 — 데이터가 안 오면(네트워크 끊김·오류) 1.5초 뒤 기본 문구라도 채운다.
-     정상 로드는 0.3초쯤이라 이 타이머가 실제로 도는 일은 없다. 위 `data-default` 로 옮긴
-     뒤에는 첫 화면이 비어 있으므로, 이게 없으면 실패한 로드에서 설명이 **영영 빈 칸**이다. */
-  setTimeout(()=>{ const p=document.getElementById('pDesc');
-    if(p && !(p.textContent||'').trim()) p.textContent = DEFAULT_DESC; }, 1500);
+  /* ⏱ 안전망 — 데이터가 안 오면(네트워크 끊김·오류) 기본 문구라도 채운다. 이게 없으면
+     실패한 로드에서 설명이 **영영 빈 칸**이다.
+     ⚠ 예전에는 **1.5초 타이머**였다. 그런데 실제 로드는 2.4초라(8368 실측) 정상적인
+       로드에서도 타이머가 먼저 터져서, **기본 문구가 잠깐 떴다가 제 문구로 바뀌는**
+       번쩍임이 났다 (2026-09-15 하윤 보고). 시간으로 재면 안 된다 —
+       **init 이 끝났는지**로 판단한다. 끝났는데도 비어 있을 때만 채운다.
+       8초짜리는 init 이 아예 멈춰 버린 경우만 위한 마지막 보루다. */
+  let _initDone = false;
+  function descFallback(){
+    const p=document.getElementById('pDesc');
+    if(p && !(p.textContent||'').trim()) p.textContent = DEFAULT_DESC;
+  }
+  setTimeout(()=>{ if(!_initDone) descFallback(); }, 8000);
   function applyDescription(){
     const p=document.getElementById('pDesc'); if(!p) return;
     p.textContent = styleSettings.description || DEFAULT_DESC;
@@ -1943,10 +1951,39 @@
       const cfg = PacificData.config;
       currentStyle = new URLSearchParams(location.search).get('style') || '1368';
       const STYLE = currentStyle;
-      product   = await PacificData.getProduct(STYLE);
+      /* 번호는 URL 에 이미 있다 — 데이터를 기다리지 말고 **지금** 찍는다 (2026-09-15).
+         이게 없으면 1~2초 동안 제목이 비고 빵부스러기가 "Home / Adult / /" 로 보인다.
+         상품명(설명)은 아래에서 데이터가 오면 뒤에 덧붙인다. */
+      document.title = 'Pacific Sports \u2014 Style #'+STYLE;
+      (function(){
+        const h1=document.getElementById('pTitle'); if(h1) h1.textContent=STYLE;
+        const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='Style #'+STYLE;
+        const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
+      })();
+      /* ⚡ 서로 기다릴 필요 없는 것은 **같이 부른다** (2026-09-15).
+         줄줄이 기다리면 첫 화면까지 2.4초가 걸렸다 (실측). */
+      const pProduct  = PacificData.getProduct(STYLE);
+      const pSettings = loadStyleSettings(STYLE);
+      const pStyles   = PacificData.getStyles().catch(()=>[]);
+      const pAuth     = (async()=>{
+        try{
+          const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
+          if(st) return { ok:true, why:null };
+          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
+          if(!(sess && sess.token && sess.userId)) return { ok:false, why:'login' };
+          const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
+            {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
+          if(!ar.ok) return { ok:false, why:'login' };
+          const rows=await ar.json();
+          if(rows && rows[0] && rows[0].status==='approved') return { ok:true, why:null };
+          if(rows && rows[0]) return { ok:false, why:'pending' };
+          return { ok:false, why:'login' };
+        }catch(e){ return { ok:false, why:'login' }; }
+      })();
+      product   = await pProduct;
       if(!product){ throw new Error('Style '+STYLE+' not found.'); }
       allSizes  = product.sizes;                  // IMS에 있는 전체 사이즈
-      styleSettings = await loadStyleSettings(STYLE);   // 직원 설정 (사이즈/색상)
+      styleSettings = await pSettings;                  // 직원 설정 (사이즈/색상)
       hiddenSizes = styleSettings.hidden_sizes;
       sizes     = allSizes.filter(s=>!hiddenSizes.includes(s));  // 손님이 보는 사이즈
       // 색상: IMS 전체(allColors) → 직원이 숨긴/이름바꾼 것 적용
@@ -1959,33 +1996,13 @@
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
       stockMap  = await PacificData.getInventory(STYLE, product);
-      // 대체 스타일 재고 (품절 칸 유도용)
-      try{
-        const _sub = SUBSTITUTE[String(STYLE)];
-        if(_sub){
-          const sp = await PacificData.getProduct(_sub);
-          const si = await PacificData.getInventory(_sub, sp);
-          subStyle = _sub; subSizes = sp.sizes || []; subStock = si;
-        }
-      }catch(e){ subStyle=null; subStock=null; }
-      // 주문 권한 판정: 직원이거나 승인된 거래처면 재고/입력 열림
-      try{
-        const st = window.PacificAuth ? await PacificAuth.currentStaff() : null;
-        if(st){ canOrder=true; lockReason=null; }
-        else{
-          const sess=(()=>{try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;}})();
-          if(sess && sess.token && sess.userId){
-            const ar=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+sess.userId+'&select=status',
-              {headers:{apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+sess.token}});
-            if(ar.ok){
-              const rows=await ar.json();
-              if(rows && rows[0] && rows[0].status==='approved'){ canOrder=true; lockReason=null; }
-              else if(rows && rows[0]){ lockReason='pending'; }
-              else { lockReason='login'; }
-            }
-          }else{ lockReason='login'; }
-        }
-      }catch(e){ canOrder=false; lockReason='login'; }
+      /* 대체 스타일(품절 칸의 "1368 \u2197" 힌트)은 **첫 화면 뒤에** 받는다 (2026-09-15).
+         스타일+재고를 한 벌 더 받는 일이라 0.9초가 걸렸는데, 첫 화면이 그걸 통째로
+         기다리고 있었다. 힌트는 있으면 좋은 것이지 표를 여는 조건이 아니다. */
+      setTimeout(loadSubstitute, 0);
+      // 주문 권한 판정 — 위에서 이미 같이 부르기 시작했다 (2026-09-15). 여기선 결과만 받는다
+      const _auth = await pAuth;
+      canOrder = !!_auth.ok; lockReason = _auth.why;
       // 안내문 갱신 + 주문 섹션 표시/숨김
       (function(){
         const note=document.getElementById('loginNote');
@@ -2004,7 +2021,7 @@
       // 제목·브레드크럼·H1 을 이 스타일로 채움
       // 상품명(설명): styles 테이블이 비어 있어 getStyles(내장 목록)에서 보강
       let _desc='';
-      try{ const _sl=await PacificData.getStyles(); const _hit=(_sl||[]).find(s=>String(s.no)===String(STYLE)); if(_hit) _desc=_hit.desc||''; }catch(e){}
+      try{ const _sl=await pStyles; const _hit=(_sl||[]).find(s=>String(s.no)===String(STYLE)); if(_hit) _desc=_hit.desc||''; }catch(e){}
       if(!_desc && product.name && String(product.name)!==String(STYLE)) _desc=String(product.name).replace(/^\s*\d+[A-Za-z]?\s*/,'');
       const niceName = _desc ? (STYLE+' '+_desc) : (product.name || STYLE);
       document.title = 'Pacific Sports — Style #'+STYLE;
@@ -2070,8 +2087,29 @@
       console.error('Data load failed:', e);
       const rb=document.getElementById('rows');
       if(rb) rb.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#b04;">Could not load inventory. Please try again shortly.</td></tr>';
+    }finally{
+      /* 여기까지 왔으면 더 기다릴 것이 없다 — 설명이 비어 있으면(=실패) 그때 기본 문구 */
+      _initDone = true; descFallback();
     }
   }
+
+  /* 대체 스타일 재고 — 품절 칸에 "1368 \u2197" 힌트를 다는 데만 쓴다 (2026-09-15 에
+     첫 화면 밖으로 빼냄). 늦게 와서 표를 다시 그릴 때가 문제인데,
+     ⚠ **사람이 이미 수량을 넣었으면 다시 그리지 않는다** — 입력이 통째로 날아간다.
+       힌트는 다음 번 화면에서 나오면 된다. */
+  async function loadSubstitute(){
+    const _sub = SUBSTITUTE[String(currentStyle)];
+    if(!_sub) return;
+    try{
+      const sp = await PacificData.getProduct(_sub);
+      const si = await PacificData.getInventory(_sub, sp);
+      subStyle = _sub; subSizes = sp.sizes || []; subStock = si;
+    }catch(e){ subStyle=null; subStock=null; return; }
+    const typed = [...document.querySelectorAll('#rows input')].some(i=>String(i.value||'')!=='');
+    if(typed) return;
+    try{ buildAllRows(); recalc(); }catch(e){}
+  }
+
   init();
 
   /* ===== 직원 로그인 + 사진 수정 모드 ===== */

@@ -133,6 +133,20 @@
   .hs-art img:nth-child(3){transform:scale(.98);z-index:2}
   .hs-art.one img{position:relative;transform:none;max-width:72%}
 
+  /* 🎨 색 모음판 — 사진 대신 색만 쫙 깐다. '색이 많다' 를 한 눈에 보여주는 게 목적이라
+     이름은 안 쓰고 네모만 쓴다. 색은 pr_config 의 web_color_hex (상품 사진에서 뽑아낸 실제 색). */
+  .hs-mos{display:grid;gap:6px;grid-template-columns:repeat(10,1fr);
+    height:clamp(250px,29vw,370px);align-content:center}
+  .hs-mos i{display:block;aspect-ratio:1;border-radius:6px;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.10)}
+  .hs-mos.lite i{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14), 0 1px 3px rgba(0,0,0,.3)}
+
+  /* ⚠ 사진도 모음판도 없는 슬라이드는 예전에 2단 격자 그대로라 **오른쪽 절반이 죽어** 있었다.
+     그런 슬라이드는 한 단으로 만들고 글자를 넓게 쓴다. */
+  .hs-slide.bare .hs-in{grid-template-columns:1fr;max-width:1000px}
+  .hs-slide.bare .hs-txt h2{max-width:24ch;font-size:clamp(44px,6.4vw,92px)}
+  .hs-slide.bare .hs-txt p{max-width:56ch;font-size:18.5px}
+
   /* 화살표·점·진행바는 .hs 의 color 를 물려받는다 — 슬라이드가 바뀔 때 스크립트가 .hs 의
      색을 같이 바꿔주기 때문에 어두운 장에서도 안 사라진다. */
   .hs-arw{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:42px;height:42px;
@@ -158,6 +172,7 @@
     .hs-in{grid-template-columns:1fr;padding:52px 22px 70px;gap:24px;min-height:0}
     .hs-txt h2{max-width:none}
     .hs-art{height:clamp(190px,46vw,260px);order:2}
+    .hs-mos{height:auto;grid-template-columns:repeat(12,1fr);gap:4px;order:2}
     .hs-arw{display:none}
   }
   @media (prefers-reduced-motion:reduce){
@@ -356,6 +371,7 @@
      설정은 init() 안에서, DOMContentLoaded 뒤에 읽는다 — 그때는 확실히 들어와 있다. */
   var CFG = {}, IMGBASE = '';
   var DUR = 6800;                 // 한 장이 머무는 시간(ms)
+  var HEX = null;                 // 색 이름 → 실제 색 (pr_config 의 web_color_hex)
   var slides = [], idx = 0, timer = null, paused = false, imgsByStyle = null;
   var host = document.getElementById('hsTrack'), hs = document.getElementById('hs');
   if(!host || !hs) return;
@@ -368,7 +384,7 @@
       sub:'Premium blank tees, tanks, long sleeves, and hooded long sleeves built for print — across cotton, blends, heathers, and performance.',
       btn:'Try the order grid', href:'#order',
       btn2:'Become a reseller', href2:'epacific-login.html',
-      bg:'#fbfbf9', fg:'#1c1c1a', style:'' },
+      bg:'#fbfbf9', fg:'#1c1c1a', mosaic:60 },   /* 10칸 x 6줄 딱 맞게 */
     { eyebrow:'Colour, not compromise',
       title:'One tee. <i>Fifty-seven</i> colours.',
       sub:'Pick the shade the job needs — heathers, brights, naturals and PFD, all off the same blank.',
@@ -399,6 +415,48 @@
   function safeColor(c){
     c = String(c==null?'':c).trim();
     return /^#[0-9a-fA-F]{3,8}$/.test(c) ? c : '';
+  }
+
+  /* 색 이름 → 실제 색. 상품 사진에서 한 번 뽑아 pr_config 에 넣어둔 것이라
+     새 색이 들어오면 그때 다시 뽑아 넣어야 한다 (없는 색은 모음판에서 그냥 빠진다). */
+  async function loadHex(){
+    if(HEX) return HEX;
+    HEX = {};
+    try{
+      var r = await fetch(CFG.SUPABASE_URL + '/rest/v1/pr_config?select=v&k=eq.web_color_hex',
+        { headers:{ apikey:CFG.SUPABASE_ANON_KEY, Authorization:'Bearer ' + CFG.SUPABASE_ANON_KEY } });
+      if(r.ok){ var j = await r.json(); var raw = (j[0]||{}).v;
+        if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ raw = null; } }
+        if(raw && typeof raw === 'object') HEX = raw;
+      }
+    }catch(e){}
+    return HEX;
+  }
+  /* 밝은 색과 어두운 색을 섞어 늘어놓는다 — 이름순(알파벳)으로 깔면 비슷한 색이 뭉쳐서
+     '색이 많다' 가 아니라 '얼룩' 처럼 보인다. 밝기로 정렬한 뒤 앞뒤에서 번갈아 집는다. */
+  function mosaicColors(n){
+    var all = Object.keys(HEX||{}).map(function(k){ return HEX[k]; })
+      .filter(function(v){ return /^#[0-9a-fA-F]{6}$/.test(String(v)); });
+    if(!all.length) return [];
+    var lum = function(h){ return 0.2126*parseInt(h.substr(1,2),16)
+      + 0.7152*parseInt(h.substr(3,2),16) + 0.0722*parseInt(h.substr(5,2),16); };
+    all.sort(function(a,b){ return lum(a) - lum(b); });
+    var out = [], lo = 0, hi = all.length - 1;
+    while(out.length < Math.min(n, all.length) && lo <= hi){
+      out.push(all[lo++]);
+      if(out.length < n && lo <= hi) out.push(all[hi--]);
+    }
+    return out;
+  }
+  function mosaicHtml(sl){
+    var n = Number(sl.mosaic) || 0; if(n < 1) return '';
+    var cols = mosaicColors(n); if(!cols.length) return '';
+    var dark = (function(){ var b = safeColor(sl.bg) || '#fbfbf9';
+      return (0.2126*parseInt(b.substr(1,2),16) + 0.7152*parseInt(b.substr(3,2),16)
+            + 0.0722*parseInt(b.substr(5,2),16)) < 128; })();
+    return '<div class="hs-mos' + (dark ? ' lite' : '') + '" aria-hidden="true">'
+      + cols.map(function(c){ return '<i style="background:' + esc(c) + '"></i>'; }).join('')
+      + '</div>';
   }
 
   async function loadImgs(){
@@ -445,6 +503,7 @@
   }
 
   function slideHtml(sl, i){
+    var right = mosaicHtml(sl) || artHtml(sl);
     var h1 = safeHref(sl.href), h2 = safeHref(sl.href2);
     var cta = ((h1 && sl.btn) || (h2 && sl.btn2))
       ? '<div class="cta rise d4">'
@@ -452,14 +511,14 @@
         + (h2 && sl.btn2 ? '<a href="' + esc(h2) + '" class="btn text"><span>' + esc(sl.btn2) + '</span></a>' : '')
         + '</div>'
       : '';
-    return '<div class="hs-slide" role="group" aria-roledescription="slide" aria-label="'
+    return '<div class="hs-slide' + (right ? '' : ' bare') + '" role="group" aria-roledescription="slide" aria-label="'
       + (i+1) + ' / ' + slides.length + '" style="--sbg:' + (safeColor(sl.bg) || '#fbfbf9')
       + ';--sfg:' + (safeColor(sl.fg) || '#1c1c1a') + ';">'
       + '<div class="hs-in"><div class="hs-txt">'
       + (sl.eyebrow ? '<div class="eyebrow rise d1"><span class="dot"></span>' + esc(sl.eyebrow) + '</div>' : '')
       + (sl.title ? '<h2 class="rise d2">' + titleHtml(sl.title) + '</h2>' : '')
       + (sl.sub ? '<p class="rise d3">' + esc(sl.sub) + '</p>' : '')
-      + cta + '</div>' + artHtml(sl) + '</div></div>';
+      + cta + '</div>' + right + '</div></div>';
   }
 
   function paint(){
@@ -543,7 +602,9 @@
       }
     }catch(e){}
     slides = (got && got.length) ? got : HS_FALLBACK;
-    await loadImgs();
+    var jobs = [loadImgs()];
+    if(slides.some(function(s){ return s && Number(s.mosaic) > 0; })) jobs.push(loadHex());
+    await Promise.all(jobs);
     paint();
   }
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
@@ -589,7 +650,7 @@
       <div class="db">
         <div class="ct">Adult · 60/40 Combed Ring Spun (BCI)</div>
         <h3>1368 Short Sleeve Crew</h3>
-        <div class="spec">4.3 oz / 145 gram · Tear-away label · BCI Certified</div>
+        <div class="spec">4.3 oz / 145 gram · Tear-away label · BCI Cotton</div>
 
         <label class="flabel"><span class="n">1</span> Choose Color</label>
         <div class="sw" id="swatches">

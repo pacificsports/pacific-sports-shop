@@ -302,6 +302,11 @@
   .editmode .cn:hover{border-bottom-color:var(--faint)}
   /* Edit 모드: ★ = 메인 사진 색 지정 */
   .cn-star{display:none}
+  /* 표지(모델) 사진이 있으면 ★ 은 숨긴다 (2026-09-15).
+     [stated] 하윤: "저 별표는 표지 사진이있는스타일에서만 숨기게 해놓자"
+     ★ 이 하던 일(카드 사진 · 큰 사진 기본 색)을 표지가 둘 다 이기므로 ★ 은 할 일이 없다.
+     ⚠ 저장된 `default_color` 는 **그대로 둔다** — 표지를 지우면 ★ 이 다시 살아난다. */
+  body.has-cover .cn-star{display:none!important}
   .editmode .cn-star{display:inline-flex;cursor:pointer;color:#d8d5cc;font-size:15px;line-height:1;flex-shrink:0}
   .editmode .cn-star:hover{color:#e8b73c}
   .editmode .cn-star.on{color:#e8b73c}
@@ -1815,6 +1820,8 @@
   }
   function showCoverOrDefault(){
     const u = (product && product.coverImg) || '';
+    /* ★ 을 보일지 말지는 이 한 곳에서만 정한다 — 올리거나 지운 직후에도 바로 맞는다 */
+    document.body.classList.toggle('has-cover', !!u);
     if(u) setMainCover(u); else setMain(pickDefaultColor());
   }
   // 메인 사진 기본 색 선택: 직접 지정 > 대표색 우선순위 > 사진 있는 첫 색

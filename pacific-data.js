@@ -255,6 +255,15 @@ window.PacificData = (function () {
     return SUPABASE_URL + '/storage/v1/object/public/' + IMAGE_BUCKET + '/' + path;
   }
 
+  /* ═══ 카드 표지(모델) 사진 — 예약 색 이름 `__COVER__` (2026-09-15) ═══
+     제품 목록 **카드에만** 쓰는 사진이다. 색이 아니라서 `skus` 에 없고, 색 목록을 만드는
+     곳은 전부 skus 를 보므로 상품 페이지·Shop by Color·색상 수에는 **절대 안 나온다**.
+     ⚠⚠ 모델 사진을 색 사진 **위에 덮어쓰지 말 것.** 1214 에서 그렇게 했더니 칼라칩에
+       얼굴이 들어가고([stated] "칼라칩은 칼라로 꽉 차야하는데") 주문표 자동 크기조절이
+       사람을 재고, 그 색 평면 사진이 영구히 사라졌다. 반드시 이 예약 줄로 넣는다. */
+  const COVER_COLOR = '__COVER__';
+  function isCoverColor(c){ return String(c || '').trim().toUpperCase() === COVER_COLOR; }
+
   // product_images 에서 한 스타일의 색상별 사진 읽기 → { 색상(예쁜표기): URL }
   async function _supabaseImages(styleNo) {
     /* ⚠ 한 색에 줄이 여러 개일 수 있다 — 대소문자만 다른 옛 줄(Charcoal / CHARCOAL)이 대표적이다.
@@ -265,6 +274,10 @@ window.PacificData = (function () {
                           +'&select=color,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
     const out = {};
     rows.forEach(r => {
+      /* 표지(모델) 사진은 색이 아니다 — 색 사진 지도에 넣지 않는다 (2026-09-15).
+         지금은 색 목록이 skus 에서 오니 넣어도 안 보이지만, 넣어두면 언젠가
+         `prettyColor('__COVER__')` 가 색처럼 생긴 칸을 만든다. */
+      if (isCoverColor(r.color)) return;
       const key = r.color ? prettyColor(r.color) : '_default';
       if (!out[key]) out[key] = _imageUrl(r.image_path);   // 색상별 첫 사진
     });
@@ -551,9 +564,16 @@ window.PacificData = (function () {
     getStyleThumbs: async function () {
       if (SOURCE !== 'supabase') return {};
       try {
-        const rows = await _sb('product_images?select=style_number,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
-        const out = {};
-        rows.forEach(r => { if (!out[r.style_number]) out[r.style_number] = _imageUrl(r.image_path); });
+        const rows = await _sb('product_images?select=style_number,color,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
+        const out = {}, cover = {};
+        rows.forEach(r => {
+          if (isCoverColor(r.color)) { if (!cover[r.style_number]) cover[r.style_number] = _imageUrl(r.image_path); return; }
+          if (!out[r.style_number]) out[r.style_number] = _imageUrl(r.image_path);
+        });
+        /* ⚠ 표지는 **무조건 이긴다.** 아니면 카드 사진이 "사진이 들어온 순서"(우연)에
+           따라 정해진다 — 1315R 이 그랬다. (카테고리 화면의 ★ 보다도 뒤에 와야 해서
+           그쪽에서도 한 번 더 덮는다 — epacific-category.html 참고) */
+        Object.keys(cover).forEach(n => { out[n] = cover[n]; });
         return out;
       } catch (e) { return {}; }
     },
@@ -561,6 +581,8 @@ window.PacificData = (function () {
     imageUrl: function (path) { return _imageUrl(path); },
 
     prettyColor, colorHex,
-    isHiddenColor, displayColorName
+    isHiddenColor, displayColorName,
+    /* 표지(모델) 사진 예약 색 이름 — 화면들이 같은 글자를 써야 한다 (2026-09-15) */
+    COVER_COLOR, isCoverColor
   };
 })();

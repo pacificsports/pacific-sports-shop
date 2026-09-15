@@ -496,9 +496,14 @@
       if(r.size) (sizesOf[n]=sizesOf[n]||{})[String(r.size).trim().toUpperCase()]=1;
     });
     const photo={};
+    const COVER_KEY=(window.PacificData&&PacificData.COVER_COLOR)||'__COVER__';
     (pi||[]).forEach(r=>{
       const n=String(r.style_number), raw=String(r.color||'').trim(), u=imgUrl(r.image_path);
       if(!u || !ok(n) || (raw && hideC(n,raw))) return;
+      /* 카드 표지(모델) 사진은 **색이 아니다** — 색 사진 지도에 넣지 않는다 (2026-09-15).
+         지금은 색 목록이 `byColor`(=skus) 에서만 오니 넣어도 화면엔 안 나오지만, 넣어두면
+         나중에 사진 쪽에서 색을 뽑는 코드가 생기는 순간 손님 화면에 "Cover" 색이 생긴다. */
+      if(raw.toUpperCase()===COVER_KEY) return;
       const key=raw?showC(n,raw).toUpperCase():'';
       if(key && !photo[key+'|'+n]) photo[key+'|'+n]=u;
       if(key && !photo[key])       photo[key]=u;

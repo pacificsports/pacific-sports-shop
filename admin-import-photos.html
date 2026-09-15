@@ -75,10 +75,17 @@
   function norm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
   function log(html){ const l=$('log'); l.innerHTML+=html+'<br>'; l.scrollTop=l.scrollHeight; }
 
+  /* 카드 표지(모델) 사진 — 예약 색 이름. 색이 아니므로 칼라칩·주문표에 안 나온다 (2026-09-15) */
+  const COVER_COLOR=(window.PacificData&&PacificData.COVER_COLOR)||'__COVER__';
+  function coverFromText(t){ return /^(cover|model|__cover__)$/i.test(String(t||'').trim()) ? COVER_COLOR : null; }
+
   // 파일명에서 스타일번호와 색상 뽑기: "1368-navy.jpg" → {style:1368, colorRaw:navy}
   function parseName(filename){
     const base=filename.replace(/\.[^.]+$/,'');           // 확장자 제거
-    const m=base.match(/^(\d{3,5})[-_\s]+(.+)$/);          // 숫자-나머지
+    /* ⚠ 예전 규칙은 `^(\d{3,5})` 라서 **`1315R` 처럼 끝에 글자가 붙은 스타일번호를
+       아예 못 읽었다** — `1315R-cover.png` 는 "이름에서 스타일/색을 못 읽음" 으로
+       통째로 건너뛰어졌다. 상품 페이지 쪽 규칙과 같게 맞춘다 (2026-09-15). */
+    const m=base.match(/^(\d{3,5}[A-Za-z]?)[-_\s]+(.+)$/);
     if(m) return { style:m[1], colorText:m[2] };
     return null;
   }
@@ -113,12 +120,14 @@
       if(!parsed){ skip++; log('<span class="sk">— '+file.name+' : could not read style/color from name (skipped)</span>'); continue; }
       const {style, colorText}=parsed;
       try{
-        const byNorm=await imsColors(style);
+        /* 표지 사진은 색 대조를 건너뛴다 — `skus` 에 없는 게 정상이다 (2026-09-15) */
+        const asCover=coverFromText(colorText);
+        const byNorm = asCover ? {} : await imsColors(style);
         /* ⚠ 예전에는 못 찾으면 파일명의 글자를 그대로 색상으로 썼다(|| colorText).
            그래서 'chacoal' 같은 오타가 그대로 새 줄이 되고, 화면에는 "✓ 성공" 이라고 떴다.
            그 줄은 어떤 SKU 색과도 안 맞아서 사이트에 영영 안 나온다 — 조용한 실패다.
            이제 못 찾으면 올리지 않고, 쓸 수 있는 색 이름을 같이 알려준다. (2026-09-03) */
-        const matched=byNorm[norm(colorText)];
+        const matched = asCover || byNorm[norm(colorText)];
         if(!matched){
           skip++;
           const opts=Object.values(byNorm).slice(0,12).join(', ');

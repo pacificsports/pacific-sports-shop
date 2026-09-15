@@ -275,6 +275,10 @@
   let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
+  /* 카드 표지(모델) 사진 — 예약 색 이름 `__COVER__` (2026-09-15).
+     [stated] 하윤: "메인 사진만 바꿀수있께하고 들어가면 저렇케 원래 나오듯이 나오게" */
+  const COVER_KEY=(window.PacificData&&PacificData.COVER_COLOR)||'__COVER__';
+  let styleCover={};                     // 스타일번호 → 표지 사진 URL
   let styleHiddenColors={};              // 스타일번호 → [숨긴 색(raw)]  (상품페이지와 색상 수 일치용)
   let colorCount={};                     // 스타일번호 → 색상 수(표시되는 색만)
   let styleSizes={};                     // 스타일번호 → Set(실제로 파는 사이즈, skus)
@@ -333,6 +337,8 @@
       if(!r.ok) return;
       const d=await r.json(); const seen={};
       (d||[]).forEach(row=>{ const no=String(row.style_number); const col=String(row.color||'').toUpperCase(); if(!col)return;
+        /* 표지(모델) 사진은 **색이 아니다** — 색 목록에 넣지 않고 따로 담는다 (2026-09-15) */
+        if(col===COVER_KEY){ if(!styleCover[no]) styleCover[no]=_imgUrl(row.image_path); return; }
         if(!styleColors[no]){styleColors[no]=[]; seen[no]=new Set();}
         if(seen[no].has(col))return; seen[no].add(col);
         styleColors[no].push({color:col, url:_imgUrl(row.image_path)}); });
@@ -363,10 +369,17 @@
   // default_color(예:"CHARCOAL (HT)")와 사진 색이름(예:"CHARCOAL")이 달라도 매칭되게 괄호 접미사 무시
   function _normC(s){ return String(s||'').toUpperCase().replace(/\s*\([^)]*\)/g,'').replace(/\s+/g,' ').trim(); }
   function applyDefaultThumbs(){
-    Object.keys(defaultColorMap).forEach(no=>{ const dc=defaultColorMap[no]; const list=styleColors[no]||[];
+    Object.keys(defaultColorMap).forEach(no=>{
+      /* ⚠ 표지(모델) 사진이 있으면 ★ 이 이기게 두면 안 된다 — 카드에서 모델이 사라진다.
+         1214 는 ★ 이 NAVY 라서 카드가 모델로 보였을 뿐이고, 1315R 은 ★ 이 없어서
+         우연히 보였다. 둘 다 우연에 기대고 있었다 (2026-09-15). */
+      if(styleCover[no]) return;
+      const dc=defaultColorMap[no]; const list=styleColors[no]||[];
       let hit=list.find(c=>c.color===dc);                 // 정확 매칭 우선
       if(!hit){ const dn=_normC(dc); hit=list.find(c=>_normC(c.color)===dn); }  // 괄호 접미사 무시 매칭
       if(hit&&hit.url) thumbs[no]=hit.url; });
+    /* 표지는 **맨 마지막에** 덮는다 — 어떤 경우에도 카드 사진은 표지다 */
+    Object.keys(styleCover).forEach(no=>{ thumbs[no]=styleCover[no]; });
   }
   // 진열 순서(rank) 저장 (color_names 안 예약 키에 병합 upsert)
   async function saveRank(styleNo, rank){

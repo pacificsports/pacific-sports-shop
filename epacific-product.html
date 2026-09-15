@@ -107,6 +107,20 @@
   /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
   .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px}
   .sw-label b{color:var(--ink);font-weight:600}
+  /* 카드 표지(모델) 사진 자리 — 직원 Edit 에서만 보인다 (2026-09-15) */
+  #coverSlot{display:none;align-items:center;gap:10px;margin:0 0 14px;padding:9px 11px;
+             border:1px dashed var(--line-2);border-radius:11px;background:var(--paper)}
+  .editmode #coverSlot{display:flex}
+  #coverThumb{width:44px;height:52px;flex:0 0 auto;border-radius:7px;background:#fff;border:1px solid var(--line);
+              overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--faint)}
+  #coverThumb img{width:100%;height:100%;object-fit:contain;display:block}
+  #coverSlot .cs-txt{flex:1 1 auto;min-width:0;line-height:1.35}
+  #coverSlot .cs-txt b{display:block;font-size:12.5px;color:var(--ink)}
+  #coverSlot .cs-txt small{font-size:11px;color:var(--faint)}
+  #coverSlot button{flex:0 0 auto;font-size:11.5px;padding:6px 10px;border-radius:8px;cursor:pointer;
+                    border:1px solid var(--line-2);background:var(--paper);color:var(--ink)}
+  #coverSlot button.on{border-color:var(--accent);color:var(--accent)}
+  #coverSlot button.warn{border-color:#b04;color:#b04}
   .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:8px;max-height:none}
   .sw{width:34px;height:34px;border-radius:50%;cursor:pointer;border:1px solid var(--line-2);background:#fff;padding:0;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
   /* 사진 칩: 셔츠 가슴 부분을 줌인해서 원단/색이 보이게 */
@@ -446,6 +460,15 @@
       <div id="mainImg"></div>
     </div>
     <div class="sw-label" id="swLabel"></div>
+    <!-- 카드 표지(모델) 사진 — 제품 목록 카드에만 쓰인다. 색이 아니므로 칼라칩·주문표에
+         나오지 않는다. 직원 Edit 에서만 보인다 (2026-09-15). -->
+    <div id="coverSlot">
+      <span id="coverThumb">none</span>
+      <span class="cs-txt"><b>Cover photo (model)</b>
+        <small>Shows on the product grid only \u2014 not a color, so it never appears in the color chips or the order table.</small></span>
+      <button id="coverAdd" type="button">Add</button>
+      <button id="coverDel" type="button" hidden>Remove</button>
+    </div>
   </div>
 
   <!-- INFO -->
@@ -2202,6 +2225,7 @@
     el('editToggle').classList.toggle('on',editOn);
     el('editToggle').textContent=editOn?'Done editing':'Edit';
     if(el('bulkBtn')) el('bulkBtn').style.display = editOn ? '' : 'none';
+    if(editOn) loadCover();      // 표지 사진은 Edit 을 켤 때만 읽는다 (손님에겐 요청 0)
     // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드, 스펙칩 다시 그림
     if(_renderSwatchesFn) _renderSwatchesFn();
     renderSpecChips();
@@ -2236,7 +2260,7 @@
     const c=String(color).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     return currentStyle+'/'+c+'.'+ext;
   }
-  async function uploadPhoto(file, color, ov){
+  async function uploadPhoto(file, color, ov, after){
     if(!file.type.startsWith('image/')){ alert('Only image files are allowed.'); return; }
     // 로그인 확인 (이 도구는 직원만 접근), 업로드는 anon 정책 사용 (admin 도구와 동일 방식)
     let token=null;
@@ -2280,12 +2304,79 @@
       if(cell){ cell.querySelector('img')?.remove(); cell.querySelector('svg')?.remove();
         cell.insertAdjacentHTML('afterbegin',`<img src="${url}" alt="${color}" style="width:100%;height:100%;object-fit:contain;display:block;border-radius:inherit">`);
         try{ fitThumbs(); }catch(e){} }
-      ov.innerHTML='Replace<br>photo';
+      /* 색 칸이 아닌 곳(표지 자리)에서 부를 수도 있다 — 그때는 부른 쪽이 화면을 고친다 */
+      if(typeof after==='function') after(url); else ov.innerHTML='Replace<br>photo';
     }catch(e){ ov.textContent=prev; alert('Failed: '+e.message); }
   }
 
+  /* ═══ 카드 표지(모델) 사진 — 예약 색 이름 `__COVER__` (2026-09-15) ═══
+     [stated] 하윤: "메인 사진만 바꿀수있께하고 들어가면 저렇케 원래 나오듯이 나오게"
+     ⚠⚠ 모델 사진을 **색 사진 위에 덮어쓰면 안 된다.** 1214 에서 그렇게 했더니
+       ① 칼라칩은 사진의 **위 25~55% 구간**을 확대해 보여주는 자리라 얼굴이 칩에 들어갔고
+          ([stated] "칼라칩은 칼라로 꽉 차야하는데")
+       ② 주문표 썸네일 자동 크기조절이 셔츠가 아니라 **사람**을 재고
+       ③ 그 색의 평면 사진이 **영구히 사라졌다**(파일 덮어쓰기).
+     `__COVER__` 는 `skus` 에 없는 이름이다. 색 목록은 전부 skus 에서 만들므로
+     칩·주문표·Shop by Color·색상 수에 **절대 안 들어간다.** 카드 표지만 바뀐다. */
+  const COVER_COLOR=(window.PacificData&&PacificData.COVER_COLOR)||'__COVER__';
+  let _coverUrl=null, _coverLoaded=false;
+
+  function paintCover(){
+    const th=el('coverThumb'), add=el('coverAdd'), del=el('coverDel');
+    if(!th||!add||!del) return;
+    th.textContent='';
+    if(_coverUrl){
+      /* ⚠ innerHTML 로 URL 을 박지 않는다 — 요소로 조립한다 (설명 문구에서 배운 것) */
+      const im=document.createElement('img'); im.src=_coverUrl; im.alt='Cover photo';
+      th.appendChild(im);
+      add.textContent='Replace'; add.classList.add('on'); del.hidden=false;
+    }else{
+      th.textContent='none'; add.textContent='Add'; add.classList.remove('on'); del.hidden=true;
+    }
+    del.textContent='Remove'; del.classList.remove('warn'); del.dataset.armed='';
+  }
+  async function loadCover(){
+    if(_coverLoaded) return; _coverLoaded=true;
+    try{
+      const r=await fetch(SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(currentStyle)
+            +'&color=eq.'+encodeURIComponent(COVER_COLOR)+'&select=image_path',
+            {headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+      if(r.ok){ const d=await r.json();
+        if(d&&d.length) _coverUrl=SB_URL+'/storage/v1/object/public/'+BUCKET+'/'+d[0].image_path; }
+    }catch(e){}
+    paintCover();
+  }
+  if(el('coverAdd')) el('coverAdd').addEventListener('click',()=>{
+    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+    inp.onchange=()=>{ if(inp.files[0]) uploadPhoto(inp.files[0], COVER_COLOR, el('coverAdd'),
+      u=>{ _coverUrl=u; paintCover(); }); };
+    inp.click();
+  });
+  /* 지우기는 **두 번 눌러야** 한다. `confirm()` 을 쓰지 않는 이유: 브라우저 모달은
+     자동화 도구를 멈춰 세우고, 실수로 지우는 걸 막는 데는 두 번 누르기로 충분하다. */
+  if(el('coverDel')) el('coverDel').addEventListener('click',async()=>{
+    const b=el('coverDel');
+    if(b.dataset.armed!=='1'){ b.dataset.armed='1'; b.textContent='Sure?'; b.classList.add('warn'); return; }
+    let token=null; try{ token=(JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token; }catch(e){}
+    if(!token){ alert('Session expired. Please log in again.'); return; }
+    b.textContent='Removing\u2026';
+    try{
+      /* ⚠⚠ PostgREST 는 **0줄이 지워져도 204** 를 준다 (2026-09-06 에 당했다).
+         `return=representation` 으로 정말 지워진 줄을 받아서만 성공으로 본다. */
+      const r=await fetch(SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(currentStyle)
+            +'&color=eq.'+encodeURIComponent(COVER_COLOR),
+            {method:'DELETE',headers:{apikey:SB_KEY,Authorization:'Bearer '+token,'Prefer':'return=representation'}});
+      const gone = r.ok ? await r.json().catch(()=>[]) : [];
+      if(!r.ok || !(gone&&gone.length)) throw new Error('nothing was removed');
+      _coverUrl=null;
+    }catch(e){ alert('Failed: '+e.message); }
+    paintCover();
+  });
+
   /* ===== 일괄 업로드 (Edit 모드) ===== */
   function normColor(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  /* 파일명이 `1315R-cover.png` / `8368_model.jpg` 면 색이 아니라 **표지**다 (2026-09-15) */
+  function coverFromText(t){ return /^(cover|model|__cover__)$/i.test(String(t||'').trim()) ? COVER_COLOR : null; }
   function parseFileName(filename){
     const base=filename.replace(/\.[^.]+$/,'');
     const m=base.match(/^(\d{3,5}[A-Za-z]?)[-_\s]+(.+)$/);  // 스타일번호-색상
@@ -2311,8 +2402,9 @@
       if(!file.type.startsWith('image/')){ skip++; blog('<span style="color:#999">— '+file.name+' (not an image, skipped)</span>'); continue; }
       const {style, colorText}=parseFileName(file.name);
       // 다른 스타일 파일이면 그 스타일로 올림(색 매칭은 현재 스타일 표만 있으니 이름 그대로)
-      const matched = (style===currentStyle) ? (byNorm[normColor(colorText)]) : null;
-      const colorName = matched ? (matched.raw||matched.name) : colorText;
+      const asCover = coverFromText(colorText);
+      const matched = asCover ? null : ((style===currentStyle) ? (byNorm[normColor(colorText)]) : null);
+      const colorName = asCover || (matched ? (matched.raw||matched.name) : colorText);
       try{
         const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
         const path=style+'/'+normColor(colorName).toLowerCase()+'.'+ext;

@@ -519,12 +519,17 @@
   }
 
   function srOf(n){
-    const have=Object.keys(DATA.sizesOf[n]||{});
+    /* 감춘 사이즈는 빼고 적는다 (2026-09-15) — [stated] 하윤: "우리가 켜져있는 사이즈까지만".
+       주문 블록은 이미 DATA.hsz 로 빼고 있었는데 이 글자만 안 빼서 서로 어긋났다. */
+    const hz=(DATA.hsz&&DATA.hsz[n])||{};
+    const have=Object.keys(DATA.sizesOf[n]||{}).filter(z=>!hz[z]);
     const known=have.filter(z=>SZ.indexOf(z)>=0).sort((a,b)=>SZ.indexOf(a)-SZ.indexOf(b));
     if(known.length>1) return known[0]+'–'+known[known.length-1];
     if(known.length===1) return known[0];
     if(have.length) return have.sort().join(', ');
-    return (DATA.meta[n]&&DATA.meta[n].sr)||'';
+    /* ⚠ 여기서 박아둔 글자(meta.sr = 'XS-5XL')로 돌아가면 다시 거짓말이 된다.
+       skus 를 받았는데 남는 사이즈가 없다면 그냥 아무 말도 안 한다 (2026-09-15). */
+    return Object.keys(DATA.sizesOf[n]||{}).length ? '' : ((DATA.meta[n]&&DATA.meta[n].sr)||'');
   }
   function title(c){ return (DATA && DATA.label && DATA.label[c]) || c; }
   /* 그 색의 스타일 — 진열순서(카테고리 화면과 공용)대로. 손님에겐 감춘 스타일을 뺀다 */

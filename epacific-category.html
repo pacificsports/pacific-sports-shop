@@ -277,6 +277,30 @@
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
   let styleHiddenColors={};              // 스타일번호 → [숨긴 색(raw)]  (상품페이지와 색상 수 일치용)
   let colorCount={};                     // 스타일번호 → 색상 수(표시되는 색만)
+  let styleSizes={};                     // 스타일번호 → Set(실제로 파는 사이즈, skus)
+  let styleHiddenSizes={};               // 스타일번호 → Set(직원이 감춘 사이즈)
+  let _sizesLoaded=false;                // skus 를 받아왔나 (못 받았으면 예전 글자로 물러난다)
+  const _SZ_ORDER=(window.PacificData&&PacificData.sizeOrder)||['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5XL'];
+  /* 카드에 찍는 사이즈 범위 (2026-09-15)
+     [stated] 하윤: "우리가 켜져있는 사이즈까지만 나오게해줘"
+     예전에는 pacific-data.js 에 박아둔 글자('XS-5XL')를 그대로 찍어서, 4XL·5XL 을 감춰 둔
+     19개 스타일이 손님에게 거짓말을 하고 있었다. 이제 **skus − hidden_sizes** 로 계산한다. */
+  function srOf(p){
+    const no=String(p.no);
+    if(!_sizesLoaded) return p.sr||'';            // 못 받았으면 예전 글자 (화면이 비지 않게)
+    const have=styleSizes[no];
+    if(!have || !have.size) return '';            // ⚠ 모르면 아무 말도 안 한다 — 틀린 범위보다 낫다
+    const hid=styleHiddenSizes[no];
+    const on=z=>!(hid && hid.has(z));
+    const known=_SZ_ORDER.filter(z=>have.has(z) && on(z));
+    const extra=[...have].filter(z=>_SZ_ORDER.indexOf(z)<0 && on(z)).sort();
+    const all=known.concat(extra);
+    if(!all.length) return '';
+    if(all.length===1) return all[0];
+    const ix=known.map(z=>_SZ_ORDER.indexOf(z));
+    const contiguous = !extra.length && ix.every((v,i)=>i===0 || v===ix[i-1]+1);
+    return contiguous ? (all[0]+'\u2013'+all[all.length-1]) : all.join(', ');
+  }
   let rankMap={};                        // 스타일번호 → 저장된 진열 순서(rank)
   let defaultRank={};                    // 스타일번호 → 기본 순서 인덱스(FEATURED 기준)
   const _anonH=()=>({apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+_SBcfg.SUPABASE_ANON_KEY});
@@ -287,11 +311,14 @@
   // 스타일 설정 로드: 숨김 / color_names / ★메인색 / 진열순서(rank)
   async function loadHiddenStyles(){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color,hidden_colors&limit=100000',
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color,hidden_colors,hidden_sizes&limit=100000',
         {headers:_anonH()});
       if(!r.ok) return;
       const d=await r.json();
       hiddenStyles=new Set((d||[]).filter(x=>x.is_hidden).map(x=>String(x.style_number)));
+      /* 감춘 사이즈 — 카드의 사이즈 범위에서 뺀다 (2026-09-15) */
+      (d||[]).forEach(x=>{ const hs=x.hidden_sizes;
+        if(Array.isArray(hs)&&hs.length) styleHiddenSizes[String(x.style_number)]=new Set(hs.map(z=>String(z).trim().toUpperCase())); });
       (d||[]).forEach(x=>{ const no=String(x.style_number); const cn=x.color_names||{}; colorNamesMap[no]=cn;
         if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
         if(Array.isArray(x.hidden_colors)&&x.hidden_colors.length) styleHiddenColors[no]=x.hidden_colors.map(c=>String(c).toUpperCase());
@@ -315,10 +342,15 @@
   //  (COLOR_RULES 숨김 + style_settings 숨김 제외, 이름 통일(rename)로 중복 합침)
   async function loadColorCounts(){
     try{
-      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/skus?select=style_number,color&is_active=eq.true&limit=100000',{headers:_anonH()});
+      /* 색과 **사이즈를 한 번에** 받는다 — 요청 수는 그대로다 (2026-09-15) */
+      const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/skus?select=style_number,color,size&is_active=eq.true&limit=100000',{headers:_anonH()});
       if(!r.ok) return;
       const d=await r.json(); const raw={};
-      (d||[]).forEach(row=>{ const no=String(row.style_number); (raw[no]=raw[no]||new Set()).add(String(row.color||'').toUpperCase().trim()); });
+      (d||[]).forEach(row=>{ const no=String(row.style_number);
+        (raw[no]=raw[no]||new Set()).add(String(row.color||'').toUpperCase().trim());
+        const z=String(row.size||'').trim().toUpperCase();
+        if(z) (styleSizes[no]=styleSizes[no]||new Set()).add(z); });
+      _sizesLoaded=true;
       const PD=window.PacificData||{};
       const isHidden=(no,c)=> (PD.isHiddenColor?PD.isHiddenColor(no,c):false) || (styleHiddenColors[no]||[]).includes(String(c).toUpperCase());
       const disp=(no,c)=> PD.displayColorName?PD.displayColorName(no,c):c;
@@ -432,7 +464,7 @@
         </div>
         <div class="style-no">Style #${no}</div>
         <div class="pname">${p.desc}</div>
-        <div class="pmeta">${catLabel(p.cat)} · ${p.sr}</div>
+        <div class="pmeta">${catLabel(p.cat)}${srOf(p)?' · '+srOf(p):''}</div>
         ${colorLine?`<div class="pcount">${colorLine}</div>`:''}
         <div class="pcolors">View colors &amp; stock</div>
         ${dragHint}

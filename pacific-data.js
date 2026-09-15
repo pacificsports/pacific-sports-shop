@@ -274,10 +274,11 @@ window.PacificData = (function () {
                           +'&select=color,image_path,sort_order,created_at&order=sort_order.asc,created_at.desc');
     const out = {};
     rows.forEach(r => {
-      /* 표지(모델) 사진은 색이 아니다 — 색 사진 지도에 넣지 않는다 (2026-09-15).
-         지금은 색 목록이 skus 에서 오니 넣어도 안 보이지만, 넣어두면 언젠가
-         `prettyColor('__COVER__')` 가 색처럼 생긴 칸을 만든다. */
-      if (isCoverColor(r.color)) return;
+      /* 표지(모델) 사진은 색이 아니다 — **색 이름 자리에는 안 넣고** 예약 키에 담는다
+         (2026-09-15). 색 이름으로 넣으면 `prettyColor('__COVER__')` 가 색처럼 생긴 칸을
+         만든다. 예약 키 `__cover` 는 색 이름이 될 수 없어 안전하다 (`_default` 와 같은 방식).
+         ⚠ 이렇게 담아두면 상품 페이지가 표지를 **조회 없이** 쓸 수 있다. */
+      if (isCoverColor(r.color)) { if (!out.__cover) out.__cover = _imageUrl(r.image_path); return; }
       const key = r.color ? prettyColor(r.color) : '_default';
       if (!out[key]) out[key] = _imageUrl(r.image_path);   // 색상별 첫 사진
     });
@@ -332,6 +333,9 @@ window.PacificData = (function () {
       styleNo,
       name: _desc ? (styleNo+' '+_desc) : styleNo,
       category: _cat,
+      /* 표지(모델) 사진 — 목록 카드와 상품 페이지 **큰 사진**에만 쓴다.
+         색이 아니므로 `colors` 에는 들어가지 않는다 (2026-09-15). */
+      coverImg: imgMap.__cover || '',
       sizes, colors, casePer: CASE_PER
     };
   }

@@ -105,7 +105,9 @@
   .main-img #mainImg svg{width:70%;height:70%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
   .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
   /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
-  .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px}
+  /* ⚠ 표지(모델) 사진이 보일 때는 "Color: ○○" 를 비운다 — 그때 줄이 사라지면서 아래가
+     덜컥 올라오지 않게 자리를 잡아둔다 (2026-09-15). */
+  .sw-label{font-size:13px;color:var(--soft-ink);margin-bottom:10px;min-height:19px}
   .sw-label b{color:var(--ink);font-weight:600}
   /* 카드 표지(모델) 사진 자리 — 직원 Edit 에서만 보인다 (2026-09-15) */
   #coverSlot{display:none;align-items:center;gap:10px;margin:0 0 14px;padding:9px 11px;
@@ -1276,7 +1278,7 @@
     if(!e.target.closest('.color-search')) sugBox.classList.remove('show');
   });
 
-  let _setMainFn=null, _renderSwatchesFn=null;
+  let _setMainFn=null, _renderSwatchesFn=null, _coverMainFn=null;
 
   // 사진에서 실제 색 뽑기 (셔츠 중앙 영역 평균색). 결과는 캐시.
   const _imgColorCache={};
@@ -1783,10 +1785,37 @@
   const swEl=document.getElementById('thumbs');
   const swLabel=document.getElementById('swLabel');
 
+  /* 지금 큰 사진에 보이는 색. 표지(모델) 사진이면 null.
+     ⚠ 이걸 기억해야 칩을 **다시 그릴 때**(Edit 토글 등) 선택 표시가 살아남는다 —
+       예전에는 `renderSwatches()` 가 `setMain()` 보다 **나중에** 돌아서 페이지를 처음
+       열었을 때 아무 칩도 선택돼 보이지 않았다 (대조군으로 확인함, 2026-09-15). */
+  let curName=null;
+  function markActive(){
+    swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', !!curName && x.dataset.name===curName));
+  }
   function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
-    swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', x.dataset.name===c.name));
+    curName = c.name;
+    markActive();
+  }
+  /* ═══ 표지(모델) 사진을 큰 사진으로 (2026-09-15) ═══
+     [stated] 하윤: "거기에도 나오고 클릭해서 들어오면 그 스타일 매인 사진으로 나오는거야"
+     들어왔을 때는 표지를, 색 칩을 누르면 그때부터 그 색 평면 사진을 보여준다.
+     ⚠ 색 이름 라벨은 **비운다** — 모델이 입은 색이 무엇인지 우리는 모른다. 아무 색이나
+       적으면 손님에게 거짓말이 된다. (칩도 하나도 선택 안 된 상태로 둔다.) */
+  function setMainCover(url){
+    mainImg.textContent='';
+    const im=document.createElement('img');      /* innerHTML 로 URL 을 박지 않는다 */
+    im.src=url; im.alt='Style '+currentStyle;
+    mainImg.appendChild(im);
+    if(swLabel) swLabel.textContent='';
+    curName = null;
+    markActive();
+  }
+  function showCoverOrDefault(){
+    const u = (product && product.coverImg) || '';
+    if(u) setMainCover(u); else setMain(pickDefaultColor());
   }
   // 메인 사진 기본 색 선택: 직접 지정 > 대표색 우선순위 > 사진 있는 첫 색
   function pickDefaultColor(){
@@ -1804,8 +1833,9 @@
     // 3) 사진 있는 첫 색 → 없으면 첫 색
     return colors.find(c=>c.img) || colors[0];
   }
-  setMain(pickDefaultColor());
+  showCoverOrDefault();
   _setMainFn = setMain;
+  _coverMainFn = showCoverOrDefault;
   // 색상 수 칩을 실제 색상 수로
   const ccChip=document.getElementById('colorCountChip');
   if(ccChip) ccChip.textContent = colors.length+' colors';
@@ -1841,6 +1871,7 @@
     });
     const ccChip=document.getElementById('colorCountChip');
     if(ccChip) ccChip.textContent = colors.length+' colors';
+    markActive();          /* 다시 그려도 선택 표시가 남는다 */
   }
   renderSwatches();
   _renderSwatchesFn = renderSwatches;
@@ -2336,7 +2367,12 @@
     del.textContent='Remove'; del.classList.remove('warn'); del.dataset.armed='';
   }
   async function loadCover(){
-    if(_coverLoaded) return; _coverLoaded=true;
+    if(_coverLoaded) return;
+    /* 표지 URL 은 `PacificData.getProduct()` 가 이미 같은 조회로 받아왔다 — 다시 묻지 않는다 */
+    if(product && typeof product.coverImg === 'string'){
+      _coverLoaded=true; _coverUrl = product.coverImg || null; paintCover(); return;
+    }
+    _coverLoaded=true;
     try{
       const r=await fetch(SB_URL+'/rest/v1/product_images?style_number=eq.'+encodeURIComponent(currentStyle)
             +'&color=eq.'+encodeURIComponent(COVER_COLOR)+'&select=image_path',
@@ -2349,7 +2385,10 @@
   if(el('coverAdd')) el('coverAdd').addEventListener('click',()=>{
     const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
     inp.onchange=()=>{ if(inp.files[0]) uploadPhoto(inp.files[0], COVER_COLOR, el('coverAdd'),
-      u=>{ _coverUrl=u; paintCover(); }); };
+      u=>{ _coverUrl=u; paintCover();
+           /* 큰 사진도 바로 새 표지로 — 새로고침 없이 결과를 본다 */
+           if(product) product.coverImg=u;
+           if(_coverMainFn) _coverMainFn(); }); };
     inp.click();
   });
   /* 지우기는 **두 번 눌러야** 한다. `confirm()` 을 쓰지 않는 이유: 브라우저 모달은
@@ -2369,6 +2408,9 @@
       const gone = r.ok ? await r.json().catch(()=>[]) : [];
       if(!r.ok || !(gone&&gone.length)) throw new Error('nothing was removed');
       _coverUrl=null;
+      /* 표지를 지우면 큰 사진은 원래대로(대표 색 평면 사진) 돌아간다 */
+      if(product) product.coverImg='';
+      if(_coverMainFn) _coverMainFn();
     }catch(e){ alert('Failed: '+e.message); }
     paintCover();
   });

@@ -1350,10 +1350,14 @@
     const t=String(c||'').trim().toLowerCase();
     if(/\boz\b|gram|sq\.?\s*yd/.test(t))                 return 1;   // 무게
     if(t==='us cotton')                                    return 3;   // 원면 산지
+    /* ⚠ 인증 검사가 원단 검사보다 **위**에 있어야 한다 (2026-09-15).
+       'BCI Cotton' 에는 'cotton' 이 들어 있어서, 아래 원단 규칙이 먼저 걸리면
+       원단 칩(2번)으로 잡혀 Tear-away label 앞으로 올라간다 — 1530 에서 실측.
+       낱말이 겹치면 **좁은 규칙이 먼저** ('US Cotton' 이 위에 있는 것과 같은 이유). */
+    if(/\bbci\b|certified|oeko|wrap/.test(t))              return 6;   // 인증
     if(/cotton|poly|blend|tri-?blend|rayon|linen/.test(t)) return 2;   // 원단 구성
     if(/tear-?away|label/.test(t))                         return 4;
     if(/made in/.test(t))                                  return 5;
-    if(/bci|certified|oeko|wrap/.test(t))                  return 6;
     return 7;                                                          // 나머지는 뒤에
   }
   function sortChips(list){

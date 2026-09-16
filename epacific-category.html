@@ -44,6 +44,23 @@
 
   .logo i{font-style:italic;color:var(--accent)}
   nav.main{display:flex;gap:2px;flex:1}
+  /* ═══ 검색을 열면 **검색 모드**로 바뀐다 (2026-09-16) ═══
+     [stated] 하윤: "너무 꽉차서 search누르면 저렇케 되버리네"
+     실측(카테고리 1240px): 머리띠 83 → 130px 으로 부풀고 'Kids & Youth'(43→90px)·
+     'Shop by Color'(43→90px)·'My Account'(36→54px) 이 **낱말 가운데서** 쪼개졌다.
+     ⚠ 틈만 줄여선 안 맞는다: 로고164 + 메뉴570 + 아이콘533(검색칸 250 포함) + 틈92
+       = 1359 인데 쓸 수 있는 폭은 1180 → **180px 부족**. 노트북(1366)에선 더 나쁘다.
+     그래서 검색 중에는 메뉴를 접고 검색칸이 그 자리를 쓴다. ✕/Esc 로 그대로 복귀. */
+  /* ⚠ `display:none` 으로 메뉴를 없애면 **머리띠가 3px 줄어든다**(실측 83→80px) —
+     줄 높이를 정하던 게 메뉴 항목(43px)이었기 때문이다. 열고 닫을 때마다 화면이 살짝
+     튄다. 그래서 없애지 않고 **폭만 0 으로 접는다**: 메뉴의 높이는 그대로 줄 높이를
+     지탱하므로 높이가 한 픽셀도 안 바뀐다 (글꼴이 달라져도 자동으로 맞는다). */
+  body.searching nav.main{flex:0 0 0;overflow:hidden;opacity:0;pointer-events:none}
+  body.searching .h-icons{flex:1 1 auto;min-width:0}
+  body.searching #searchInline{flex:1 1 auto;min-width:0}
+  body.searching #searchInput{width:100%!important}
+  /* ⚠ 머리띠 글자는 절대 쪼개지지 않게 — 자리가 모자라면 줄이 늘지 말고 넘치게 둔다 */
+  .nav-item>a, .h-icons button{white-space:nowrap}
   .nav-item{position:relative}
   .nav-item>a{display:block;padding:10px 16px;font-weight:450;font-size:15px;color:var(--soft-ink);cursor:pointer;border-radius:8px;transition:color .2s,background .2s}
   .nav-item>a:hover{color:var(--ink);background:var(--accent-soft)}
@@ -670,10 +687,12 @@
     }
     function openSearch(){
       btn.style.display='none'; box.style.display='inline-flex';
+      document.body.classList.add('searching');   /* 메뉴를 접고 검색칸에 자리를 준다 */
       ensureStyles(); setTimeout(()=>inp.focus(),30);
     }
     function closeSearch(){
       box.style.display='none'; btn.style.display='';
+      document.body.classList.remove('searching');
       inp.value=''; res.style.display='none'; res.innerHTML='';
     }
     function render(q){

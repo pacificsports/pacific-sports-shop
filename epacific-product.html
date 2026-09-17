@@ -588,7 +588,7 @@
     <div><h4>Company</h4><a href="#">About Us</a><a href="#">Information</a><a href="#">Blog</a><a href="#">Contact</a></div>
     <div><h4>Account</h4><a href="epacific-login.html?pane=reg">Register (Reseller)</a><a href="epacific-login.html">Login</a><a href="#">How to Order</a><a href="#">Shipping</a></div>
   </div>
-  <div class="f-bot"><span>© 2026 Pacific Sports. Demo redesign concept.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
+  <div class="f-bot"><span>© 2026 Pacific Sports. All rights reserved.</span><span>VISA · Mastercard · AMEX · PayPal</span></div>
 </footer>
 
 <div class="toast" id="toast">✓ Added to order</div>
@@ -2119,8 +2119,17 @@
         throw new Error('pacific-data.js not found. It must be in the same folder as this HTML file.');
       }
       const cfg = PacificData.config;
-      currentStyle = new URLSearchParams(location.search).get('style') || '1368';
+      /* 🔒 URL 로 들어온 값은 **믿지 않는다** (2026-09-17).
+         예전에는 이 값이 그대로 innerHTML 에 박혀서
+           ?style=<img src=x onerror=...>
+         가 실행됐다. 실행되면 localStorage 의 로그인 토큰을 가져갈 수 있다.
+         ⚠ 여기서 한 번 걸러두면 currentStyle 이 들어가는 모든 자리
+            (문서 제목 · 이미지 경로 · PostgREST 필터 · 저장 호출)가 같이 안전해진다.
+         실제 스타일 번호는 영숫자와 . _ - 뿐이고 제일 긴 게 5자(1315R)다. */
+      const _rawStyle = new URLSearchParams(location.search).get('style') || '';
+      currentStyle = /^[A-Za-z0-9._-]{1,24}$/.test(_rawStyle) ? _rawStyle : '1368';
       const STYLE = currentStyle;
+      const _escS = t => String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
       /* 번호는 URL 에 이미 있다 — 데이터를 기다리지 말고 **지금** 찍는다 (2026-09-15).
          이게 없으면 1~2초 동안 제목이 비고 빵부스러기가 "Home / Adult / /" 로 보인다.
          상품명(설명)은 아래에서 데이터가 오면 뒤에 덧붙인다. */
@@ -2196,7 +2205,9 @@
       const niceName = _desc ? (STYLE+' '+_desc) : (product.name || STYLE);
       document.title = 'Pacific Sports — Style #'+STYLE;
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=STYLE;
-      const sn=document.getElementById('pStyleNo'); if(sn) sn.innerHTML='Style #'+STYLE+(_desc?' · <span style="color:var(--soft-ink)">'+_desc.replace(/</g,'&lt;')+'</span>':'');
+      /* ⚠ 여기가 예전에 `?style=` 을 그대로 쏟아내던 자리다 — 위에서 모양을 걸렀지만
+         나가는 자리에서도 한 번 더 막는다 (두 겹이어야 한 겹이 뚫려도 버틴다) */
+      const sn=document.getElementById('pStyleNo'); if(sn) sn.innerHTML='Style #'+_escS(STYLE)+(_desc?' · <span style="color:var(--soft-ink)">'+_escS(_desc)+'</span>':'');
       const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
       // 빵부스러기 중간 단계도 카테고리에 맞게 (Men's/Kids, Short Sleeve/Long Sleeve/Tank Top 등)
       (function(){

@@ -1,0 +1,9 @@
+# Cloudflare Pages 응답 헤더 (2026-09-17)
+# ⚠ CSP 는 일부러 아직 안 넣었다 — 잘못 걸면 사이트가 통째로 안 뜬다
+#    (Accept.js · 인라인 스크립트/스타일이 페이지마다 있다). 사장님이 볼 수 있을 때 같이 켠다.
+#    아래 네 줄은 지금 페이지들에 아무 영향이 없으면서 막아주는 것만 골랐다.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: SAMEORIGIN
+  Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()

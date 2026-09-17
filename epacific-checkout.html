@@ -316,9 +316,18 @@
     const total=Math.round((goods+(shipCost||0))*100)/100;
     const names=st.name.split(' ');
     try{
-      const r=await fetch(WORKER+'/pay',{method:'POST',headers:{'Content-Type':'application/json'},
+      /* 🔒 워커가 값을 **직접** 매길 수 있도록 장바구니와 로그인 토큰을 같이 보낸다 (2026-09-17).
+         · `amount` 는 아직 같이 보낸다 — 지금 워커가 그걸 쓰기 때문이다. 새 워커는
+           `amount` 를 무시하고 자기가 계산한 값을 긁으며, `clientTotal` 과 1센트 이상
+           다르면 **거절한다** (손님이 본 금액과 다른 금액을 청구하지 않는다).
+         · `items` 는 값을 매기는 데 필요한 것만 보낸다 — `unit_price` 는 일부러 안 보낸다.
+           그건 손님 브라우저에 있던 값이라 믿을 수 없다. */
+      const payItems = cartGet().map(i=>({style:i.style, color:i.color, size:i.size, wh:i.wh, qty:i.qty}));
+      const r=await fetch(WORKER+'/pay',{method:'POST',
+        headers:{'Content-Type':'application/json', ...(s&&s.token?{Authorization:'Bearer '+s.token}:{})},
         body:JSON.stringify({opaqueData, amount:total, invoice:ono, email:(document.getElementById('fEmail').value.trim()||s.email),
-          billTo:billToObj()})});
+          billTo:billToObj(),
+          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null, clientTotal:total})});
       const d2=await r.json();
       if(!r.ok||!d2.ok) throw new Error(d2.error||('결제 실패 ('+r.status+')'));
       // 결제 성공 → 주문 저장 (저장 실패해도 결제는 이미 됨 → 화면에 안내)

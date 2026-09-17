@@ -653,6 +653,38 @@
   // 카탈로그·재고는 pacific-data.js 에서 불러옵니다 (init()에서 채움)
   let sizes=[], allSizes=[], hiddenSizes=[], colors=[], allColors=[], hiddenColors=[], casePer={}, stockMap={}, product=null, currentStyle='1368';
 
+  /* ═══ 📦 재고 열쇠 맞추기 — 색 이름을 바꿔도 재고가 0 으로 안 보이게 (2026-09-17) ═══
+     `stockMap` 의 열쇠는 **손질한 색 이름**이다 (`prettyColor`, 예 `PFD` → `Pfd`).
+     그런데 표의 줄 이름 `c.name` 은 `style_settings.color_names` 로 **직원이 바꾼 이름**이다.
+     둘이 한 글자라도 다르면 예전 찾기(글자 그대로 세 번)는 전부 빗나가 재고가 **전부 0** 으로
+     보였다 — 실측: 1394 `PFD` 3,240장 · 2210 `CHARCOAL (HT)` 11,376장이 0 이었다.
+     (1314 · 1322 는 바꾼 이름이 우연히 손질한 이름과 같아 안 걸렸을 뿐이다)
+     ⚠ 정확한 열쇠를 **먼저** 보고, 못 찾을 때만 아래 색인을 쓴다 — 맞는 건 그대로 맞는다.
+     ⚠⚠ 두 색이 같은 열쇠로 겹치면 **아무 것도 안 돌려준다** — 어느 쪽인지 모르는데
+        하나를 골라 보여주면 틀린 재고가 되고, 그건 0 보다 나쁘다.
+     ⚠ 낡음 판정은 `stockMap` 객체 자기 자신(`===`) — 통째로 새로 대입되기 때문이다. */
+  let _stkIdx=null, _stkIdxRef=null;
+  function _stkNorm(v){ return String(v==null?'':v).toUpperCase().replace(/[^A-Z0-9]/g,''); }
+  function stockIdx(){
+    if(_stkIdx && _stkIdxRef===stockMap) return _stkIdx;
+    const m={}, dup={};
+    Object.keys(stockMap||{}).forEach(k=>{
+      const n=_stkNorm(k);
+      if(n in m) dup[n]=1; else m[n]=stockMap[k];
+    });
+    Object.keys(dup).forEach(n=>{ delete m[n]; });
+    _stkIdx=m; _stkIdxRef=stockMap;
+    return _stkIdx;
+  }
+  function stockFor(c){
+    if(!c) return null;
+    const raw=c._raw||c.raw||c.name;
+    const hit = stockMap[c.name] || stockMap[raw] || stockMap[c.rawName];
+    if(hit) return hit;
+    const ix=stockIdx();
+    return ix[_stkNorm(raw)] || ix[_stkNorm(c.name)] || null;
+  }
+
   // 티셔츠 모양 SVG를 색상별로 그려주는 함수 (실제 사진 대용 미리보기)
 
   // 색상 썸네일: 사진 있으면 사진, 없으면 티셔츠 SVG
@@ -712,7 +744,7 @@
     if(isFirst) tr.id='color-'+c.name.replace(/[^a-zA-Z0-9]/g,'');
     // 재고는 여러 키로 안전하게 찾음 (이름 변경돼도 동작)
     const raw=c._raw||c.raw||c.name;
-    const sm = stockMap[c.name] || stockMap[raw] || stockMap[c.rawName] || null;
+    const sm = stockFor(c);   /* ← 이름을 바꾼 색도 재고를 찾는다 (2026-09-17) */
     const st = (sm && sm[wh]) ? sm[wh] : [];
     // 색상 셀: 색상의 첫 줄(SC)에만 표시, CA줄은 비움
     const colorCell = isFirst
@@ -885,7 +917,7 @@
     tr.dataset.color=c.name; tr.dataset.wh='ALL';
     tr.className='wh-row stock-total'+(hidden?' color-hidden':'');
     const raw=c._raw||c.raw||c.name;
-    const sm = stockMap[c.name] || stockMap[raw] || stockMap[c.rawName] || null;
+    const sm = stockFor(c);   /* ← 이름을 바꾼 색도 재고를 찾는다 (2026-09-17) */
     const sc = (sm && sm.SC) ? sm.SC : [], ca = (sm && sm.CA) ? sm.CA : [];
     const lbl = `<td class="whcell"><div class="whwrap"><span class="whbadge wh-ALL" title="SC + CA — total stock for this colour, both warehouses">SC+CA</span></div></td>`;
     let grand = 0;

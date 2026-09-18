@@ -2674,5 +2674,44 @@ function pacLogout(){
   location.href="epacific-timeless.html";
 }
 </script>
+<script>
+/* 붙어 있는 바들의 자리를 실제 높이로 다시 잡는다 (2026-09-18)
+   합계바(.summary)는 오더를 넣으면 Case Breakdown 이 1줄 -> 3줄로 늘어나 86px -> 132px 이 된다.
+   그런데 표(.order-block)의 붙는 자리가 CSS 에 327px 로 박혀 있어서, 늘어난 46px 이
+   표의 머리(사이즈별 단가 줄)를 덮어버렸다. 색 개수에 따라 칩바 높이도 달라지므로
+   숫자를 박아두면 스타일마다 또 어긋난다 - 그래서 매번 재서 넣는다. */
+(function(){
+  function fitSticky(){
+    var sec=document.getElementById('orderSection');
+    if(!sec || sec.offsetParent===null) return;   /* 아직 안 보이면 건드리지 않는다 */
+    var hdr=document.querySelector('header'), chip=document.querySelector('.chipbar'),
+        sum=document.querySelector('.summary'), ob=document.querySelector('.order-block'),
+        sc=document.querySelector('.otable-scroll');
+    if(!sum || !ob) return;
+    var h=Math.round(hdr ? hdr.getBoundingClientRect().height : 0);
+    if(chip) chip.style.top=h+'px';
+    var chipH=Math.round(chip ? chip.getBoundingClientRect().height : 0);
+    var sumTop=h+chipH; sum.style.top=sumTop+'px';
+    var sumH=Math.round(sum.getBoundingClientRect().height);
+    var obTop=sumTop+sumH; ob.style.top=obTop+'px';
+    if(sc) sc.style.maxHeight='calc(100vh - '+(obTop+40)+'px)';
+  }
+  window.fitSticky=fitSticky;
+  function boot(){
+    fitSticky();
+    window.addEventListener('resize', fitSticky);
+    /* 합계바 글자가 늘어나는 순간을 잡는다 - 이게 이 버그의 방아쇠였다 */
+    if(window.ResizeObserver){
+      var ro=new ResizeObserver(function(){ fitSticky(); });
+      ['header','.chipbar','.summary','#orderSection'].forEach(function(s){
+        var e=document.querySelector(s); if(e) ro.observe(e);
+      });
+    }
+    setTimeout(fitSticky, 800);   /* 사진·폰트가 늦게 뜨는 경우 */
+  }
+  if(document.readyState==='complete') boot();
+  else window.addEventListener('load', boot);
+})();
+</script>
 </body>
 </html>

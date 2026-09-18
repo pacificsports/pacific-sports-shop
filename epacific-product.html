@@ -2695,11 +2695,23 @@ function pacLogout(){
     var sumH=Math.round(sum.getBoundingClientRect().height);
     var obTop=sumTop+sumH; ob.style.top=obTop+'px';
     if(sc) sc.style.maxHeight='calc(100vh - '+(obTop+40)+'px)';
+    fitHead();
   }
+  /* 표가 깊이 스크롤되면 .order-block 이 부모 끝에 걸려 붙는 자리를 못 지킨다 -
+     그때 표 머리가 합계바 뒤로 들어간다. 그래서 표 머리를 합계바 바로 아래에 맞춰 내려 붙인다. */
+  function fitHead(){
+    var sc=document.querySelector('.otable-scroll'), sum=document.querySelector('.summary');
+    if(!sc || !sum) return;
+    var off=Math.max(0, Math.round(sum.getBoundingClientRect().bottom - sc.getBoundingClientRect().top));
+    var ths=document.querySelectorAll('.otable thead th');
+    for(var i=0;i<ths.length;i++) ths[i].style.top=off+'px';
+  }
+  window.fitHead=fitHead;
   window.fitSticky=fitSticky;
   function boot(){
     fitSticky();
     window.addEventListener('resize', fitSticky);
+    window.addEventListener('scroll', fitHead, {passive:true});
     /* 합계바 글자가 늘어나는 순간을 잡는다 - 이게 이 버그의 방아쇠였다 */
     if(window.ResizeObserver){
       var ro=new ResizeObserver(function(){ fitSticky(); });

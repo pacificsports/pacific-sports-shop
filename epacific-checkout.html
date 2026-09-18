@@ -445,6 +445,9 @@
   async function charge(opaqueData, btn){
     const s=session(); const cust=customer()||{}; const st=shipToObj();
     const d=new Date();
+    /* ⚠ 이건 **폴백 전용**이다. 진짜 주문번호는 워커가 DB 에서 뽑아 응답으로 준다(`d2.orderNumber`).
+       옛 워커가 돌고 있을 때만 이 값이 쓰인다. 브라우저가 만든 번호는 손님이 바꿀 수 있으므로
+       새 워커는 이걸 아예 무시한다. */
     const ono='WEB-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
     const total=Math.round((goods+(shipCost||0))*100)/100;
     const names=st.name.split(' ');
@@ -474,6 +477,11 @@
                    notes: document.getElementById('orderNotes').value.trim()||null }})});
       const d2=await r.json();
       if(!r.ok||!d2.ok) throw new Error(d2.error||('결제 실패 ('+r.status+')'));
+      /* 🔢 주문번호는 **워커(=DB)** 가 정한다 (2026-09-18). `W10001` 형태로 오고,
+         같은 번호가 Authorize.Net 의 invoice 칸에도 찍혀 있다.
+         ⚠ 옛 워커면 안 올 수 있으니 그때만 위에서 만든 ono 를 쓴다 — 번호 없는
+            확인 화면·메일이 나가지 않게. */
+      const ordNo = (d2 && d2.orderNumber) ? String(d2.orderNumber) : ono;
       // 결제 성공 → 주문 저장 (저장 실패해도 결제는 이미 됨 → 화면에 안내)
       const cart=cartGet();
       /* 🔒 새 워커가 이미 주문을 썼으면 여기서 또 쓰지 않는다 — 안 그러면 두 줄이 생긴다 */
@@ -484,7 +492,7 @@
         const or=await fetch(_C.SUPABASE_URL+'/rest/v1/web_orders',{method:'POST',
           headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
           body:JSON.stringify({
-            order_number:ono, user_id:s.userId, email:s.email,
+            order_number:ordNo, user_id:s.userId, email:s.email,
             company_name:st.company||cust.company_name||null, contact_name:st.name||cust.contact_name||null, phone:st.phone||null,
             items:cart, total_pcs:pcs,
             total_amount:total,
@@ -496,12 +504,12 @@
         if(!or.ok){
           console.warn('order save failed', or.status);
           /* ⚠ 예전엔 조용히 넘어갔다 — 돈은 빠졌는데 주문이 없으면 아무도 모른다 */
-          showMsg('결제는 완료됐습니다 ('+money(total)+'). 다만 주문 기록 저장이 실패했습니다 — 주문번호 '+ono+' 로 연락 주세요.', true);
+          showMsg('결제는 완료됐습니다 ('+money(total)+'). 다만 주문 기록 저장이 실패했습니다 — 주문번호 '+ordNo+' 로 연락 주세요.', true);
         }
       }catch(e){ if(!(e&&e._skip)) console.warn('order save failed', e); }
       if(EMAIL_WORKER){
         fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({type:'order',to:s.email,data:{order_number:ono,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,
+          body:JSON.stringify({type:'order',to:s.email,data:{order_number:ordNo,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,
             notes:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
             company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
       }
@@ -509,7 +517,7 @@
       cartSet([]);
       document.getElementById('checkoutArea').style.display='none';
       const ok=document.getElementById('okBox'); ok.style.display='block';
-      document.getElementById('okNo').textContent='Order '+ono;
+      document.getElementById('okNo').textContent='Order '+ordNo;
       document.getElementById('okDetail').textContent=money(total)+' charged to card ending '+(d2.last4||'')+' · '+(shipMethod?shipMethod.name:'');
     }catch(e){
       showMsg(String(e.message||e),true);

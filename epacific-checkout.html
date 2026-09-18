@@ -90,6 +90,11 @@
       <h2>Shipping method</h2>
       <div id="rateList"></div>
       <div class="splitnote" id="splitNote" style="display:none">📦 This order ships from both SC and CA warehouses — rates shown are the combined total of both shipments.</div>
+      <div id="legNote" style="display:none;margin-top:6px;font-size:12.5px;color:var(--faint)"></div>
+      <div id="combineBox" style="display:none;margin-top:10px;padding:11px 14px;border:1.5px solid #bfe0c9;background:#f2f9f4;border-radius:10px;font-size:13.5px;color:#1f5133">
+        <span id="combineMsg"></span>
+        <button type="button" id="combineBtn" style="margin-left:10px;background:#1f5133;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer"></button>
+      </div>
     </div>
 
     <!-- 카드 -->
@@ -146,6 +151,8 @@
 </div>
 
 <script src="pacific-config.js"></script>
+<!-- 📦 재고를 읽어 「한 창고로 합치기」를 제안하려고 불러온다 (2026-09-18) -->
+<script src="pacific-data.js"></script>
 <script src="pacific-admin-auth.js"></script>
 <script>
   const _C=window.PACIFIC_CONFIG||{};
@@ -278,12 +285,111 @@
       document.getElementById('payPanel').style.display='';
       const pick=i=>{ shipMethod=d.services[i]; shipCost=d.services[i].total;
         list.querySelectorAll('.rateopt').forEach((el,j)=>{el.classList.toggle('sel',j===i); el.querySelector('input').checked=(j===i);});
-        summary(); };
+        showLegs(d.services[i]);
+        summary();
+        /* 고른 서비스가 바뀌면 절약액도 달라진다 — 다시 계산 */
+        offerCombine(st, d, i); };
       list.querySelectorAll('.rateopt').forEach(el=>el.addEventListener('click',()=>pick(parseInt(el.dataset.i))));
       pick(0);
     }catch(e){ alert('배송비 조회 실패: '+e.message); }
     btn.disabled=false; btn.textContent='Get shipping rates →';
   });
+
+  /* ═══════ 📦 창고별 운임 표시 + 한 창고로 합치기 (2026-09-18) ═══════
+     워커는 원래 창고마다 UPS 에 따로 물어보고 **합쳐서 한 줄**만 줬다.
+     이제 `legs: {SC:21.67, CA:22.38}` 도 같이 오므로 손님에게 내역을 보여주고,
+     한쪽 창고에 재고가 다 있으면 합쳐서 얼마를 아끼는지까지 알려준다. */
+  function showLegs(svc){
+    const box=document.getElementById('legNote');
+    const legs=(svc&&svc.legs)||null;
+    /* 🚚 직접 가져가는 옵션 (Local pickup · LTL) — 무엇이 무료인지 분명히 적는다 */
+    if(svc && svc.selfService){
+      box.style.display='';
+      box.textContent = (legs && legs.CA===0 && legs.SC!=null)
+        ? ('Eastvale, CA — you pick up (no charge)  ·  Sumter, SC — UPS Ground '+money(legs.SC))
+        : 'No shipping charge — you arrange the pickup. We will have the order ready and call you.';
+      return;
+    }
+    if(!legs || Object.keys(legs).length<2){ box.style.display='none'; box.textContent=''; return; }
+    box.style.display='';
+    box.textContent='Sumter SC warehouse '+money(legs.SC||0)+'  ·  Eastvale CA warehouse '+money(legs.CA||0);
+  }
+
+  /* ⚠ 서비스를 바꿔 고를 때마다 UPS 를 다시 부르면 느리고 낭비다.
+     한 번 받으면 모든 서비스 가격이 다 들어 있으니 (장바구니+주소) 기준으로 가직고 있는다. */
+  let _combineBusy=false, _combineCache=null;
+  async function offerCombine(st, d, idx){
+    const box=document.getElementById('combineBox');
+    const svc=(d.services||[])[idx];
+    box.style.display='none';
+    /* ⚠ 직접 가져가는 옵션에는 합치기를 제안하지 않는다 — 아낄 운임이 없거나 이미 $0 다 */
+    if(!d.splitShipment || !svc || svc.selfService || _combineBusy) return;
+    const cart=cartGet();
+    const sig=JSON.stringify(cart.map(i=>[i.style,i.color,i.size,i.wh,i.qty]))+'|'+st.zip+'|'+st.state;
+    _combineBusy=true;
+    try{
+      if(!_combineCache || _combineCache.sig!==sig){
+        /* ① 한 창고가 장바구니 전체를 커버하나 — 재고를 합쳐서 본다 */
+        const can = (window.PacificData && PacificData.canCombine) ? await PacificData.canCombine(cart) : {SC:false,CA:false};
+        const cands = ['SC','CA'].filter(w=>can[w]);
+        const quotes = {};
+        /* ② 그 창고에서 다 나간다고 치고 UPS 에 다시 물어본다 (창고당 한 번만) */
+        const totLbs = Math.round((scLbs+caLbs)*SHIP_BUFFER*10)/10;
+        for(const w of cands){
+          const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0} : {shipTo:st, scLbs:0, caLbs:totLbs};
+          try{
+            const rr=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            const j=await rr.json();
+            if(rr.ok && !j.error && Array.isArray(j.services)) quotes[w]=j.services;
+          }catch(e){}
+        }
+        _combineCache = { sig:sig, quotes:quotes };
+      }
+      let best=null;
+      Object.keys(_combineCache.quotes).forEach(w=>{
+        const hit=(_combineCache.quotes[w]||[]).find(x=>String(x.code)===String(svc.code));
+        if(hit && (!best || hit.total < best.total)) best={wh:w, total:hit.total};
+      });
+      /* ③ 진짜 싸질 때만 제안한다 */
+      if(!best) return;
+      const save=Math.round((svc.total-best.total)*100)/100;
+      if(!(save > 0.005)) return;
+      _combineSig=sig;
+      const name=(best.wh==='SC')?'Sumter, SC':'Eastvale, CA';
+      document.getElementById('combineMsg').innerHTML=
+        'Everything in your cart is available at our <b>'+esc(name)+'</b> warehouse. '
+        +'Shipping from one warehouse costs <b>'+money(best.total)+'</b> instead of '+money(svc.total)
+        +' — you save <b>'+money(save)+'</b>.';
+      const btn=document.getElementById('combineBtn');
+      btn.textContent='Combine to '+best.wh+' warehouse';
+      btn.onclick=()=>doCombine(best.wh, save);
+      box.style.display='';
+    } finally { _combineBusy=false; }
+  }
+
+  function doCombine(wh, save){
+    const cart=cartGet();
+    if(!cart.length) return;
+    if(!confirm('Move all items to our '+(wh==='SC'?'Sumter, SC':'Eastvale, CA')+' warehouse?\n\n'
+      +'Your order does not change — only which warehouse ships it.\n'
+      +'You save '+money(save)+' on shipping.')) return;
+    /* 같은 (스타일|색|사이즈) 줄이 양쪽에 있으면 한 줄로 합친다 */
+    const merged={};
+    cart.forEach(i=>{
+      const k=String(i.style)+'|'+String(i.color)+'|'+String(i.size);
+      if(!merged[k]) merged[k]={...i, wh:wh, qty:0};
+      merged[k].qty += (Number(i.qty)||0);
+    });
+    const out=Object.values(merged);
+    try{ localStorage.setItem('pacific_cart', JSON.stringify(out)); }catch(e){ alert('Could not update your cart.'); return; }
+    _combineCache=null;   /* 장바구니가 바뀜으니 캐시를 버린다 */
+    document.getElementById('combineBox').style.display='none';
+    document.getElementById('legNote').style.display='none';
+    shipCost=null; shipMethod=null;
+    summary();
+    /* 창고가 바뀌었으니 배송비를 다시 받는다 */
+    const b=document.getElementById('rateBtn'); if(b) b.click();
+  }
 
   // ── 2) 결제 (Accept.js 토큰 → 워커 → 주문 생성) ──
   function showMsg(t,bad){ const m=document.getElementById('msg'); m.style.display='block';

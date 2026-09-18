@@ -540,6 +540,35 @@ window.PacificData = (function () {
     },
 
     // 재고를 화면이 쓰기 쉬운 형태 { 색상: { SC:[사이즈순 숫자], CA:[...] } } 로 정규화
+    /* 📦 장바구니를 **한 창고에서 전부** 보낼 수 있나 (2026-09-18).
+       두 창고에서 나가면 운임을 두 번 내게 된다 — 한쪽에 재고가 다 있으면 합치는 게 싸다.
+       ⚠ 재고는 **양쪽 수량을 합쳐서** 본다. SC 1장 + CA 1장이면 그 창고에 2장이 있어야 한다.
+       ⚠ 못 읽으면 조용히 {SC:false, CA:false} — 못 합치는 걸로 본다 (체크아웃은 그대로 돈다). */
+    canCombine: async function (items) {
+      const out = { SC:false, CA:false };
+      try{
+        const list = (items||[]).filter(i=>i && i.style && (Number(i.qty)||0) > 0);
+        if (!list.length) return out;
+        const styles = Array.from(new Set(list.map(i=>String(i.style))));
+        const inv = {};
+        for (const st of styles) inv[st] = await _supabaseInventory(st);
+        // (스타일|색|사이즈) 별로 양쪽 수량을 합친다
+        const need = {};
+        list.forEach(i=>{
+          const k = String(i.style)+'|'+String(i.color)+'|'+String(i.size);
+          need[k] = (need[k]||0) + (Number(i.qty)||0);
+        });
+        ['SC','CA'].forEach(wh=>{
+          out[wh] = Object.keys(need).every(k=>{
+            const p = k.split('|'); const st = p[0], color = p[1], size = p[2];
+            const have = ((inv[st]||{})[color]||{})[wh];
+            return have ? (Number(have[size]||0) >= need[k]) : false;
+          });
+        });
+      }catch(e){ return { SC:false, CA:false }; }
+      return out;
+    },
+
     getInventory: async function (styleNo, product) {
       const sizes = (product && product.sizes) || SIZE_ORDER;
       if (SOURCE === 'supabase') {

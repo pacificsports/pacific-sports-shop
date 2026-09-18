@@ -23,7 +23,10 @@
   input:focus,select:focus{outline:none;border-color:var(--accent)}
   .rateopt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line-2);border-radius:11px;padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:14.5px}
   .rateopt.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .rateopt{flex-wrap:wrap}
   .rateopt .rname{font-weight:600;flex:1}
+  /* 창고별 내역 — 줄 안에서 이름 밑으로 내려간다 (2026-09-18) */
+  .rateopt .rlegs{flex:0 0 100%;margin:5px 0 0 30px;font-size:12.5px;color:var(--faint);font-weight:500}
   .rateopt .rprice{font-weight:700}
   .btn{background:var(--accent);color:#fff;border:none;padding:14px 30px;border-radius:10px;font-size:15.5px;font-weight:600;cursor:pointer;width:100%}
   .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -43,7 +46,7 @@
 </head>
 <body>
 <header>
-  <a class="back" href="epacific-cart.html">← Back to cart</a>
+  <span style="width:120px"></span>
   <h1>Checkout</h1>
   <span style="width:120px"></span>
 </header>
@@ -90,7 +93,7 @@
       <h2>Shipping method</h2>
       <div id="rateList"></div>
       <div class="splitnote" id="splitNote" style="display:none">📦 This order ships from both SC and CA warehouses — rates shown are the combined total of both shipments.</div>
-      <div id="legNote" style="display:none;margin-top:6px;font-size:12.5px;color:var(--faint)"></div>
+      <div id="legNote" style="display:none"></div>
       <div id="combineBox" style="display:none;margin-top:10px;padding:11px 14px;border:1.5px solid #bfe0c9;background:#f2f9f4;border-radius:10px;font-size:13.5px;color:#1f5133">
         <span id="combineMsg"></span>
         <button type="button" id="combineBtn" style="margin-left:10px;background:#1f5133;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer"></button>
@@ -139,6 +142,9 @@
       <div class="sumrow"><span>Shipping<span id="sumShipName" style="color:var(--faint);font-size:12px"></span></span><b id="sumShip">—</b></div>
       <div class="sumrow grand"><span>Total</span><span id="sumTotal">$0.00</span></div>
     </div>
+    <!-- 장바구니로 돌아가기 — 하윤 요청으로 머리띠에서 Total 아래로 내렸다 (2026-09-18) -->
+    <a href="epacific-cart.html" style="display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+       text-align:center;color:var(--accent);text-decoration:none;font-size:14px;font-weight:600">← Back to cart</a>
   </div>
 </div>
 
@@ -278,8 +284,17 @@
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||r.status);
       const list=document.getElementById('rateList');
+      /* 창고별 금액을 줄 안에 같이 적는다 — 합계 하나만 보여주면 어디서 얼마인지 알 수 없다 */
+      const legsHtml = s => {
+        const L = s && s.legs; if(!L) return '';
+        const has = k => L[k] !== undefined && L[k] !== null;
+        const part = [];
+        if(has('SC')) part.push('Sumter, SC ' + (L.SC===0 ? 'you pick up' : money(L.SC)));
+        if(has('CA')) part.push('Eastvale, CA ' + (L.CA===0 ? 'you pick up' : money(L.CA)));
+        return part.length>1 ? ('<div class="rlegs">'+part.join('  ·  ')+'</div>') : '';
+      };
       list.innerHTML=d.services.map((s,i)=>
-        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(s.total)}</span></div>`).join('');
+        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(s.total)}</span>${legsHtml(s)}</div>`).join('');
       document.getElementById('ratePanel').style.display='';
       document.getElementById('splitNote').style.display=d.splitShipment?'':'none';
       document.getElementById('payPanel').style.display='';

@@ -327,12 +327,27 @@
         headers:{'Content-Type':'application/json', ...(s&&s.token?{Authorization:'Bearer '+s.token}:{})},
         body:JSON.stringify({opaqueData, amount:total, invoice:ono, email:(document.getElementById('fEmail').value.trim()||s.email),
           billTo:billToObj(),
-          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null, clientTotal:total})});
+          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null, clientTotal:total,
+          /* 🔒 주문을 **워커가** 쓰게 넘긴다 (2026-09-18). 지금은 브라우저가 쓰는데,
+             그러면 손님이 자기 이름으로 total_amount·payment_status 를 아무렇게나
+             적을 수 있다. 새 워커는 자기가 계산한 금액으로 주문을 쓰고
+             `orderSaved: true` 를 돌려준다 → 그때는 아래 브라우저 저장을 건너뛴다.
+             ⚠ 지금 워커는 이걸 무시하므로 예전과 똑같이 브라우저가 쓴다 (동작 불변). */
+          saveOrder: true,
+          order: { order_number: ono, email: (document.getElementById('fEmail').value.trim()||s.email),
+                   company_name: st.company||cust.company_name||null,
+                   contact_name: st.name||cust.contact_name||null, phone: st.phone||null,
+                   ship_to: st, shipping_method: shipMethod?shipMethod.name:null,
+                   notes: document.getElementById('orderNotes').value.trim()||null }})});
       const d2=await r.json();
       if(!r.ok||!d2.ok) throw new Error(d2.error||('결제 실패 ('+r.status+')'));
       // 결제 성공 → 주문 저장 (저장 실패해도 결제는 이미 됨 → 화면에 안내)
       const cart=cartGet();
+      /* 🔒 새 워커가 이미 주문을 썼으면 여기서 또 쓰지 않는다 — 안 그러면 두 줄이 생긴다 */
+      const _workerSaved = (d2 && d2.orderSaved === true);
+      if(_workerSaved && d2.orderError){ showMsg('결제는 됐습니다. 주문 기록에 문제가 있어 확인이 필요합니다: '+d2.orderError, true); }
       try{
+        if(_workerSaved) throw {_skip:true};
         const or=await fetch(_C.SUPABASE_URL+'/rest/v1/web_orders',{method:'POST',
           headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
           body:JSON.stringify({
@@ -345,8 +360,12 @@
             notes:document.getElementById('orderNotes').value.trim()||null,
             status:'new'
           })});
-        if(!or.ok) console.warn('order save failed', or.status);
-      }catch(e){ console.warn('order save failed', e); }
+        if(!or.ok){
+          console.warn('order save failed', or.status);
+          /* ⚠ 예전엔 조용히 넘어갔다 — 돈은 빠졌는데 주문이 없으면 아무도 모른다 */
+          showMsg('결제는 완료됐습니다 ('+money(total)+'). 다만 주문 기록 저장이 실패했습니다 — 주문번호 '+ono+' 로 연락 주세요.', true);
+        }
+      }catch(e){ if(!(e&&e._skip)) console.warn('order save failed', e); }
       if(EMAIL_WORKER){
         fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({type:'order',to:s.email,data:{order_number:ono,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,

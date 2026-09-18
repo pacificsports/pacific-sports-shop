@@ -160,7 +160,9 @@
     el.disabled = true;
     var res;
     try{
-      var rr = await fetch(CWB + '/refund', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({transId: row.transaction_id, amount: amount})});
+      /* 🔒 직원 토큰을 같이 보낸다 (2026-09-18) — 워커의 /refund 에 로그인 확인이
+         없었다. 이 페이지는 직원만 들어오므로 s.token 은 늘 직원 토큰이다. */
+      var rr = await fetch(CWB + '/refund', {method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + s.token}, body: JSON.stringify({transId: row.transaction_id, amount: amount})});
       res = await rr.json().catch(function(){ return {}; });
       if(!rr.ok || !res.ok){ alert('환불 실패: ' + ((res && res.error) || rr.status)); el.disabled=false; return; }
     }catch(e){ alert('환불 요청 오류: ' + e.message); el.disabled=false; return; }

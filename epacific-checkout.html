@@ -284,6 +284,12 @@
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||r.status);
       const list=document.getElementById('rateList');
+      /* 🚚 손님이 내는 운임은 `bill` 이다 — UPS 정가 기준 (2026-09-18).
+         전에는 `s.total` 을 썼는데 그건 **우리가 UPS 에 내는 협상요율**이라 마진이 0 이었다.
+         일반 PO 거래처는 원래 정가로 청구받는다 (psflowx 라벨: list + handling).
+         ⚠ `total` 은 워커에 협상요율로 그대로 남는다 (psflowx 라벨 화면이 쓴다) — 여기서만 안 쓴다.
+         ⚠ 옛 워커면 `bill` 이 안 오니 `total` 로 폴백한다. 배포 순서를 틀려도 화면이 안 깨진다. */
+      const rateBill = x => Number((x && x.bill != null) ? x.bill : ((x && x.total) || 0));
       /* 창고별 금액을 줄 안에 같이 적는다 — 합계 하나만 보여주면 어디서 얼마인지 알 수 없다 */
       const legsHtml = s => {
         const L = s && s.legs; if(!L) return '';
@@ -294,11 +300,11 @@
         return part.length>1 ? ('<div class="rlegs">'+part.join('  ·  ')+'</div>') : '';
       };
       list.innerHTML=d.services.map((s,i)=>
-        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(s.total)}</span>${legsHtml(s)}</div>`).join('');
+        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(rateBill(s))}</span>${legsHtml(s)}</div>`).join('');
       document.getElementById('ratePanel').style.display='';
       document.getElementById('splitNote').style.display=d.splitShipment?'':'none';
       document.getElementById('payPanel').style.display='';
-      const pick=i=>{ shipMethod=d.services[i]; shipCost=d.services[i].total;
+      const pick=i=>{ shipMethod=d.services[i]; shipCost=rateBill(d.services[i]);
         list.querySelectorAll('.rateopt').forEach((el,j)=>{el.classList.toggle('sel',j===i); el.querySelector('input').checked=(j===i);});
         showLegs(d.services[i]);
         summary();
@@ -372,20 +378,22 @@
         }
         _combineCache = { sig:sig, quotes:quotes };
       }
+      /* ⚠ 비교도 손님이 내는 값(bill)으로 해야 한다 — 기준이 다르면 "you save $X" 가 틀린다 */
+      const _bill = x => Number((x && x.bill != null) ? x.bill : ((x && x.total) || 0));
       let best=null;
       Object.keys(_combineCache.quotes).forEach(w=>{
         const hit=(_combineCache.quotes[w]||[]).find(x=>String(x.code)===String(svc.code));
-        if(hit && (!best || hit.total < best.total)) best={wh:w, total:hit.total};
+        if(hit && (!best || _bill(hit) < best.total)) best={wh:w, total:_bill(hit)};
       });
       /* ③ 진짜 싸질 때만 제안한다 */
       if(!best) return;
-      const save=Math.round((svc.total-best.total)*100)/100;
+      const save=Math.round((_bill(svc)-best.total)*100)/100;
       if(!(save > 0.005)) return;
       _combineSig=sig;
       const name=(best.wh==='SC')?'Sumter, SC':'Eastvale, CA';
       document.getElementById('combineMsg').innerHTML=
         'Everything in your cart is available at our <b>'+esc(name)+'</b> warehouse. '
-        +'Shipping from one warehouse costs <b>'+money(best.total)+'</b> instead of '+money(svc.total)
+        +'Shipping from one warehouse costs <b>'+money(best.total)+'</b> instead of '+money(_bill(svc))
         +' — you save <b>'+money(save)+'</b>.';
       const btn=document.getElementById('combineBtn');
       btn.textContent='Combine to '+best.wh+' warehouse';

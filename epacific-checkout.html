@@ -207,6 +207,12 @@
   }
   const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }
+  /* 운임 조회에 같이 보내는 장바구니 줄. 결제(/pay)의 payItems 와 **같은 모양**이어야
+     워커가 화면과 결제에서 똑같은 박스를 만든다 (2026-09-19). wh 를 주면 그 창고로 몰아준다. */
+  function rateItems(forceWh){
+    return cartGet().map(i=>({style:i.style, color:i.color, size:i.size,
+                              wh: forceWh || i.wh, qty:i.qty}));
+  }
   function cartSet(c){ try{localStorage.setItem('pacific_cart',JSON.stringify(c));}catch(e){} }
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
   function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
@@ -340,7 +346,8 @@
     const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting UPS rates…';
     try{
       const r=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10})});
+        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10,
+                             items:rateItems()})});
       const d=await r.json();
       if(!r.ok||d.error) throw new Error(d.error||r.status);
       const list=document.getElementById('rateList');
@@ -429,7 +436,9 @@
         /* ② 그 창고에서 다 나간다고 치고 UPS 에 다시 물어본다 (창고당 한 번만) */
         const totLbs = Math.round((scLbs+caLbs)*SHIP_BUFFER*10)/10;
         for(const w of cands){
-          const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0} : {shipTo:st, scLbs:0, caLbs:totLbs};
+          const _it = rateItems(w);
+          const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0, items:_it}
+                                  : {shipTo:st, scLbs:0, caLbs:totLbs, items:_it};
           try{
             const rr=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
             const j=await rr.json();

@@ -636,6 +636,14 @@
     shipCost=null; shipMethod=null;
     document.getElementById('ratePanel').style.display='none';
     summary();
+    /* 저장된 주소로 채운 경우에도 운임이 저절로 나오게 한다 (2026-09-19).
+       el.value 로 직접 넣으면 브라우저가 input/change 를 안 쏘기 때문에,
+       위쪽 자동조회 장치가 아무것도 못 듣고 있었다. 여기서 한 번 쏴 준다.
+       주소가 덜 찼거나 같은 주소면 그 장치가 알아서 넘어간다. */
+    try{
+      const _n=document.getElementById('fName');
+      if(_n) _n.dispatchEvent(new Event('change',{bubbles:true}));
+    }catch(e){}
   }
   function clearAddr(){ ['fName','fCompany','fAddr1','fAddr2','fCity','fZip','fPhone'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); const ss=document.getElementById('fState'); if(ss) ss.value=''; const rc=document.getElementById('fResidential'); if(rc) rc.checked=false; }
   async function loadSavedAddresses(){

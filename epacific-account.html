@@ -1210,13 +1210,14 @@ function findOid(el){ var p=el.closest('.reorder-panel'); if(!p) return null; va
 function addReorderToCart(oid){ var rows=reorderState[oid]||[]; var items=[]; rows.forEach(function(r){ for(var sz in r.sizes){ var q=Number(r.sizes[sz])||0; if(q>0) items.push({style:r.style, styleName:r.styleName||'', color:r.color, wh:r.wh, size:sz, qty:q}); } }); if(!items.length){ showToast('Enter at least one quantity'); return; } if(window.PacificCart) window.PacificCart.add(items); var pcs=items.reduce(function(a,i){return a+i.qty;},0); showToast('✓ '+pcs+' pcs added to cart'); closeReorder(oid); }
 function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var panel=s?s.closest('.reorder-panel'):null; if(panel){ panel.style.display='none'; panel.innerHTML=''; } }
 
-  async function loadOrders(){
+  async function loadOrders(quiet){
     const s=session();
     if(!s||!s.token){
       ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">🔒 <a href="epacific-login.html?next='+encodeURIComponent('epacific-account.html')+'" style="color:var(--accent)">Log in</a> to see your orders.</div>';
       return;
     }
-    ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Loading…</div>';
+    /* 배경 새로고침(quiet)에서는 화면을 비우지 않는다 - 깜빡이면 더 이상하다 (2026-09-20) */
+    if(!quiet) ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Loading…</div>';
     /* 쓰는 칸만 골라 받는다 (2026-09-20). 전에는 select=* 라 invoice_html(인보이스
        HTML 통째)까지 200건 끌고 왔다 - 인보이스가 쌓이면 열 때마다 몇 MB 가 된다. */
     const url=_C.SUPABASE_URL+'/rest/v1/web_orders?select=order_number,created_at,status,items,total_pcs,total_amount,notes,ship_to,tracking_number,carrier,shipped_at,accepted_at,shipping_method,payment_status,invoice_no&order=created_at.desc&limit=200';
@@ -1256,6 +1257,29 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
     acLoad();
     loadOrders();
   });
+
+  /* 🔄 주문 상태는 우리가 psflowx 에서 바꾼다 (Processing -> Shipped).
+     이 페이지는 열 때 한 번만 읽으니, 손님이 탭을 켜둔 채로 있으면 옛 상태가 남는다.
+     탭을 다시 보거나 창이 포커스를 받으면 그때 한 번 더 읽는다 (2026-09-20).
+     ⚠ 주기적 폴링은 일부러 안 한다 - 켜둔 탭마다 Supabase 를 계속 두드리게 된다. */
+  var _ordLoadAt = Date.now();
+  async function ordersRefresh(){
+    try{
+      if(document.hidden) return;
+      var _vo = document.getElementById('viewOrders');
+      if(!_vo || _vo.hidden) return;                 // Profile 화면이면 안 읽는다
+      if(Date.now() - _ordLoadAt < 20000) return;
+      _ordLoadAt = Date.now();
+      var open = [].slice.call(document.querySelectorAll('.order.open')).map(function(c){ return c.dataset.oid; });
+      await loadOrders(true);
+      open.forEach(function(id){
+        var c = document.querySelector('.order[data-oid="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+        if(c && !c.classList.contains('open')) c.classList.add('open');
+      });
+    }catch(e){}
+  }
+  document.addEventListener('visibilitychange', ordersRefresh);
+  window.addEventListener('focus', ordersRefresh);
 </script>
 
 <script>

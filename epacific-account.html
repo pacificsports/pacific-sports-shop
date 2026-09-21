@@ -1078,6 +1078,7 @@
             ${shipBox(o)}
             ${o.notes?`<div style="font-size:13px;color:var(--soft-ink);padding:8px 0">📝 ${esc(o.notes)}</div>`:''}
             <div class="o-actions">
+              ${o.plNo?`<button class="btn-ghost" onclick="location.href='epacific-invoice.html?order=${encodeURIComponent(o.id)}&doc=packing'">View packing list</button>`:''}
               ${o.invNo?`<button class="btn-ghost" onclick="location.href='epacific-invoice.html?order=${encodeURIComponent(o.id)}'">View invoice</button>`:''}
               <button class="btn-solid" data-reorder="${esc(o.id)}">↻ Reorder</button>
             </div>
@@ -1220,7 +1221,7 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
     if(!quiet) ordersEl.innerHTML='<div style="text-align:center;color:var(--faint);padding:60px 0">Loading…</div>';
     /* 쓰는 칸만 골라 받는다 (2026-09-20). 전에는 select=* 라 invoice_html(인보이스
        HTML 통째)까지 200건 끌고 왔다 - 인보이스가 쌓이면 열 때마다 몇 MB 가 된다. */
-    const url=_C.SUPABASE_URL+'/rest/v1/web_orders?select=order_number,created_at,status,items,total_pcs,total_amount,notes,ship_to,tracking_number,carrier,shipped_at,accepted_at,shipping_method,payment_status,invoice_no&order=created_at.desc&limit=200';
+    const url=_C.SUPABASE_URL+'/rest/v1/web_orders?select=order_number,created_at,status,items,total_pcs,total_amount,notes,ship_to,tracking_number,carrier,shipped_at,accepted_at,shipping_method,payment_status,invoice_no,packing_no&order=created_at.desc&limit=200';
     try{
       let r=await fetch(url,{headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
       if(r.status===401 && s.refresh){ const ns=await refreshTok(s); if(ns){ r=await fetch(url,{headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+ns.token}}); } }
@@ -1233,7 +1234,7 @@ function closeReorder(oid){ var s=document.getElementById('resum-'+oid); var pan
                  total_pcs:rw.total_pcs, total_amount:rw.total_amount, notes:rw.notes, ship_to:rw.ship_to,
                  tracking:rw.tracking_number, carrier:rw.carrier, shippedAt:rw.shipped_at,
                  acceptedAt:rw.accepted_at, shipMethod:rw.shipping_method, pay:rw.payment_status,
-                 invNo:rw.invoice_no,
+                 invNo:rw.invoice_no, plNo:rw.packing_no,
                  wh:[...new Set(items.map(function(i){return i.wh||'SC';}))].join(' + '),
                  items, lines:groupLines(items) };
       });

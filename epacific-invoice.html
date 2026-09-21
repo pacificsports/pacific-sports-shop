@@ -175,6 +175,11 @@ const sizeOrder=['2T','3T','4T','5T','XS','S','M','L','XL','2XL','3XL','4XL','5X
 const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
 function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
 const ONO=new URLSearchParams(location.search).get('order')||'';
+/* ?doc=packing 이면 패킹리스트, 없으면 인보이스 (2026-09-21).
+   두 서류 다 psflowx 가 발행한 문서를 글자 하나 안 바꾸고 그대로 띄운다. */
+const DOC=(new URLSearchParams(location.search).get('doc')||'').toLowerCase();
+const WANT_PACKING = DOC==='packing';
+const SELF = 'epacific-invoice.html?order='+encodeURIComponent(ONO)+(WANT_PACKING?'&doc=packing':'');
 
 function groupLines(items){
 const map={}, out=[];
@@ -201,13 +206,29 @@ const cfg=window.PACIFIC_CONFIG||{};
 const body=document.getElementById('itemRows');
 if(!ONO){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">No order specified. Open this page from Order History.</td></tr>'; return; }
 const s=session();
-if(!s||!s.token){ location.href='epacific-login.html?next='+encodeURIComponent('epacific-invoice.html?order='+ONO); return; }
+if(!s||!s.token){ location.href='epacific-login.html?next='+encodeURIComponent(SELF); return; }
 const r=await fetch(cfg.SUPABASE_URL+'/rest/v1/web_orders?order_number=eq.'+encodeURIComponent(ONO)+'&select=*',
 {headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
 const rows=r.ok?await r.json():[];
 const o=rows[0];
 if(!o){ body.innerHTML='<tr><td colspan="6" style="padding:20px;color:#888">Order not found (or no access).</td></tr>'; return; }
 
+/* 📦 패킹리스트를 보러 온 경우 — 받은 물건을 세어 맞출 종이다 (2026-09-21) */
+if(WANT_PACKING){
+  const real=document.getElementById('realInv'), fb=document.getElementById('fallbackSheet');
+  if(fb) fb.style.display='none';
+  real.style.display='';
+  if(o.packing_html){
+    real.innerHTML=o.packing_html;
+    document.title='Pacific Sports — Packing list '+(o.packing_no||o.order_number);
+  }else{
+    real.innerHTML='<div style="padding:46px 20px;text-align:center;color:var(--faint);font-size:14px;line-height:1.8">'
+      +'The packing list for order <b>'+esc(o.order_number)+'</b> is not ready yet.<br>'
+      +'It appears here as soon as the order ships.</div>';
+    document.title='Pacific Sports — Packing list';
+  }
+  return;
+}
 // 실제 발행된 인보이스가 돌아와 있으면 그걸 그대로 띄우고 끝낸다
 if(o.invoice_html){
   const real=document.getElementById('realInv'), fb=document.getElementById('fallbackSheet');

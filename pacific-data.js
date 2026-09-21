@@ -412,29 +412,46 @@ window.PacificData = (function () {
      빈 칸은 바로 아래 사이즈의 할증을 그대로 물려받게 한다. (2026-08-30) */
   const _BIGORDER=['2XL','3XL','4XL','5XL'];
   const _TOTORDER=['2T','3T','4T','5T'];
-  /* 빈 칸을 채울 때 한 단계 올라갈 때마다 붙는 금액 (2026-08-30, 사장님 규칙)
-       4XL = 3XL + 0.80
-       5XL = 4XL + 1.20   (→ 3XL 만 있으면 5XL = 3XL + 2.00)
-     값이 직접 들어 있으면 그 값이 먼저다. 규칙이 없는 단계는 아래 값을 그대로 쓴다. */
-  const _BIGSTEP={'4XL':0.80,'5XL':1.20};
-  /* 웹사이트 큰사이즈 가격 — 기본가(XS~XL)에서 한 단계씩 올린다 (2026-09-01, 사장님 규칙)
-       2XL = XS~XL + 0.60
-       3XL = 2XL   + 1.00
-       4XL = 3XL   + 1.50
-       5XL = 4XL   + 2.50
-     웹 표시 전용이다. 거래처 협상가(customer_prices)는 _listPrice 위쪽에서 먼저 처리되므로
-     이 규칙의 영향을 받지 않는다. style_prices 의 2XL~5XL 칸은 웹에서는 더 이상 읽지 않는다
-     (그 값들은 예전 +0.60 기준으로 채워져 있어서 새 규칙과 어긋난다). */
-  const _WEBSTEP={'2XL':0.60,'3XL':1.00,'4XL':1.50,'5XL':2.50};
+  /* ⭐⭐ 확장사이즈 할증표 — **이 파일에서 단 하나다** (2026-09-21).
+     [stated] 하윤: "통일할꺼면 우리 psflowx increase로 통일시켜줘"
+     한 단계 올라갈 때마다 붙는 금액 (앞 사이즈 기준):
+         2XL = XS~XL + 0.60
+         3XL = 2XL   + 0.60
+         4XL = 3XL   + 0.80
+         5XL = 4XL   + 1.20
+     -> 기본가 기준 누적: 2XL +0.60 · 3XL +1.20 · 4XL +2.00 · 5XL +3.20
+     이 값은 psflowx 의 거래처 가격표 할증(psUp)·Quick Add 자동가와 **똑같은 숫자**다.
+     ⚠⚠ 예전에는 표가 둘이었다 — 웹 0.60/1.00/1.50/2.50 vs psflowx 0.60/0.60/0.80/1.20.
+        그래서 같은 스타일의 5XL 이 psflowx 에서는 6.95, 웹에서는 9.35 로 갈렸다.
+        **표를 다시 둘로 쪼개지 말 것.** 바꿀 일이 있으면 이 한 줄만 바꾼다.
+     ⚠ 칸에 값이 직접 들어 있으면 언제나 그 값이 먼저다 — 할증은 빈 칸을 채울 때만 쓴다. */
+  const _XLSTEP={'2XL':0.60,'3XL':0.60,'4XL':0.80,'5XL':1.20};
+  const _BIGSTEP=_XLSTEP;   /* 거래처 가격표의 빈 칸 채우기 */
+  const _WEBSTEP=_XLSTEP;   /* 웹 기본가(style_prices)의 빈 칸 채우기 — 같은 표다 */
   const _WEBBIG=(function(){ const o={}; let a=0; _BIGORDER.forEach(z=>{ a+=_WEBSTEP[z]; o[z]=Math.round(a*100)/100; }); return o; })();
-  /* => 2XL +0.60 · 3XL +1.60 · 4XL +3.10 · 5XL +5.60 */
+  /* => 2XL +0.60 · 3XL +1.20 · 4XL +2.00 · 5XL +3.20 */
+
+  /* 💲 가격 칸 하나를 읽는 단 하나의 창구 (2026-09-21).
+     [stated] 하윤: "만약 계약가에 0이나 가격이 안들어가 있으면 우리가 만들어놓은
+              standard price가 적용되게 하자"
+     0 은 "값이 없다" 와 똑같이 취급한다 -> undefined 를 주면 부르는 쪽이 저절로
+     다음 출처(style_prices = Standard Price)로 흘러내려간다.
+     ⚠ 판정을 `!=null` 로 되돌리지 말 것 — 0 이 진짜 가격으로 통과해서 $0.00 에 팔린다.
+        실측 2026-09-21: customer_prices 에 base_price 0 인 줄이 173개(거래처 11곳) 있다. */
+  function _pnum(v){
+    if(v === null || v === undefined || v === '') return undefined;
+    const n = Number(v);
+    return (isFinite(n) && n > 0) ? n : undefined;
+  }
+
   function _stepUp(row, order, map, sz, steps){
     const i=order.indexOf(sz);
     if(i<0) return undefined;
     let add=0;
     for(let k=i;k>=0;k--){
       const col=map[order[k]];
-      if(row[col]!=null) return Math.round((Number(row[col])+add)*100)/100;
+      const cv=_pnum(row[col]);
+      if(cv!==undefined) return Math.round((cv+add)*100)/100;
       if(steps && steps[order[k]]!=null) add+=steps[order[k]];   // 이 단계는 못 찾았으니 아래로 가면서 값을 더한다
     }
     return undefined;   // 아래로 내려가도 값이 없으면 기본가로
@@ -445,12 +462,21 @@ window.PacificData = (function () {
     const sz=String(size||'').toUpperCase();
     const c=P.cust;
     if(c){
+      /* ⭐ 여기서 하나도 못 찾으면 아래 const b=P.base 로 흘러내려가 Standard Price 가 된다.
+         계약가 줄이 있어도 값이 0/빈칸이면 "계약가 없음" 과 같다 (2026-09-21 하윤 결정) */
       let v=_stepUp(c,_TOTORDER,_TOTSZ,sz,null);   if(v!==undefined) return v;
       v=_stepUp(c,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
-      if(/youth/i.test(P.cat)   && c.price_youth!=null)   return Number(c.price_youth);
-      if(/juvy/i.test(P.cat)    && c.price_juvy!=null)    return Number(c.price_juvy);
-      if(/toddler/i.test(P.cat) && c.price_toddler!=null) return Number(c.price_toddler);
-      if(c.base_price!=null) return Number(c.base_price);
+      let kv;
+      if(/youth/i.test(P.cat)   && (kv=_pnum(c.price_youth))!==undefined)   return kv;
+      if(/juvy/i.test(P.cat)    && (kv=_pnum(c.price_juvy))!==undefined)    return kv;
+      if(/toddler/i.test(P.cat) && (kv=_pnum(c.price_toddler))!==undefined) return kv;
+      /* 📈 계약가에 2XL~5XL 이 하나도 안 적혀 있으면 **기본가에 같은 할증**을 태운다 (2026-09-21).
+         [stated] 하윤: "contract price가 있을경우 2XL 3XL 4XL 5XL 우리가 psflowx시스템에
+                  사용하는 increase 로 적용"
+         예전에는 여기서 기본가를 그냥 돌려줘서 **5XL 도 M 값**이었다 (실측 117줄 · 거래처 20곳).
+         ⚠ 칸에 값이 적혀 있으면 위 _stepUp 에서 이미 잡혔다 — 여기까지 오면 정말 빈 것이다.
+         ⚠ XS~XL 과 2T~5T 는 _WEBBIG 에 없으므로 0 이 더해진다 = 기본가 그대로 (부동) */
+      if((kv=_pnum(c.base_price))!==undefined) return Math.round((kv+(_WEBBIG[sz]||0))*100)/100;
     }
     const b=P.base;
     if(b){
@@ -460,14 +486,17 @@ window.PacificData = (function () {
            Kids  2T-5T price_2t · XS-XL base_price
          이렇게 두면 나중에 "이 거래처는 거래처가, 저 거래처는 웹 기본가" 로 바꿔도 두 표가 그대로 맞는다. */
       const vk=_stepUp(b,_TOTORDER,_TOTSZ,sz,null); if(vk!==undefined) return vk;
-      if(/youth/i.test(P.cat)   && b.price_youth!=null)   return Math.round(Number(b.price_youth)*100)/100;
-      if(/juvy/i.test(P.cat)    && b.price_juvy!=null)    return Math.round(Number(b.price_juvy)*100)/100;
-      if(/toddler/i.test(P.cat) && b.price_toddler!=null) return Math.round(Number(b.price_toddler)*100)/100;
+      let bk;
+      if(/youth/i.test(P.cat)   && (bk=_pnum(b.price_youth))!==undefined)   return Math.round(bk*100)/100;
+      if(/juvy/i.test(P.cat)    && (bk=_pnum(b.price_juvy))!==undefined)    return Math.round(bk*100)/100;
+      if(/toddler/i.test(P.cat) && (bk=_pnum(b.price_toddler))!==undefined) return Math.round(bk*100)/100;
       /* 표(Price Management)에 값이 적혀 있으면 그 값이 먼저다 — 스타일별 예외를 손으로 넣을 수 있어야 한다.
          비어 있으면 기본가에서 _WEBBIG 규칙으로 계산한다. */
       const col=_BIGSZ[sz];
-      if(col && b[col]!=null) return Math.round(Number(b[col])*100)/100;
-      if(b.base_price!=null) return Math.round((Number(b.base_price)+(_WEBBIG[sz]||0))*100)/100;
+      const bc=col ? _pnum(b[col]) : undefined;
+      if(bc!==undefined) return Math.round(bc*100)/100;
+      const bb=_pnum(b.base_price);
+      if(bb!==undefined) return Math.round((bb+(_WEBBIG[sz]||0))*100)/100;
       const v=_stepUp(b,_BIGORDER,_BIGSZ,sz,_BIGSTEP); if(v!==undefined) return v;
     }
     return null;
@@ -493,7 +522,9 @@ window.PacificData = (function () {
     if(list==null) return {list:null, price:null, onSale:false};
     const s=_saleFor(P, color, size);
     if(!s) return {list:list, price:list, onSale:false};
-    let v = (s.sale_price!=null) ? Number(s.sale_price)
+    /* 💲 세일가 0 도 빈칸으로 본다 — 0 을 적어 공짜로 나가는 일이 없게 (2026-09-21) */
+    const sv=_pnum(s.sale_price);
+    let v = (sv!==undefined) ? sv
           : (s.percent_off!=null) ? (list*(1-Number(s.percent_off)/100)) : list;
     v = Math.round(v*100)/100;
     return {list:list, price:v, onSale:(v<list)};

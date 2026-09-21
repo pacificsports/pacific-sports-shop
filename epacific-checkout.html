@@ -606,7 +606,10 @@
       if(EMAIL_WORKER){
         fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({type:'order',to:s.email,data:{order_number:ordNo,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,
-            notes:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
+            /* 📝 손님이 적은 메모는 손님 것 그대로 — 예전엔 여기에 결제 요약을 넣어서
+               손님 메모가 메일에서 사라졌다 (2026-09-21 고침). 결제 요약은 pay_note 로. */
+            notes:document.getElementById('orderNotes').value.trim()||null,
+            pay_note:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
             company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
       }
       saveAddressIfNew(st);

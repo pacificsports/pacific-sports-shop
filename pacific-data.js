@@ -236,6 +236,20 @@ window.PacificData = (function () {
     return res.json();
   }
 
+  /* ═══ RPC(함수) 읽기 — POST 라서 캐시에 걸리지 않는다 (2026-09-22) ═══ */
+  async function _sbRpc(fn, body, sel) {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY)
+      throw new Error('Supabase 미설정: pacific-data.js 상단 SUPABASE_URL / SUPABASE_ANON_KEY 를 채워주세요.');
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn + (sel ? ('?select=' + sel) : ''), {
+      method: 'POST',
+      headers: { apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+SUPABASE_ANON_KEY,
+                 'Content-Type':'application/json' },
+      body: JSON.stringify(body || {})
+    });
+    if (!res.ok) throw new Error('IMS 조회 실패: ' + res.status + ' rpc/' + fn);
+    return res.json();
+  }
+
   // 창고 id → SC/CA 코드 매핑 (한 번 읽어서 캐시)
   let _whCache = null;
   async function _warehouseMap() {
@@ -341,6 +355,39 @@ window.PacificData = (function () {
     };
   }
 
+  /* ═══ 재고 한 스타일 읽기 (2026-09-22) ══════════════════════════════
+     왜 함수로 바꿨나: inventory_web 은 inventory_web_exact 를 감싼 뷰인데, 그 안의
+     b0 CTE(pr_boxes WHERE status='IN') 가 **두 번** 참조돼서 Postgres 가 인라인을
+     못 한다. 그래서 style_number=eq.X 필터가 pr_boxes 까지 내려가지 못하고, 한 줄을
+     읽어도 IN 박스 전체를 훑는다. 게다가 묶음 키가 btrim(upper(btrim(style))) 식이라
+     일반 인덱스도 안 걸렸다. 실측 뷰 712~721ms — 한 번 몰리면 anon 문장 제한에
+     걸려 500 이 뜬다(그게 9/22 상품페이지가 통째로 안 뜬 이유였다).
+     DB 쪽 조치: pr_boxes_in_style_norm_idx(부분·식 인덱스) + inventory_web_style()
+     (SECURITY DEFINER — anon 은 pr_boxes 를 RLS 때문에 직접 못 읽는다).
+     계산식과 7501/5001/3001 자르기는 뷰와 **똑같다**(0/0 로 대조 확인).
+     실측 함수 202~256ms.
+     ⚠ 함수가 없어도 사이트는 멀쩡해야 한다 — 아래처럼 뷰로 자동 되돌아간다. */
+  let _invRpcOk = true;   // 404/401/403 이면 false 로 내려앉아 이후엔 뷰만 쓴다
+  function _invView(styleNo) {
+    return _sb('inventory_web?style_number=eq.'+encodeURIComponent(styleNo)
+              +'&select=color,size,wh,qty_on_hand');
+  }
+  async function _invRows(styleNo) {
+    if (_invRpcOk) {
+      try {
+        const rows = await _sbRpc('inventory_web_style', { p_style: styleNo },
+                                  'color,size,wh,qty_on_hand');
+        if (Array.isArray(rows)) return rows;
+        throw new Error('rpc 응답이 배열이 아니다');
+      } catch (e) {
+        const msg = String((e && e.message) || e);
+        if (/\b(400|401|403|404)\b/.test(msg)) _invRpcOk = false;   // 함수가 없거나 권한이 없다
+        console.warn('inventory_web_style 실패 -> inventory_web 뷰로:', msg);
+      }
+    }
+    return _invView(styleNo);
+  }
+
   async function _supabaseInventory(styleNo) {
     // 2026-08-26: inventory 테이블 → inventory_live 뷰로 교체.
     //   inventory 는 버린 IMS 가 쓰던 테이블이라 2026-08-18 에 갱신이 멈춰 있었다(270만장 차이).
@@ -348,8 +395,8 @@ window.PacificData = (function () {
     //   inventory_live = pr_boxes(풀박스) + pr_pcroom(낱장) − 예약분 이라 웹에 낱장까지
     //   섞여 나왔다(409·523 처럼 박스 배수가 아닌 숫자). 웹은 psflowx 풀박스만 판다.
     //   inventory_web = pr_boxes(status='IN') − 예약분. 색 이름 정규화·7,500 자르기는 동일.
-    const rows = await _sb('inventory_web?style_number=eq.'+encodeURIComponent(styleNo)
-                          +'&select=color,size,wh,qty_on_hand');
+    // 2026-09-22: 읽기를 inventory_web_style() 함수로 교체 (_invRows 주석 참고).
+    const rows = await _invRows(styleNo);
     const out = {};   // 화면색상명 → { SC:{size:qty}, CA:{size:qty} }
     rows.forEach(r=>{
       const wh = (String(r.wh||'').toUpperCase() === 'CA') ? 'CA' : 'SC';

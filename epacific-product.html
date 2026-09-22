@@ -159,6 +159,19 @@
   .ct{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:11px}
   .info h1{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.02;margin-bottom:8px}
   .style-no{font-size:14px;color:var(--faint);margin-bottom:22px}
+  /* 💲 가격칸 (B-1, 2026-09-22) — 스타일 번호 바로 아래. 값이 없으면 display:none 이라 자리도 안 먹는다.
+     [stated] 하윤: "Standard Price : $3.75 / Your Account Price : $3.65 / [Extended Sizes 2XL : 나머지 여기]"
+     ⚠ 라벨을 대문자 소제목(letter-spacing + uppercase)으로 바꾸지 말 것 — 한 번 그렇게 만들었다가 되돌렸다.
+        한 줄로 "이름 : 값" 처럼 읽혀야 한다. */
+  .pblock{display:none;margin:-12px 0 22px}
+  .pblock .prow{line-height:1.65}
+  .pblock .pstd{font-size:13px;color:#a8a8a0}
+  .pblock .pmine{font-size:16px;font-weight:700;color:var(--accent)}
+  .pblock .ponly{font-size:14.5px;color:var(--ink)}
+  .pblock .pcall{font-size:14px;color:var(--soft-ink)}
+  .pblock .pwas{color:var(--faint);text-decoration:line-through;font-weight:400;margin-right:4px}
+  .pblock .pext{margin-top:6px;font-size:12.5px;color:var(--soft-ink);line-height:1.7}
+  .pblock .pext b{font-weight:700;color:var(--ink)}
   .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px;align-items:center}
   #specsRow{margin-bottom:8px}
   .specs-auto .chip{background:var(--accent-soft);border-color:var(--line)}
@@ -504,6 +517,9 @@
         border-radius:99px;background:var(--paper,#fff);color:var(--soft-ink,#56564f);cursor:pointer;line-height:1.5;"></button>
     </div>
     <div class="style-no" id="pStyleNo"></div>
+    <!-- 💲 가격칸 (B-1) — 내용은 paintPriceBlock() 이 채운다.
+         ⚠ 여기에 글자를 미리 넣지 않는다: 새로고침할 때 틀린 가격이 잠깐 보인다. -->
+    <div class="pblock" id="priceBlock"></div>
     <div class="specs" id="specsRow">
       <span id="specChips"></span>
     </div>
@@ -835,6 +851,7 @@
     try{ PRICING = await PacificData.getPricing(currentStyle, (product&&product.category)||''); }
     catch(e){ PRICING=null; }
     paintSizePrices();
+    paintPriceBlock();
     markCellSales();
     try{ recalc(); }catch(e){}   // 가격이 늦게 도착해도 Subtotal 이 채워지도록
   }
@@ -852,6 +869,66 @@
     return top + '<span class="szn">' + sz + '</span>';
   }
   /* 가격을 받은 뒤 사이즈 칸만 다시 칠한다 (표 전체를 다시 그리지 않는다) */
+  /* 💲 가격칸 (B-1, 2026-09-22) ─────────────────────────────────────
+     Standard price     = 계약가를 빼고 style_prices 만으로 계산한 값
+     Your account price = 실제 적용가 (계약가가 있으면 그것)
+     ⭐ pacific-data.js 는 손대지 않는다 — cust 를 null 로 준 사본을 하나 더 계산할 뿐이다.
+        그래서 확장사이즈 할증 사다리(2XL +0.60 · 3XL +1.20 · 4XL +2.00 · 5XL +3.20)도
+        두 값에 똑같이 적용된다. */
+  const _PB_BIG=['2XL','3XL','4XL','5XL'];
+  function _pbSizes(){ const a=(sizes&&sizes.length)?sizes:(allSizes||[]); return a.map(z=>String(z).toUpperCase()); }
+  /* 기준 사이즈 — 확장사이즈가 아닌 첫 사이즈 (Adult 는 S, Youth 는 YS, Toddler 는 2T …) */
+  function _pbBaseSize(){
+    const a=_pbSizes();
+    for(const z of a){ if(_PB_BIG.indexOf(z)<0) return z; }
+    return a[0]||null;
+  }
+  function _pbMoney(p){
+    if(!p || p.price==null) return null;
+    return p.onSale
+      ? '<span class="pwas">'+fmtUSD(p.list)+'</span> '+fmtUSD(p.price)
+      : fmtUSD(p.price);
+  }
+  function paintPriceBlock(){
+    const el=document.getElementById('priceBlock');
+    if(!el) return;
+    el.innerHTML=''; el.style.display='none';
+    /* 비로그인·승인대기는 아래 🔒 안내문이 대신한다 — 가격을 두 번 말하지 않는다 */
+    if(!canOrder) return;
+    if(!(PRICING && window.PacificData && PacificData.priceOf)) return;
+    const bz=_pbBaseSize(); if(!bz) return;
+    const STD={ base:PRICING.base, cust:null, sales:PRICING.sales, cat:PRICING.cat };
+    const mine=PacificData.priceOf(PRICING, null, bz);
+    const std =PacificData.priceOf(STD,     null, bz);
+    let html='';
+    if(mine.price==null){
+      /* style_prices 줄이 없는 스타일 (2026-09-21 실측 14개: 1240 1248 1292 1315R 1332
+         1352 1534 1600 1615 1650 1690 2382 5212 8255) */
+      html='<div class="prow"><span class="pcall">Call for pricing &mdash; '
+         + '<a href="mailto:sales@peacepacificsports.com" style="color:var(--accent);font-weight:600">sales@peacepacificsports.com</a>'
+         + '</span></div>';
+    }else if(std.price!=null && Math.abs(std.price-mine.price)>=0.005){
+      html='<div class="prow pstd">Standard Price : '+_pbMoney(std)+'</div>'
+         + '<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+'</div>';
+    }else{
+      html='<div class="prow ponly">Standard Price : '+_pbMoney(mine)+'</div>';
+    }
+    if(mine.price!=null){
+      const have=_pbSizes();
+      const bits=[];
+      _PB_BIG.forEach(z=>{
+        if(have.indexOf(z)<0) return;
+        const p=PacificData.priceOf(PRICING, null, z);
+        if(p.price!=null) bits.push(z+' <b>'+fmtUSD(p.price)+'</b>');
+      });
+      if(bits.length) html+='<div class="pext">Extended Sizes : '+bits.join(' &nbsp;&middot;&nbsp; ')+'</div>';
+    }
+    el.innerHTML=html;
+    /* ⚠ display='' 로 두면 안 된다 — .pblock 의 CSS 가 display:none 이라
+       인라인 스타일을 지우는 순간 다시 숨는다 (실측: 글자는 들어갔는데 높이 0). */
+    el.style.display='block';
+  }
+
   function paintSizePrices(){
     document.querySelectorAll('.otable thead th.szh').forEach(th=>{
       const sz=th.dataset.size; if(!sz) return;

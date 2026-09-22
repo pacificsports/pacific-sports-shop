@@ -132,7 +132,9 @@
   .badge.new{background:var(--accent)}
   .quick{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(251,251,249,.95);backdrop-filter:blur(6px);border:1px solid var(--line);border-radius:10px;padding:11px;text-align:center;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:opacity .25s,transform .25s}
   .card:hover .quick{opacity:1;transform:translateY(0)}
+  /* 카드 색 점 — 이름이 같은 스타일(8368 / 1368)을 눈으로 가르는 유일한 단서 (2026-09-22) */
   .swatches-mini{display:flex;gap:6px;margin-bottom:9px}
+  .card .swatches-mini{margin:9px 0 0;flex-wrap:wrap}
   .sm{width:15px;height:15px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
   .pcount{font-size:13px;color:var(--soft-ink);font-weight:400;margin-bottom:4px}
   body.editmode .card.editable{cursor:grab}
@@ -140,7 +142,8 @@
   body.editmode .card.drag-over-top{box-shadow:0 -4px 0 -1px var(--accent,#6b7b5e)}
   body.editmode .card.drag-over-bottom{box-shadow:0 4px 0 -1px var(--accent,#6b7b5e)}
   .drag-hint{font-size:11px;color:var(--faint);margin-top:6px;font-style:italic}
-  .style-no{font-size:12px;color:var(--faint);font-weight:500;margin-bottom:3px}
+  /* 번호는 이제 'Style #' 없이 번호만 — 카드에서 번호를 말하는 건 이 줄뿐이다 */
+  .style-no{font-size:13px;color:var(--soft-ink);font-weight:700;letter-spacing:.02em;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
   .pmeta{font-size:13px;color:var(--soft-ink);font-weight:350}
   .pcolors{font-size:12px;color:var(--faint);margin-top:7px}
@@ -297,6 +300,8 @@
   let styleCover={};                     // 스타일번호 → 표지 사진 URL
   let styleHiddenColors={};              // 스타일번호 → [숨긴 색(raw)]  (상품페이지와 색상 수 일치용)
   let colorCount={};                     // 스타일번호 → 색상 수(표시되는 색만)
+  let styleDots={};                      // 스타일번호 → 카드에 찍을 색 점 [{n:이름, h:hex}]
+  const CARD_DOTS=8;                     // 카드 한 장에 점 몇 개까지
   let styleSizes={};                     // 스타일번호 → Set(실제로 파는 사이즈, skus)
   let styleHiddenSizes={};               // 스타일번호 → Set(직원이 감춘 사이즈)
   let _sizesLoaded=false;                // skus 를 받아왔나 (못 받았으면 예전 글자로 물러난다)
@@ -376,9 +381,21 @@
       const PD=window.PacificData||{};
       const isHidden=(no,c)=> (PD.isHiddenColor?PD.isHiddenColor(no,c):false) || (styleHiddenColors[no]||[]).includes(String(c).toUpperCase());
       const disp=(no,c)=> PD.displayColorName?PD.displayColorName(no,c):c;
-      Object.keys(raw).forEach(no=>{ const shown=new Set();
-        raw[no].forEach(c=>{ if(!isHidden(no,c)) shown.add(disp(no,c)); });
-        colorCount[no]=shown.size; });
+      const hexOf=(c)=> PD.colorHex ? PD.colorHex(c) : '#c9c7bf';
+      /* ⚠ 앞에서부터 8개를 자르면 안 된다 — 목록 순서가 흰색·아이보리 쪽에 몰려 있어서
+         카드마다 **비슷한 연한 점 8개**만 나온다. 전체에서 고르게 집어야 색 폭이 보인다. */
+      const spread=(arr,n)=>{ if(arr.length<=n) return arr.slice();
+        const out=[]; for(let i=0;i<n;i++) out.push(arr[Math.round(i*(arr.length-1)/(n-1))]); return out; };
+      Object.keys(raw).forEach(no=>{ const shown=new Set(); const all=[];
+        raw[no].forEach(c=>{
+          if(isHidden(no,c)) return;
+          const d=disp(no,c);
+          if(shown.has(d)) return;                 /* 이름을 통일해서 겹치는 색은 한 번만 */
+          shown.add(d);
+          /* ⚠ hex 는 **원래 이름**으로 찾는다 — 직원이 바꾼 이름은 색상표에 없다 */
+          all.push({n:d, h:hexOf(c)});
+        });
+        colorCount[no]=shown.size; styleDots[no]=spread(all, CARD_DOTS); });
     }catch(e){}
   }
   // ★메인색을 카테고리 대표 사진(썸네일)에 반영
@@ -491,11 +508,10 @@
                   : '<button class="fav-star" type="button" data-fav="'+no+'" title="Save to My Styles">\u2606</button>'}
           ${editBadge}
         </div>
-        <div class="style-no">Style #${no}</div>
-        <div class="pname">${p.desc}</div>
-        <div class="pmeta">${catLabel(p.cat)}${srOf(p)?' · '+srOf(p):''}</div>
-        ${colorLine?`<div class="pcount">${colorLine}</div>`:''}
-        <div class="pcolors">View colors &amp; stock</div>
+        <div class="style-no">${no}</div>
+        <div class="pname">${cardName(p.desc)}</div>
+        <div class="pmeta">${[catLabel(p.cat), srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
+        ${dotsHtml(no)}
         ${dragHint}
       `;
       const _st=card.querySelector('.fav-star');
@@ -543,6 +559,24 @@
   /* 화면에 쓰는 카테고리 이름. 저장된 값은 'Adult Performance' 그대로 두고
      보이는 글자만 Outdoor 로 바꾼다 — 배송무게표·재고가 카테고리 값으로 물려 있다 */
   function catLabel(c){ return String(c||'').replace(/Performance/i,'Outdoor'); }
+  /* 카드 이름에서 **맨 앞 대상 단어 하나**만 뗀다 — 바로 아래 줄이 'Adult S/S' 라고 이미 말한다.
+     [stated] 하윤: "이부분이 보면 repetitive하잖아" (2026-09-22)
+     ⚠ 중간에 들어간 Adult 는 건드리지 않는다. 뗀 뒤 남는 게 없으면 원래 이름을 쓴다. */
+  function cardName(d){
+    const s=String(d||'').trim();
+    const cut=s.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i,'').trim();
+    return cut || s;
+  }
+  /* 색 점 — 이름이 똑같은 스타일을 눈으로 가른다 (8368 / 1368).
+     ⚠ 사진이 아니라 hex 단색이다. 카드마다 사진 8장을 더 받으면 목록이 느려진다. */
+  function _cEsc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function dotsHtml(no){
+    const list=styleDots[no]||[];
+    if(!list.length) return '';
+    return '<div class="swatches-mini">'
+      + list.map(d=>'<span class="sm" style="background:'+_cEsc(d.h)+'" title="'+_cEsc(d.n)+'"></span>').join('')
+      + '</div>';
+  }
 
   /* 원단 필터. 예전에는 Fabric·Style·Yarn·Color 가 전부 체크박스 모양만 있고
      아무 동작도 안 했다 (숫자도 손으로 적어둔 가짜였다). Style·Yarn·Color 는

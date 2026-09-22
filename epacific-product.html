@@ -178,6 +178,30 @@
   .pblock .psale{font-size:12px;font-weight:600;color:#b04a3a;white-space:nowrap}
   .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px;align-items:center}
   #specsRow{margin-bottom:8px}
+  /* 🎨 색/사이즈 요약 — 가격과 설명 문구 사이 (2026-09-22)
+     [stated] 하윤: "Price 랑 문구 사이에 몇가지 칼라랑 사이즈 내용 나오게"
+     ⚠ 점은 상품 사진이 있으면 그 사진, 없으면 단색이다 (색칩과 같은 규칙). */
+  .csum{margin:0 0 22px;padding:16px 0 0;border-top:1px solid var(--line)}
+  .csum:empty{display:none}
+  .csum-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:11px}
+  .csum-row:last-child{margin-bottom:0}
+  .csum-lb{flex:0 0 52px;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
+    font-weight:700;color:var(--faint);padding-top:6px}
+  .csum-dots{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+  .csum-dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);
+    background-size:cover;background-position:center;display:inline-block;flex:none}
+  .csum-more{font-size:12px;color:var(--soft-ink);margin-left:4px;padding-top:1px;white-space:nowrap}
+  .csum-sizes{display:flex;flex-wrap:wrap;gap:6px}
+  .csum-sz{font-size:11.5px;font-weight:600;color:var(--soft-ink);border:1px solid var(--line-2);
+    border-radius:6px;padding:4px 8px;line-height:1;background:var(--paper)}
+  /* 📋 스펙 한 줄 (손님 화면) — 알약 대신 가운뎃점으로 이은 글자.
+     ⚠ 직원 Edit 모드에서는 이 클래스를 떼서 칩으로 되돌린다 (고치기·빼기 버튼이 칩에 있다). */
+  /* ⚠ 여기에 border-top 을 넣지 말 것 — .desc 가 이미 border-bottom 을 갖고 있어서
+     줄이 두 개 그어지고 그 사이가 텅 빈다 (한 번 그렇게 만들었다가 뺐다, 2026-09-22). */
+  .specs.spec-line{display:block;margin:2px 0 0;padding-top:0}
+  .specs.spec-line #specChips{display:inline}
+  .specitem{font-size:12.5px;color:var(--soft-ink);white-space:nowrap}
+  .specdot{color:var(--line-2);margin:0 9px;font-size:12.5px}
   .specs-auto .chip{background:var(--accent-soft);border-color:var(--line)}
   /* 아직 값이 안 들어온 칩은 테두리만 남은 회색 알약으로 보인다 — 숨긴다 (2026-09-12) */
   .specs .chip:empty{display:none}
@@ -513,7 +537,10 @@
 
   <!-- INFO -->
   <div class="info rise">
-    <div class="ct" id="pKicker"></div>
+    <!-- ⓘ 작은줄(ADULT · 30/1 CVC)은 2026-09-22 에 뺐다 (H1안).
+         빵부스러기가 Home / Adult / Short Sleeve / Style #8368 을 이미 말하고,
+         바로 아래 이름줄에 Adult 와 30/1 CVC 가 또 나와서 같은 말이 세 번이었다.
+         [stated] 하윤: "이부분이 보면 repetitive하잖아" -->
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
       <h1 id="pTitle" style="margin:0;"></h1>
       <button id="favBtn" type="button" onclick="favToggleThis()" style="display:none;align-items:center;gap:6px;
@@ -524,17 +551,19 @@
     <!-- 💲 가격칸 (B-1) — 내용은 paintPriceBlock() 이 채운다.
          ⚠ 여기에 글자를 미리 넣지 않는다: 새로고침할 때 틀린 가격이 잠깐 보인다. -->
     <div class="pblock" id="priceBlock"></div>
-    <div class="specs" id="specsRow">
-      <span id="specChips"></span>
-    </div>
-    <div class="specs specs-auto">
-      <span class="chip" id="colorCountChip"></span>
-      <span class="chip" id="sizeChip"></span>
-    </div>
+    <!-- 🎨 색/사이즈 요약 — renderCsum() 이 채운다. 여기에 글자를 미리 넣지 않는다
+         (새로고침할 때 빈 줄이 번쩍인다). -->
+    <div class="csum" id="csum"></div>
     <!-- ⚠ 기본 문구는 화면이 아니라 data-default 에 둔다 (2026-09-12).
          여기에 글자로 넣으면 새로고침할 때 이 문구가 먼저 번쩍이고, 자기 문구가 있는
          스타일은 **틀린 문구가 거래처 화면에 잠깐 나간다.** -->
+    <!-- ⓘ 스펙 줄은 설명 문구 **아래**다 (2026-09-22).
+         [stated] 하윤: "Price 다음에 설명 문구 나오고 그다음에 4.3 oz / 145 그램 등등" -->
     <p class="desc" id="pDesc" data-default="A premium 30/1 combed ring-spun blank with a soft hand and clean print surface. Proprietary dye-house finishing delivers excellent color, hand, and shrinkage control. The everyday workhorse for screen printing and customization."></p>
+
+    <div class="specs" id="specsRow">
+      <span id="specChips"></span>
+    </div>
 
     <div class="related" id="relatedStyles" style="display:none"></div>
 
@@ -854,8 +883,8 @@
       th.addEventListener('click',()=>{ if(editOn) toggleSize(s); });
       headRow.insertBefore(th, piecesTh);
     });
-    const chip=document.getElementById('sizeChip');
-    if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
+    /* 사이즈가 바뀌면 요약줄도 같이 바뀐다 (예전엔 #sizeChip 글자를 고쳤다) */
+    renderCsum();
   }
 
   /* ═══ 가격 줄 (2026-08-29) ═══════════════════════════════════════════
@@ -1091,8 +1120,7 @@
     document.querySelectorAll('.szcol').forEach(el=>{
       if(el.getAttribute('data-size')===s) el.classList.toggle('size-hidden', hidden);
     });
-    const chip=document.getElementById('sizeChip');
-    if(chip && sizes.length) chip.textContent = sizes[0]+'–'+sizes[sizes.length-1];
+    renderCsum();   /* 사이즈를 숨기거나 다시 켜면 요약줄도 바로 따라간다 */
     recalc();
     const ok=await saveHiddenSizes(currentStyle, hiddenSizes);
     if(!ok) alert('Could not save. Please check your connection and try again.');
@@ -1691,6 +1719,39 @@
     });
     input.addEventListener('blur',()=>finish(true));
   }
+  /* ═══ 🎨 색/사이즈 요약 (2026-09-22) ═══════════════════════════════
+     [stated] 하윤: "Price 랑 문구 사이에 몇가지 칼라랑 사이즈 내용 나오게"
+     ⚠ 이 페이지엔 esc() 가 없다 — 전에 esc 를 썼다가 함수가 통째로 죽었다. 여기 것을 쓴다.
+     ⚠ `#colorCountChip` 은 **이 id 그대로** 둔다: renderSwatches 가 '56 colors' 를 써넣고,
+       init 이 클릭(색칩으로 스크롤)을 달아준다. 이름을 바꾸면 그 두 군데가 조용히 죽는다. */
+  const CSUM_DOTS = 14;
+  function _csEsc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function renderCsum(){
+    const box=document.getElementById('csum'); if(!box) return;
+    const list=(colors||[]);
+    const zs=(sizes && sizes.length) ? sizes : (allSizes||[]);
+    if(!list.length && !zs.length){ box.innerHTML=''; return; }
+    let h='';
+    if(list.length){
+      const dots=list.slice(0,CSUM_DOTS).map(c=>{
+        /* 색칩과 같은 규칙: 사진이 있으면 사진, 없으면 단색 */
+        const st = c.img ? ('background-image:url(&quot;'+_csEsc(String(c.img))+'&quot;)')
+                         : ('background:'+_csEsc(String(c.hex||'#ddd')));
+        return '<span class="csum-dot" style="'+st+'" title="'+_csEsc(c.name)+'"></span>';
+      }).join('');
+      h += '<div class="csum-row"><span class="csum-lb">Colors</span><div class="csum-dots">'
+         + dots + '<span class="csum-more" id="colorCountChip"></span></div></div>';
+    }
+    if(zs.length){
+      h += '<div class="csum-row"><span class="csum-lb">Sizes</span>'
+         + '<div class="csum-sizes" id="csumSizes">'
+         + zs.map(z=>'<span class="csum-sz">'+_csEsc(z)+'</span>').join('')
+         + '</div></div>';
+    }
+    box.innerHTML=h;
+    const cc=document.getElementById('colorCountChip');
+    if(cc) cc.textContent = list.length+' colors';
+  }
   function renderSpecChips(){
     const box=document.getElementById('specChips');
     if(!box) return;
@@ -1745,8 +1806,14 @@
         });
       });
     }else{
-      box.innerHTML=act.map(c=>'<span class="chip">'+chipEsc(c)+'</span>').join('');
+      /* 손님 화면 = 가운뎃점으로 이은 한 줄 (A안, 2026-09-22).
+         [stated] 하윤: "4.3 oz / 145 gram 이런 박스들이 좀 보기 별론거 같아서" */
+      box.innerHTML=act.map(c=>'<span class="specitem">'+chipEsc(c)+'</span>')
+                       .join('<span class="specdot">&middot;</span>');
     }
+    /* ⚠ Edit 모드에서는 칩으로 되돌린다 — 고치기·빼기 버튼이 칩 모양에 달려 있다 */
+    const row=document.getElementById('specsRow');
+    if(row) row.classList.toggle('spec-line', !editOn);
   }
 
   /* ═══════════ 📏 사이즈표도 Edit 모드에서 고친다 (2026-09-12) ═══════════
@@ -2092,6 +2159,8 @@
 
   // 색상 칩 그리기 (평소=보이는 색만, Edit=전체+숨김표시)
   function renderSwatches(){
+    /* ⚠ 먼저 요약줄을 그려야 한다 — '56 colors' 를 써넣을 #colorCountChip 이 그 안에 있다 */
+    try{ renderCsum(); }catch(e){}
     swEl.innerHTML='';
     const list = editOn ? allColors : colors;
     list.forEach(c=>{
@@ -2331,7 +2400,9 @@
       document.title = 'Pacific Sports \u2014 Style #'+STYLE;
       (function(){
         const h1=document.getElementById('pTitle'); if(h1) h1.textContent=STYLE;
-        const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='Style #'+STYLE;
+        /* ⚠ 여기서 'Style #8368' 을 찍어두면 잠시 뒤 이름으로 **바뀌는 게 보인다**.
+           번호는 바로 위 큰 글자에 이미 있으니 이름이 올 때까지 비워 둔다 (2026-09-22). */
+        const sn=document.getElementById('pStyleNo'); if(sn) sn.textContent='';
         const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
       })();
       /* ⚡ 서로 기다릴 필요 없는 것은 **같이 부른다** (2026-09-15).
@@ -2402,7 +2473,11 @@
       const h1=document.getElementById('pTitle'); if(h1) h1.textContent=STYLE;
       /* ⚠ 여기가 예전에 `?style=` 을 그대로 쏟아내던 자리다 — 위에서 모양을 걸렀지만
          나가는 자리에서도 한 번 더 막는다 (두 겹이어야 한 겹이 뚫려도 버틴다) */
-      const sn=document.getElementById('pStyleNo'); if(sn) sn.innerHTML='Style #'+_escS(STYLE)+(_desc?' · <span style="color:var(--soft-ink)">'+_escS(_desc)+'</span>':'');
+      /* 이름만 적는다 — 'Style #8368' 은 빵부스러기와 큰 글자가 이미 말한다 (H1안, 2026-09-22).
+         ⚠ 이름이 없는 스타일은 번호라도 보여준다 (빈 줄로 두지 않는다). */
+      const sn=document.getElementById('pStyleNo');
+      if(sn) sn.innerHTML = _desc ? '<span style="color:var(--soft-ink)">'+_escS(_desc)+'</span>'
+                                  : ('Style #'+_escS(STYLE));
       const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
       // 빵부스러기 중간 단계도 카테고리에 맞게 (Men's/Kids, Short Sleeve/Long Sleeve/Tank Top 등)
       (function(){
@@ -2422,20 +2497,9 @@
           c2.href='epacific-category.html?cat='+encodeURIComponent(rawCat);  // 그 카테고리로 필터된 목록
         }
       })();
-      // 상단 작은 라벨: 카테고리 + 원단 (스타일 설명에서 자동 추출)
-      const kick=document.getElementById('pKicker');
-      if(kick){
-        const rawCat = product.category || '';
-        // "Adult S/S" → "Adult", "Youth" 계열은 그대로
-        const cat = /youth|kid/i.test(rawCat) ? 'Youth' : 'Adult';
-        // 설명에서 원단 부분 추출: "1390 Adult 30/1 100% Cotton PFD Short Sleeve Tee" → "30/1 100% Cotton PFD"
-        let fabric = String(niceName)
-          .replace(/^\d+[A-Za-z]?\s*/,'')              // 앞 스타일번호 제거
-          .replace(/^(Adult|Mens|Men's|Youth|Kids)\s*/i,'')  // 대상 제거
-          .replace(/\s*(Short Sleeve|Long Sleeve|Tank Top|Hooded|V-?neck|Raglan|Crew|Tee|Top)\s*.*$/i,'') // 제품형 제거
-          .trim();
-        kick.textContent = cat + (fabric ? ' · ' + fabric : '');
-      }
+      /* ⓘ 여기 있던 '작은 라벨(Adult · 30/1 CVC)' 만들기는 2026-09-22 에 뺐다.
+         스타일 이름에서 원단을 뽑아 쓰던 코드였는데, 바로 아래 이름줄이 같은 말을
+         그대로 다시 했다. 되살리려면 pKicker 칸부터 HTML 에 다시 넣어야 한다. */
       renderSizeHeaders();
       buildAllRows();
       setupGallery();
@@ -2446,7 +2510,8 @@
       const ccChip=document.getElementById('colorCountChip');
       if(ccChip){ ccChip.style.cursor='pointer'; ccChip.title='See all colors';
         ccChip.addEventListener('click',()=>{ const t=document.getElementById('thumbs'); if(t) t.scrollIntoView({behavior:'smooth',block:'center'}); }); }
-      const szChip=document.getElementById('sizeChip');
+      /* 사이즈 알약 줄을 누르면 Size Guide 가 열린다 (예전 #sizeChip 이 하던 일) */
+      const szChip=document.getElementById('csumSizes');
       if(szChip){ szChip.style.cursor='pointer'; szChip.title='Open size guide';
         szChip.addEventListener('click',()=>{
           const tg=document.getElementById('sgToggle');
@@ -2836,8 +2901,12 @@
     const byNo={}; styles.forEach(s=>{ byNo[String(s.no)]=s; });
     /* 카탈로그에 없는 번호는 아예 안 보여준다 — 눌러도 빈 페이지가 나오는 죽은 카드가 된다
        (2026-08-29: 여기 '2216' 이 그런 카드였다. 그런 스타일은 존재하지 않는다.) */
+    /* 이름 맨 앞의 대상 단어(Adult/Kids...)는 뗀다 — 바로 아래 줄이 'Adult S/S' 라고 또 말한다
+       (2026-09-22, 목록 카드와 같은 규칙). 떼고 남는 게 없으면 원래 이름을 쓴다. */
+    const relName=(d)=>{ const t=String(d||'').trim();
+      const c=t.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i,'').trim(); return c||t; };
     const cards=others.filter(n=>byNo[n]).map(n=>{
-      const s=byNo[n]; const desc=s?(s.desc||''):''; const cat=s?(s.cat||''):'';
+      const s=byNo[n]; const desc=relName(s?(s.desc||''):''); const cat=s?(s.cat||''):'';
       return '<a class="rel-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+
              '<span class="rel-no">#'+n+'</span>'+
              (desc?'<span class="rel-nm">'+desc+'</span>':'')+

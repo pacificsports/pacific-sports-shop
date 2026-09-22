@@ -167,7 +167,6 @@
   .pblock .prow{line-height:1.65}
   .pblock .pstd{font-size:13px;color:#a8a8a0}
   .pblock .pmine{font-size:16px;font-weight:700;color:var(--accent)}
-  .pblock .ponly{font-size:14.5px;color:var(--ink)}
   .pblock .pcall{font-size:14px;color:var(--soft-ink)}
   .pblock .pwas{color:var(--faint);text-decoration:line-through;font-weight:400;margin-right:4px}
   .pblock .pext{margin-top:6px;font-size:12.5px;color:var(--soft-ink);line-height:1.7}
@@ -921,7 +920,10 @@
       html='<div class="prow pstd">Standard Price : '+_pbMoney(std)+'</div>'
          + '<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }else{
-      html='<div class="prow ponly">Standard Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
+      /* 계약가가 없으면 이 줄이 손님이 실제로 내는 가격이다 -> Your Account Price 와 같은
+         초록 굵게로 눈에 띄게 한다 (2026-09-22).
+         ⚠ 흐린 회색(pstd)은 "계약가가 더 싸다" 를 보여줄 때만 쓴다. */
+      html='<div class="prow pmine">Standard Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }
     if(mine.price!=null){
       const have=_pbSizes();

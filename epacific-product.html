@@ -206,6 +206,15 @@
     color:var(--faint);padding:11px 0;border-bottom:1px solid var(--line)}
   .sptab dd{margin:0;font-size:13.5px;color:var(--ink);padding:10px 0;
     border-bottom:1px solid var(--line)}
+  /* 직원 Edit — 같은 표에서 값만 고친다 (2026-09-22) */
+  .sptab-edit dd.spedit{display:flex;align-items:center;gap:8px}
+  .sptab-edit .spval{flex:1;min-width:0;cursor:text;border-bottom:1px dashed var(--line-2)}
+  .sptab-edit .spval:hover{border-bottom-color:var(--accent);color:var(--accent)}
+  .sptab-edit .spdel{background:none;border:none;color:#b04a3a;cursor:pointer;
+    font-size:15px;line-height:1;padding:0 2px;opacity:.45;flex:none}
+  .sptab-edit .spdel:hover{opacity:1}
+  .sptab-edit .spadd{cursor:pointer;color:var(--accent);font-weight:600}
+  .sptab-edit dt.spaddk{color:var(--accent)}
   .specs-auto .chip{background:var(--accent-soft);border-color:var(--line)}
   /* 아직 값이 안 들어온 칩은 테두리만 남은 회색 알약으로 보인다 — 숨긴다 (2026-09-12) */
   .specs .chip:empty{display:none}
@@ -1180,6 +1189,14 @@
        ⚠ 부르는 쪽마다 markCellSales() 를 넣지 말 것 — 반드시 하나를 빠뜨린다.
        PRICING 이 아직 없으면 markCellSales 가 알아서 바로 돌아간다. */
     try{ markCellSales(); }catch(e){}
+    /* ⚠⚠ 재고를 못 받았으면 **여기서** 알린다 — init 에서 한 번 적어두면
+       loadSubstitute·loadPricing 이 표를 다시 그릴 때 지워진다 (실측, 2026-09-22).
+       0 으로 채운 칸을 그대로 두면 거래처가 "전부 품절" 로 읽는다. */
+    if(typeof _stockFailed!=='undefined' && _stockFailed){
+      const rb0=document.getElementById('rows');
+      if(rb0) rb0.innerHTML='<tr><td colspan="9" style="padding:24px;text-align:center;color:#b04;">'
+        + 'Could not load stock right now. Please refresh in a moment.</td></tr>';
+    }
     if(!_thumbFitInit){ _thumbFitInit = 1; setTimeout(initThumbFit, 0); }
   }
 
@@ -1406,6 +1423,11 @@
     let amount=0, priceKnown=true;
     rowsBody.querySelectorAll('tr').forEach(tr=>{
       if(tr.dataset.wh==='ALL') return;   // 재고 합계 줄 — 주문 수량과 무관
+      /* ⚠ 데이터 줄이 아니면 건너뛴다 (2026-09-22).
+         재고를 못 받았을 때 넣는 안내문 줄에는 .rowtotal 칸이 없어서
+         아래 `tr.querySelector('.rowtotal').textContent` 가 null 에 값을 넣다가 터졌고,
+         그 예외가 init 을 죽여서 **가격까지 안 그려졌다** (실측으로 잡았다). */
+      if(!tr.dataset.wh || !tr.querySelector('.rowtotal')) return;
       let rt=0;
       tr.querySelectorAll('input').forEach((inp)=>{
         const td=inp.closest('td');
@@ -1716,12 +1738,28 @@
     if(!ok) alert('Could not save. Please try again.');
   }
   /* 칩(또는 + Add) 자리를 입력칸으로 바꾼다. 끝나면 onDone(값 또는 null=취소) */
-  function chipInput(el, cur, onDone){
+  function chipInput(el, cur, onDone, flat, suggest){
     const input=document.createElement('input');
     input.type='text'; input.value=cur||''; input.placeholder='New spec…';
-    input.style.cssText='font-family:var(--body);font-size:13px;border:1px solid var(--accent);'
-      +'border-radius:999px;padding:7px 14px;outline:none;width:'
-      +Math.max(150, String(cur||'').length*8+46)+'px';
+    if(flat){
+      /* 표 안에서는 네모 입력칸 — 알약 모양은 칸 높이를 밀어낸다 */
+      input.style.cssText='font-family:var(--body);font-size:13.5px;color:var(--ink);'
+        +'border:1px solid var(--accent);border-radius:6px;padding:5px 8px;outline:none;'
+        +'width:100%;max-width:420px;box-sizing:border-box';
+    }else{
+      input.style.cssText='font-family:var(--body);font-size:13px;border:1px solid var(--accent);'
+        +'border-radius:999px;padding:7px 14px;outline:none;width:'
+        +Math.max(150, String(cur||'').length*8+46)+'px';
+    }
+    /* 자주 쓰는 값 — 예전 점선 칩이 하던 일을 입력칸 추천 목록이 대신한다 */
+    if(suggest && suggest.length){
+      const id='spsug-'+Math.random().toString(36).slice(2,8);
+      const dl=document.createElement('datalist'); dl.id=id;
+      suggest.forEach(s=>{ const o=document.createElement('option'); o.value=s; dl.appendChild(o); });
+      input.setAttribute('list', id);
+      document.body.appendChild(dl);
+      setTimeout(()=>{ try{ dl.remove(); }catch(e){} }, 60000);
+    }
     el.replaceWith(input); input.focus(); input.select();
     let done=false;
     const finish=(save)=>{ if(done) return; done=true; onDone(save ? input.value.trim() : null); };
@@ -1778,53 +1816,54 @@
     if(!box) return;
     const act=activeChips();
     if(editOn){
-      /* 켜진 칩(글자 클릭=고치기 · ✕=빼기) + 점선 추천 칩(클릭=넣기) + "+ Add" */
-      const onChips=act.map(c=>
-        '<span class="chip chip-edit chip-on" data-chip="'+chipEsc(c)+'">'
-        + '<span class="chip-txt" title="Click to edit">'+chipEsc(c)+'</span>'
-        + '<button type="button" class="chip-x" title="Remove">×</button></span>');
-      const offChips=ALL_SPEC_CHIPS.filter(c=>!act.includes(c)).map(c=>
-        '<span class="chip chip-edit chip-off" data-chip="'+chipEsc(c)+'" title="Click to add">'
-        + chipEsc(c)+'</span>');
-      box.innerHTML=onChips.join('')+offChips.join('')
-        +'<span class="chip chip-edit chip-add" id="chipAdd">+ Add</span>';
+      /* 직원 화면도 **같은 키-값 표**다 — 값 옆에서 바로 고친다 (2026-09-22).
+         [stated] 하윤: "weight fabric label Cotton 에서 바로 옆에서 우리가 그냥 고치고
+                         싶은대로 고칠수있게해줘"
+         ⓘ 예전엔 알약 칩이었다(켜진 칩 + 점선 추천 칩 + "+ Add"). 손님 화면과 모양이 달라서
+           고친 결과가 어떻게 보일지 바로 안 보였다. 추천 값은 입력칸 목록으로 옮겼다.
+         ⚠ 줄은 **값으로** 집는다 (data-v) — 저장하면 sortChips 가 차례를 다시 잡아
+           자리(index)가 밀린다. */
+      box.innerHTML='<dl class="sptab sptab-edit">'
+        + act.map(c=>'<dt>'+(specKey(c)||'&nbsp;')+'</dt>'
+            + '<dd class="spedit"><span class="spval" data-v="'+chipEsc(c)+'" title="Click to edit">'
+            + chipEsc(c)+'</span>'
+            + '<button type="button" class="spdel" data-v="'+chipEsc(c)+'" title="Remove this line">&times;</button>'
+            + '</dd>').join('')
+        + '<dt class="spaddk">Add</dt><dd class="spedit">'
+        + '<span class="spadd" title="Add a spec line">+ new spec</span></dd></dl>';
 
-      /* 글자를 누르면 그 자리에서 고친다 */
-      box.querySelectorAll('.chip-edit.chip-on').forEach(el=>{
-        const cur=el.dataset.chip;
-        const txt=el.querySelector('.chip-txt');
-        if(txt) txt.addEventListener('click',()=>{
-          chipInput(el, cur, v=>{
-            if(v===null || v===cur){ renderSpecChips(); return; }   /* 취소 · 안 바뀜 */
-            let list=activeChips();
-            if(!v)                    list=list.filter(x=>x!==cur);        /* 비우면 빼기 */
-            else if(list.includes(v)) list=list.filter(x=>x!==cur);        /* 이미 있는 값이면 중복 안 만든다 */
-            else                      list=list.map(x=> x===cur ? v : x);  /* 글자 교체 */
-            chipSave(list);
-          });
-        });
-        const x=el.querySelector('.chip-x');
-        if(x) x.addEventListener('click',e=>{
-          e.stopPropagation();
-          chipSave(activeChips().filter(y=>y!==cur));
-        });
-      });
-      /* 점선 칩 = 자주 쓰는 값. 누르면 넣는다 */
-      box.querySelectorAll('.chip-edit.chip-off').forEach(el=>{
+      const sugg=()=>ALL_SPEC_CHIPS.filter(x=>!activeChips().includes(x));
+      /* 값 클릭 = 그 자리에서 고치기 */
+      box.querySelectorAll('.spval').forEach(el=>{
         el.addEventListener('click',()=>{
-          const c=el.dataset.chip, list=activeChips();
-          if(!list.includes(c)) chipSave([...list, c]); else renderSpecChips();
+          const cur=el.dataset.v;
+          chipInput(el, cur, v=>{
+            if(v===null || v===cur){ renderSpecChips(); return; }
+            let list=activeChips();
+            if(!v)                    list=list.filter(x=>x!==cur);       /* 비우면 그 줄 삭제 */
+            else if(list.includes(v)) list=list.filter(x=>x!==cur);       /* 이미 있는 값이면 중복 안 만든다 */
+            else                      list=list.map(x=> x===cur ? v : x); /* 글자 교체 */
+            chipSave(list);
+          }, true, sugg());
         });
       });
-      /* + Add = 아무 글자나 */
-      const addBtn=box.querySelector('#chipAdd');
-      if(addBtn) addBtn.addEventListener('click',()=>{
-        chipInput(addBtn, '', v=>{
+      /* × = 그 줄 삭제 */
+      box.querySelectorAll('.spdel').forEach(el=>{
+        el.addEventListener('click',e=>{
+          e.stopPropagation();
+          const cur=el.dataset.v;
+          chipSave(activeChips().filter(x=>x!==cur));
+        });
+      });
+      /* + new spec = 새 줄 */
+      const add=box.querySelector('.spadd');
+      if(add) add.addEventListener('click',()=>{
+        chipInput(add, '', v=>{
           if(!v){ renderSpecChips(); return; }
           const list=activeChips();
           if(list.includes(v)){ renderSpecChips(); return; }
           chipSave([...list, v]);
-        });
+        }, true, sugg());
       });
     }else{
       /* 손님 화면 = 키-값 표 (S1안, 2026-09-22).
@@ -1833,9 +1872,9 @@
         + act.map(c=>'<dt>'+(specKey(c)||'&nbsp;')+'</dt><dd>'+chipEsc(c)+'</dd>').join('')
         + '</dl>';
     }
-    /* ⚠ Edit 모드에서는 칩으로 되돌린다 — 고치기·빼기 버튼이 칩 모양에 달려 있다 */
+    /* ⚠ 이제 Edit 모드도 같은 표다 — 클래스를 떼면 안 된다 (떼면 표가 한 줄로 뭉친다) */
     const row=document.getElementById('specsRow');
-    if(row) row.classList.toggle('spec-table', !editOn);
+    if(row) row.classList.add('spec-table');
     /* 스펙이 하나도 없으면 그 줄을 감추고 구분선을 설명칸으로 돌려준다 —
        안 그러면 선이 아예 없어져서 설명과 다음 묶음이 붙어 보인다 (2026-09-22) */
     const dsc=document.getElementById('pDesc');
@@ -2018,6 +2057,22 @@
   setTimeout(()=>{ try{ renderSizeGuide(); }catch(e){} }, 0);
   /* ===== 제품 설명 (스타일별 수정) ===== */
   /* 기본 문구는 화면이 아니라 `data-default` 에서 읽는다 — 위 HTML 주석 참고 (2026-09-12) */
+  /* ⚠⚠ 재고 조회는 한 번 삐끗해도 화면 전체를 죽이지 않는다 (2026-09-22 실측).
+     그날 `inventory_web` 이 500 을 한 번 뱉었고, init 이 거기서 멈춰서 주문표뿐 아니라
+     설명·스펙·가격까지 **전부** 안 그려졌다. 바로 다시 부르면 200 이었다 (일시적).
+     -> 한 번 다시 부르고, 그래도 실패하면 _stockFailed 를 켜고 빈 재고로 돌려준다.
+     ⚠ 빈 재고를 그대로 그리면 모든 칸이 0 = **품절**로 보인다. 그래서 _stockFailed 일 때는
+       줄을 지우고 안내문을 적는다 (아래 init 끝부분). */
+  let _stockFailed = false;
+  async function stockSafe(style, prod){
+    try{ return await PacificData.getInventory(style, prod); }
+    catch(e1){
+      console.warn('inventory retry after:', e1);
+      await new Promise(r=>setTimeout(r, 700));
+      try{ return await PacificData.getInventory(style, prod); }
+      catch(e2){ console.error('inventory failed twice:', e2); _stockFailed = true; return {}; }
+    }
+  }
   const DEFAULT_DESC=(()=>{ const p=document.getElementById('pDesc');
     return p ? (p.dataset.default || p.textContent || '') : ''; })();
   /* ⏱ 안전망 — 데이터가 안 오면(네트워크 끊김·오류) 기본 문구라도 채운다. 이게 없으면
@@ -2468,7 +2523,7 @@
       hiddenColors = styleSettings.hidden_colors || [];
       colors    = allColors.filter(c=>!hiddenColors.includes(c._raw));  // 손님이 보는 색
       casePer   = product.casePer || cfg.casePer;
-      stockMap  = await PacificData.getInventory(STYLE, product);
+      stockMap  = await stockSafe(STYLE, product);
       /* 대체 스타일(품절 칸의 "1368 \u2197" 힌트)은 **첫 화면 뒤에** 받는다 (2026-09-15).
          스타일+재고를 한 벌 더 받는 일이라 0.9초가 걸렸는데, 첫 화면이 그걸 통째로
          기다리고 있었다. 힌트는 있으면 좋은 것이지 표를 여는 조건이 아니다. */
@@ -2549,6 +2604,11 @@
           tg.click();                                     // 토글: 열려 있으면 닫고, 닫혀 있으면 열기
           if(!wasOpen) tg.scrollIntoView({behavior:'smooth',block:'center'});  // 열 때만 스크롤
         }); }
+      /* 재고를 못 받았으면 주문을 막는다 (줄 안내문은 buildAllRows 가 그린다) */
+      if(_stockFailed){
+        const ab=document.getElementById('addBtn');
+        if(ab){ ab.disabled=true; ab.title='Stock could not be loaded'; }
+      }
       recalc();
       favBtnSync();
       loadPricing();

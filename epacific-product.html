@@ -638,9 +638,12 @@
   .otable thead th .szp .was{display:block;font-size:9.5px;font-weight:500;color:var(--faint,#8e8e85);text-decoration:line-through}
   .otable thead th.on-sale .szp{color:#c0392b}
   .otable thead th .szn{display:block}
-  /* 칸에 붙는 세일가 — 값 + [종료일]. 9.5px 은 안 보인다고 해서 11px 로 키웠다 (2026-09-22) */
-  .cellprice{display:block;font-size:11px;line-height:1.35;color:#c0392b;font-weight:700;margin-top:2px;white-space:nowrap}
-  .cellprice .cpd{font-weight:600;font-size:10px;color:#b04a3a;margin-left:2px}
+  /* 칸에 붙는 세일가 (2026-09-22).
+     ⚠⚠ .cellwrap 에 block 으로 붙이면 **그 칸만 한 줄이 더 생겨** 같은 줄의 입력칸이
+       서로 어긋난다 (한 번 그렇게 만들었다가 되돌렸다). 반드시 .altslot **안에** 넣는다 —
+       그 자리는 대체스타일 버튼 때문에 min-height:15px 로 모든 칸에 이미 잡혀 있다.
+     ⚠ 날짜는 여기 적지 않는다. 위 가격칸 줄에 이미 "… on sale until 11/1/2026" 이 있다. */
+  .cellprice{font-size:11px;line-height:1;color:#c0392b;font-weight:800;white-space:nowrap}
   /* 수정모드: 숨긴 열도 흐리게 보여서 다시 켤 수 있게 */
   .editmode .size-hidden{display:table-cell;opacity:.35}
   /* 수정모드: 사이즈 헤더에 켜기/끄기 표시 */
@@ -1001,12 +1004,6 @@
     });
   }
 
-  /* [11.01.26] — 종료일이 없으면 빈 글자 (2026-09-22) */
-  function _cellEndHtml(endsOn){
-    const m = String(endsOn||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if(!m) return '';
-    return ' <span class="cpd">[' + m[2] + '.' + m[3] + '.' + m[1].slice(2) + ']</span>';
-  }
   /* 색까지 지정된 세일이 걸린 칸에만 빨간 단가를 붙인다 */
   function markCellSales(){
     if(!rowsBody) return;
@@ -1021,13 +1018,16 @@
         const rowp=PacificData.priceOf(PRICING, null, sz);
         if(cell.price==null || rowp.price==null) return;
         if(cell.price===rowp.price) return;      // 줄에 적힌 값과 같으면 굳이 두 번 안 쓴다
-        const w=td.querySelector('.cellwrap')||td;
+        /* ⭐ 이미 자리가 잡혀 있는 .altslot 안에 넣는다 — 줄 높이가 안 흔들린다.
+           ⚠ .cellwrap 에 직접 붙이면 그 칸만 한 줄 늘어나 입력칸이 어긋난다 (겪어봤다). */
+        const w = td.querySelector('.altslot');
+        if(!w) return;
+        /* 품절 칸은 건너뛴다 — 그 자리는 대체스타일 버튼 것이고,
+           못 사는 물건의 세일가는 적어봐야 소용이 없다 */
+        if(td.classList.contains('is-out') || w.querySelector('.subhint')) return;
         const sp=document.createElement('span');
         sp.className='cellprice';
-        /* [stated] 하윤: "$3.35 [11.01.26] 뭐 이런식" — 값 옆에 언제까지인지 (2026-09-22).
-           ⚠ new Date('2026-11-01') 로 파싱하지 말 것 — UTC 로 읽혀 10/31 이 된다. 글자에서 자른다. */
-        /* fmtUSD 는 '$3.35' 같은 안전한 글자만 돌려준다 — 이 페이지엔 esc() 가 없다 */
-        sp.innerHTML = fmtUSD(cell.price) + _cellEndHtml(cell.endsOn);
+        sp.textContent = fmtUSD(cell.price);
         w.appendChild(sp);
       });
     });

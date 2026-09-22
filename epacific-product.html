@@ -160,7 +160,7 @@
   .info h1{font-family:var(--display);font-weight:400;font-size:46px;line-height:1.02;margin-bottom:8px}
   .style-no{font-size:14px;color:var(--faint);margin-bottom:22px}
   /* 💲 가격칸 (B-1, 2026-09-22) — 스타일 번호 바로 아래. 값이 없으면 display:none 이라 자리도 안 먹는다.
-     [stated] 하윤: "Standard Price : $3.75 / Your Account Price : $3.65 / [Extended Sizes 2XL : 나머지 여기]"
+     [stated] 하윤: "Standard Price : $3.75 / Your Account Price : $3.65"
      ⚠ 라벨을 대문자 소제목(letter-spacing + uppercase)으로 바꾸지 말 것 — 한 번 그렇게 만들었다가 되돌렸다.
         한 줄로 "이름 : 값" 처럼 읽혀야 한다. */
   .pblock{display:none;margin:-12px 0 22px}
@@ -169,8 +169,11 @@
   .pblock .pmine{font-size:16px;font-weight:700;color:var(--accent)}
   .pblock .pcall{font-size:14px;color:var(--soft-ink)}
   .pblock .pwas{color:var(--faint);text-decoration:line-through;font-weight:400;margin-right:4px}
-  .pblock .pext{margin-top:6px;font-size:12.5px;color:var(--soft-ink);line-height:1.7}
-  .pblock .pext b{font-weight:700;color:var(--ink)}
+  /* 🏷 좁게 걸린 세일 한 줄 — "Artichoke XS on sale until 10/1/2026"
+     ⓘ Extended Sizes 줄(.pext)은 2026-09-22 에 뺐다. 주문표 머리칸이 사이즈별 가격을
+       이미 다 보여줘서 같은 말을 두 번 하고 있었고, 그 줄 때문에 위 가격이 묻혔다.
+       되살리고 싶으면 이 자리에 .pext 규칙과 paintPriceBlock 의 블록을 같이 되돌린다. */
+  .pblock .pnote{margin-top:7px;font-size:12px;font-weight:600;color:#b04a3a;line-height:1.6}
   /* ⏳ "Sale ends 10/15/2026" — 세일이 실제로 값을 깎았을 때만 붙는다 */
   .pblock .psale{font-size:12px;font-weight:600;color:#b04a3a;white-space:nowrap}
   .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px;align-items:center}
@@ -892,6 +895,53 @@
     if(!m) return '';
     return ' <span class="psale">&middot; Sale ends '+Number(m[2])+'/'+Number(m[3])+'/'+m[1]+'</span>';
   }
+  /* 🏷 좁게 걸린 세일만 모은다 (2026-09-22)
+     스타일 전체 세일과 기준 사이즈 세일은 위 가격줄에 이미 날짜가 붙으니 여기서 뺀다.
+     ⚠⚠ 날짜가 살았는지는 **priceOf 로만** 판정한다. 여기서 오늘 날짜를 또 계산하면
+        America/New_York 기준이 네 번째로 생겨서 페이지와 checkout 워커가 어긋난다
+        (값이 다르면 /quote 가 409 로 주문을 막는다).
+     ⚠ 직원이 숨긴 색·사이즈의 세일은 말하지 않는다 — 손님이 살 수 없는 것이다. */
+  function _pbSaleList(){
+    if(!(PRICING && window.PacificData && PacificData.priceOf)) return [];
+    const bz=_pbBaseSize(); if(!bz) return [];
+    const BZ=String(bz).toUpperCase();
+    const vis={}; (colors||[]).forEach(c=>{ vis[String(c._raw||c.name).toUpperCase()]=c.name; });
+    const okSize=(z)=>(sizes||[]).some(s=>String(s).toUpperCase()===z);
+    const seen={}, out=[];
+    (PRICING.sales||[]).forEach(s=>{
+      const craw=s.color?String(s.color).toUpperCase():null;
+      const z   =s.size ?String(s.size ).toUpperCase():null;
+      if(!craw && !z)   return;            /* 스타일 전체 — 위 줄에 이미 있다 */
+      if(!craw && z===BZ) return;          /* 기준 사이즈 — 위 줄에 이미 있다 */
+      if(craw && !(craw in vis)) return;   /* 숨긴 색 */
+      if(z && !okSize(z))        return;   /* 숨긴 사이즈 */
+      const p=PacificData.priceOf(PRICING, craw?s.color:null, z||bz);
+      if(!p.onSale) return;                /* 끝난 세일이거나 실제로 안 싸다 */
+      const label=[craw?vis[craw]:null, z||null].filter(Boolean).join(' ');
+      if(!label) return;
+      const key=label+'|'+(p.endsOn||'');
+      if(seen[key]) return; seen[key]=1;
+      out.push({ label:label, endsOn:p.endsOn||null });
+    });
+    return out;
+  }
+  function _pbUntil(d){
+    const m=String(d||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? (' until '+Number(m[2])+'/'+Number(m[3])+'/'+m[1]) : '';
+  }
+  /* 1~2개는 이름을 쓰고, 3개부터는 개수만 말하고 사이즈표로 보낸다.
+     표에서는 paintSizePrices 가 세일 사이즈 머리칸에 on-sale 을, markCellSales 가
+     색까지 지정된 칸에 빨간 단가를 이미 붙이고 있다 — 손님이 거기서 찾을 수 있다. */
+  function _pbSaleLineHtml(){
+    const L=_pbSaleList();
+    if(!L.length) return '';
+    if(L.length>=3) return '<div class="pnote">'+L.length+' items on sale &mdash; see the size table below</div>';
+    const same = (L.length===2) && (String(L[0].endsOn||'')===String(L[1].endsOn||''));
+    const txt = same
+      ? (L[0].label+' &nbsp;&middot;&nbsp; '+L[1].label+' on sale'+_pbUntil(L[0].endsOn))
+      : L.map(x=>x.label+' on sale'+_pbUntil(x.endsOn)).join(' &nbsp;&middot;&nbsp; ');
+    return '<div class="pnote">'+txt+'</div>';
+  }
   function _pbMoney(p){
     if(!p || p.price==null) return null;
     return p.onSale
@@ -925,21 +975,11 @@
          ⚠ 흐린 회색(pstd)은 "계약가가 더 싸다" 를 보여줄 때만 쓴다. */
       html='<div class="prow pmine">Standard Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }
-    if(mine.price!=null){
-      const have=_pbSizes();
-      const bits=[];
-      let bigSale=null;
-      _PB_BIG.forEach(z=>{
-        if(have.indexOf(z)<0) return;
-        const p=PacificData.priceOf(PRICING, null, z);
-        if(p.price==null) return;
-        bits.push(z+' <b>'+fmtUSD(p.price)+'</b>');
-        if(!bigSale && p.onSale && p.endsOn) bigSale=p;   /* 확장사이즈만 세일인 경우 */
-      });
-      /* 기준 사이즈가 세일이면 위 줄에 이미 날짜가 붙었다 — 두 번 쓰지 않는다 */
-      const extNote = mine.onSale ? '' : _pbSaleNote(bigSale);
-      if(bits.length) html+='<div class="pext">Extended Sizes : '+bits.join(' &nbsp;&middot;&nbsp; ')+extNote+'</div>';
-    }
+    /* ⓘ 예전엔 여기에 "Extended Sizes : 2XL $4.35 · 3XL $4.95 …" 줄이 있었다.
+       뺀 이유: 주문표 머리칸이 사이즈별 가격을 이미 전부 보여준다 (같은 말 두 번),
+       그리고 그 줄이 바로 아래 붙어서 위 가격이 눈에 안 들어왔다. 대신 좁게 걸린
+       세일만 한 줄로 알린다. */
+    if(mine.price!=null) html += _pbSaleLineHtml();
     el.innerHTML=html;
     /* ⚠ display='' 로 두면 안 된다 — .pblock 의 CSS 가 display:none 이라
        인라인 스타일을 지우는 순간 다시 숨는다 (실측: 글자는 들어갔는데 높이 0). */
@@ -1042,6 +1082,13 @@
     fitJumpTail();
     fitColorCells();
     fitThumbs();                                   /* 사진 크기 맞추기 (2026-09-14) */
+    /* 🏷 색까지 지정된 세일의 빨간 단가를 여기서 다시 칠한다 (2026-09-22).
+       ⚠ 표를 다시 그리면 몸통을 통째로 비우므로 빨간 단가가 같이 날아간다. 표가 다시
+         그려지는 길이 다섯 군데(loadAlternate · rebuildColorViews · Edit 토글 …)라
+         **표를 만드는 이 자리 한 곳**에서 칠해야 한 군데도 안 빠진다.
+       ⚠ 부르는 쪽마다 markCellSales() 를 넣지 말 것 — 반드시 하나를 빠뜨린다.
+       PRICING 이 아직 없으면 markCellSales 가 알아서 바로 돌아간다. */
+    try{ markCellSales(); }catch(e){}
     if(!_thumbFitInit){ _thumbFitInit = 1; setTimeout(initThumbFit, 0); }
   }
 

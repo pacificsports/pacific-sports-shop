@@ -163,7 +163,10 @@
      [stated] 하윤: "Standard Price : $3.75 / Your Account Price : $3.65"
      ⚠ 라벨을 대문자 소제목(letter-spacing + uppercase)으로 바꾸지 말 것 — 한 번 그렇게 만들었다가 되돌렸다.
         한 줄로 "이름 : 값" 처럼 읽혀야 한다. */
-  .pblock{display:none;margin:-12px 0 22px}
+  /* ⚠ margin-top 을 다시 음수로 만들지 말 것 — 이름줄(.style-no 아래 22px)과 붙어서
+     가격이 이름의 일부처럼 보인다. [stated] 하윤: "공백을 조금 더 늘려서 가격이 더 눈에
+     잘들어오게하자" (2026-09-22). 지금 실제 간격 = 22px. */
+  .pblock{display:none;margin:0 0 22px}
   .pblock .prow{line-height:1.65}
   .pblock .pstd{font-size:13px;color:#a8a8a0}
   .pblock .pmine{font-size:16px;font-weight:700;color:var(--accent)}
@@ -181,24 +184,20 @@
   /* 🎨 색/사이즈 요약 — 가격과 설명 문구 사이 (2026-09-22)
      [stated] 하윤: "Price 랑 문구 사이에 몇가지 칼라랑 사이즈 내용 나오게"
      ⚠ 점은 상품 사진이 있으면 그 사진, 없으면 단색이다 (색칩과 같은 규칙). */
-  .csum{margin:0 0 22px;padding:16px 0 0;border-top:1px solid var(--line)}
+  .csum{margin:0 0 20px;padding:16px 0 0;border-top:1px solid var(--line)}
   .csum:empty{display:none}
-  .csum-row{display:flex;align-items:flex-start;gap:14px;margin-bottom:11px}
-  .csum-row:last-child{margin-bottom:0}
-  .csum-lb{flex:0 0 52px;font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;
-    font-weight:700;color:var(--faint);padding-top:6px}
-  .csum-dots{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-  .csum-dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--line-2);
-    background-size:cover;background-position:center;display:inline-block;flex:none}
-  .csum-more{font-size:12px;color:var(--soft-ink);margin-left:4px;padding-top:1px;white-space:nowrap}
-  .csum-sizes{display:flex;flex-wrap:wrap;gap:6px}
-  .csum-sz{font-size:11.5px;font-weight:600;color:var(--soft-ink);border:1px solid var(--line-2);
-    border-radius:6px;padding:4px 8px;line-height:1;background:var(--paper)}
+  /* ⓘ 예전엔 색 점 + 사이즈 알약이었다. [stated] 하윤: "이거 좀 별로다 … 그냥 글씨로 적는게
+     난거 같에" (2026-09-22). 되살리고 싶으면 .csum-dot/.csum-sz 규칙부터 다시 넣어야 한다. */
+  .csum .ctxt{display:block;font-size:14px;line-height:1.75;color:var(--soft-ink);font-weight:500}
   /* 📋 스펙 한 줄 (손님 화면) — 알약 대신 가운뎃점으로 이은 글자.
      ⚠ 직원 Edit 모드에서는 이 클래스를 떼서 칩으로 되돌린다 (고치기·빼기 버튼이 칩에 있다). */
   /* ⚠ 여기에 border-top 을 넣지 말 것 — .desc 가 이미 border-bottom 을 갖고 있어서
-     줄이 두 개 그어지고 그 사이가 텅 빈다 (한 번 그렇게 만들었다가 뺐다, 2026-09-22). */
-  .specs.spec-line{display:block;margin:2px 0 0;padding-top:0}
+     줄이 두 개 그어지고 그 사이가 텅 빈다 (한 번 그렇게 만들었다가 뺐다, 2026-09-22).
+     ⚠ 아래 여백(28px)을 없애지 말 것 — 없으면 'Complete the collection' 머리글에 달라붙어
+       그 묶음의 일부처럼 보인다. [stated] 하윤: "너무 complete the collection 그쪽에
+       붙어있어서 뭔가 좀 어색해" */
+  .specs.spec-line{display:block;margin:0 0 28px;padding:0 0 26px;
+    border-bottom:1px solid var(--line)}
   .specs.spec-line #specChips{display:inline}
   .specitem{font-size:12.5px;color:var(--soft-ink);white-space:nowrap}
   .specdot{color:var(--line-2);margin:0 9px;font-size:12.5px}
@@ -236,7 +235,12 @@
   .desc .dp{display:block}
   .desc .dp + .dp{margin-top:.6em}
   .desc b{font-weight:600;color:var(--ink)}
-  .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
+  /* ⚠ 구분선은 여기가 아니라 **스펙 줄 아래**에 있다 (2026-09-22).
+     설명 뒤에 선을 그으면 그 다음 줄(스펙)이 'Complete the collection' 묶음의 첫 줄처럼
+     보인다. [stated] 하윤: "너무 complete the collection 그쪽에 붙어있어서 어색해"
+     ⚠ 스펙이 하나도 없는 스타일에서는 JS 가 `.desc-end` 를 붙여 선을 여기로 되돌린다. */
+  .desc{font-size:15.5px;color:var(--soft-ink);font-weight:350;line-height:1.7;margin-bottom:16px}
+  .desc.desc-end{margin-bottom:30px;padding-bottom:30px;border-bottom:1px solid var(--line)}
 
   .login-note{background:var(--accent-soft);border:1px solid #dce4da;border-radius:12px;padding:14px 18px;font-size:14px;color:var(--accent);margin-bottom:28px;display:flex;align-items:center;gap:10px}
   .login-note b{font-weight:600}
@@ -1724,33 +1728,24 @@
      ⚠ 이 페이지엔 esc() 가 없다 — 전에 esc 를 썼다가 함수가 통째로 죽었다. 여기 것을 쓴다.
      ⚠ `#colorCountChip` 은 **이 id 그대로** 둔다: renderSwatches 가 '56 colors' 를 써넣고,
        init 이 클릭(색칩으로 스크롤)을 달아준다. 이름을 바꾸면 그 두 군데가 조용히 죽는다. */
-  const CSUM_DOTS = 14;
   function _csEsc(s){ return String(s==null?'':s).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
   function renderCsum(){
     const box=document.getElementById('csum'); if(!box) return;
     const list=(colors||[]);
     const zs=(sizes && sizes.length) ? sizes : (allSizes||[]);
     if(!list.length && !zs.length){ box.innerHTML=''; return; }
+    /* 글씨 두 줄: `56 Colors` / `XS-5XL` (2026-09-22)
+       ⚠ id 는 그대로 살린다 — #colorCountChip 은 renderSwatches 가 글자를 채우고
+         init 이 클릭(색칩으로 스크롤)을 달며, #csumSizes 는 Size Guide 를 연다. */
     let h='';
-    if(list.length){
-      const dots=list.slice(0,CSUM_DOTS).map(c=>{
-        /* 색칩과 같은 규칙: 사진이 있으면 사진, 없으면 단색 */
-        const st = c.img ? ('background-image:url(&quot;'+_csEsc(String(c.img))+'&quot;)')
-                         : ('background:'+_csEsc(String(c.hex||'#ddd')));
-        return '<span class="csum-dot" style="'+st+'" title="'+_csEsc(c.name)+'"></span>';
-      }).join('');
-      h += '<div class="csum-row"><span class="csum-lb">Colors</span><div class="csum-dots">'
-         + dots + '<span class="csum-more" id="colorCountChip"></span></div></div>';
-    }
+    if(list.length) h += '<span class="ctxt" id="colorCountChip"></span>';
     if(zs.length){
-      h += '<div class="csum-row"><span class="csum-lb">Sizes</span>'
-         + '<div class="csum-sizes" id="csumSizes">'
-         + zs.map(z=>'<span class="csum-sz">'+_csEsc(z)+'</span>').join('')
-         + '</div></div>';
+      const range = (zs.length>1) ? (zs[0]+'\u2013'+zs[zs.length-1]) : String(zs[0]);
+      h += '<span class="ctxt" id="csumSizes">'+_csEsc(range)+'</span>';
     }
     box.innerHTML=h;
     const cc=document.getElementById('colorCountChip');
-    if(cc) cc.textContent = list.length+' colors';
+    if(cc) cc.textContent = list.length+' Colors';
   }
   function renderSpecChips(){
     const box=document.getElementById('specChips');
@@ -1814,6 +1809,12 @@
     /* ⚠ Edit 모드에서는 칩으로 되돌린다 — 고치기·빼기 버튼이 칩 모양에 달려 있다 */
     const row=document.getElementById('specsRow');
     if(row) row.classList.toggle('spec-line', !editOn);
+    /* 스펙이 하나도 없으면 그 줄을 감추고 구분선을 설명칸으로 돌려준다 —
+       안 그러면 선이 아예 없어져서 설명과 다음 묶음이 붙어 보인다 (2026-09-22) */
+    const dsc=document.getElementById('pDesc');
+    const none=!act.length;
+    if(row) row.style.display = none ? 'none' : '';
+    if(dsc) dsc.classList.toggle('desc-end', none);
   }
 
   /* ═══════════ 📏 사이즈표도 Edit 모드에서 고친다 (2026-09-12) ═══════════
@@ -2155,7 +2156,7 @@
   _coverMainFn = showCoverOrDefault;
   // 색상 수 칩을 실제 색상 수로
   const ccChip=document.getElementById('colorCountChip');
-  if(ccChip) ccChip.textContent = colors.length+' colors';
+  if(ccChip) ccChip.textContent = colors.length+' Colors';
 
   // 색상 칩 그리기 (평소=보이는 색만, Edit=전체+숨김표시)
   function renderSwatches(){
@@ -2189,7 +2190,7 @@
       swEl.appendChild(sw);
     });
     const ccChip=document.getElementById('colorCountChip');
-    if(ccChip) ccChip.textContent = colors.length+' colors';
+    if(ccChip) ccChip.textContent = colors.length+' Colors';
     markActive();          /* 다시 그려도 선택 표시가 남는다 */
   }
   renderSwatches();

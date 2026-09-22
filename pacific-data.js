@@ -541,6 +541,19 @@ window.PacificData = (function () {
   }
 
   /* 최종 단가 — { list, price, onSale, endsOn } */
+  /* ⭐⭐ 세일가에도 확장사이즈 할증이 붙는다 (2026-09-22)
+     [stated] 하윤: "XS-XL 가 세일을 $3.40에 하면 거기에 2XL 3XL 4XL 5XL은 우리가
+              정해놓은 increase amount가 추가 되서 나오는건데. 저렇케 전체 다 3.40이아니라"
+     그래서 **사이즈를 안 집은 세일의 sale_price 는 XS~XL 값**이고, 큰 사이즈는 정가가
+     쓰는 것과 **같은 폭**을 얹는다: 2XL +0.60 · 3XL +1.20 · 4XL +2.00 · 5XL +3.20
+     ⭐ 폭을 여기서 다시 적지 않는다 — 정가끼리 빼서 구한다. 그래야 style_prices 에
+       값이 직접 적힌 스타일(할증표를 안 쓰는 예외)도 그 스타일의 폭을 그대로 따른다.
+     ⚠ **사이즈를 딱 집은 세일(size='2XL')은 그 사이즈 값 그대로다** — 할증을 또 얹으면
+       "2XL 만 $4.00 에" 라고 적은 것이 $4.60 이 되어 버린다.
+     ⚠ % 할인은 손댈 것이 없다 — 사이즈별 정가에 곱하니 폭이 저절로 따라간다.
+     ⚠⚠ 이 규칙은 checkout 워커의 _priceOf 에도 **똑같이** 들어 있다. 한쪽만 고치면
+        화면 금액과 워커 금액이 갈려서 /quote 가 409 로 주문을 막는다. */
+  const _SALE_REF='M';   /* 확장사이즈가 아닌 기준 사이즈 — 어느 계열이든 기본가가 나온다 */
   function _priceOf(P, color, size){
     const list=_listPrice(P, size);
     if(list==null) return {list:null, price:null, onSale:false, endsOn:null};
@@ -548,8 +561,15 @@ window.PacificData = (function () {
     if(!s) return {list:list, price:list, onSale:false, endsOn:null};
     /* 💲 세일가 0 도 빈칸으로 본다 — 0 을 적어 공짜로 나가는 일이 없게 (2026-09-21) */
     const sv=_pnum(s.sale_price);
-    let v = (sv!==undefined) ? sv
-          : (s.percent_off!=null) ? (list*(1-Number(s.percent_off)/100)) : list;
+    let v;
+    if(sv!==undefined){
+      if(s.size){ v=sv; }                                  /* 사이즈를 집은 세일 = 그대로 */
+      else {
+        const refList=_listPrice(P, _SALE_REF);
+        v = (refList==null) ? sv : (sv + (list - refList)); /* 정가와 같은 폭을 얹는다 */
+      }
+    } else if(s.percent_off!=null){ v = list*(1-Number(s.percent_off)/100); }
+    else { v = list; }
     v = Math.round(v*100)/100;
     const on = (v<list);
     /* endsOn 은 **세일이 실제로 값을 깎았을 때만** 준다 — 화면이 "언제까지" 를 찍는 조건과 같다 */

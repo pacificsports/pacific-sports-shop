@@ -381,7 +381,13 @@
       const PD=window.PacificData||{};
       const isHidden=(no,c)=> (PD.isHiddenColor?PD.isHiddenColor(no,c):false) || (styleHiddenColors[no]||[]).includes(String(c).toUpperCase());
       const disp=(no,c)=> PD.displayColorName?PD.displayColorName(no,c):c;
-      const hexOf=(c)=> PD.colorHex ? PD.colorHex(c) : '#c9c7bf';
+      const hexOf=(c)=> PD.colorHex ? PD.colorHex(c) : '';
+      /* ⚠⚠ 색표(COLOR_HEX)에 없는 이름은 **회색 한 가지**로 돌아온다. 실측 2026-09-22:
+         쓰는 색 이름 251개 중 196개가 색표에 없다 -> 그대로 찍으면 카드가 회색 동그라미
+         투성이가 된다. 그래서 **모르는 색은 점을 아예 안 찍는다** (회색으로 속이지 않는다).
+         ⓘ 회색 값을 글자로 박지 않고 '없는 이름'을 한 번 물어서 알아낸다 — 나중에 그 값이
+           바뀌어도 이 검사가 따라간다. */
+      const UNKNOWN_HEX = hexOf('__NO_SUCH_COLOR__');
       /* ⚠ 앞에서부터 8개를 자르면 안 된다 — 목록 순서가 흰색·아이보리 쪽에 몰려 있어서
          카드마다 **비슷한 연한 점 8개**만 나온다. 전체에서 고르게 집어야 색 폭이 보인다. */
       const spread=(arr,n)=>{ if(arr.length<=n) return arr.slice();
@@ -393,7 +399,8 @@
           if(shown.has(d)) return;                 /* 이름을 통일해서 겹치는 색은 한 번만 */
           shown.add(d);
           /* ⚠ hex 는 **원래 이름**으로 찾는다 — 직원이 바꾼 이름은 색상표에 없다 */
-          all.push({n:d, h:hexOf(c)});
+          const hx=hexOf(c);
+          if(hx && hx!==UNKNOWN_HEX) all.push({n:d, h:hx});   /* 아는 색만 점으로 */
         });
         colorCount[no]=shown.size; styleDots[no]=spread(all, CARD_DOTS); });
     }catch(e){}

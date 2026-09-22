@@ -172,6 +172,8 @@
   .pblock .pwas{color:var(--faint);text-decoration:line-through;font-weight:400;margin-right:4px}
   .pblock .pext{margin-top:6px;font-size:12.5px;color:var(--soft-ink);line-height:1.7}
   .pblock .pext b{font-weight:700;color:var(--ink)}
+  /* ⏳ "Sale ends 10/15/2026" — 세일이 실제로 값을 깎았을 때만 붙는다 */
+  .pblock .psale{font-size:12px;font-weight:600;color:#b04a3a;white-space:nowrap}
   .specs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px;align-items:center}
   #specsRow{margin-bottom:8px}
   .specs-auto .chip{background:var(--accent-soft);border-color:var(--line)}
@@ -883,6 +885,14 @@
     for(const z of a){ if(_PB_BIG.indexOf(z)<0) return z; }
     return a[0]||null;
   }
+  /* ⏳ 세일 종료일 문구. pacific-data.js 의 priceOf() 가 endsOn 을 준다.
+     ⚠ new Date('2026-10-15') 로 파싱하면 UTC 로 읽혀 10/14 가 된다 — 글자에서 자른다. */
+  function _pbSaleNote(p){
+    if(!p || !p.onSale || !p.endsOn) return '';
+    const m=String(p.endsOn).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!m) return '';
+    return ' <span class="psale">&middot; Sale ends '+Number(m[2])+'/'+Number(m[3])+'/'+m[1]+'</span>';
+  }
   function _pbMoney(p){
     if(!p || p.price==null) return null;
     return p.onSale
@@ -909,19 +919,24 @@
          + '</span></div>';
     }else if(std.price!=null && Math.abs(std.price-mine.price)>=0.005){
       html='<div class="prow pstd">Standard Price : '+_pbMoney(std)+'</div>'
-         + '<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+'</div>';
+         + '<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }else{
-      html='<div class="prow ponly">Standard Price : '+_pbMoney(mine)+'</div>';
+      html='<div class="prow ponly">Standard Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }
     if(mine.price!=null){
       const have=_pbSizes();
       const bits=[];
+      let bigSale=null;
       _PB_BIG.forEach(z=>{
         if(have.indexOf(z)<0) return;
         const p=PacificData.priceOf(PRICING, null, z);
-        if(p.price!=null) bits.push(z+' <b>'+fmtUSD(p.price)+'</b>');
+        if(p.price==null) return;
+        bits.push(z+' <b>'+fmtUSD(p.price)+'</b>');
+        if(!bigSale && p.onSale && p.endsOn) bigSale=p;   /* 확장사이즈만 세일인 경우 */
       });
-      if(bits.length) html+='<div class="pext">Extended Sizes : '+bits.join(' &nbsp;&middot;&nbsp; ')+'</div>';
+      /* 기준 사이즈가 세일이면 위 줄에 이미 날짜가 붙었다 — 두 번 쓰지 않는다 */
+      const extNote = mine.onSale ? '' : _pbSaleNote(bigSale);
+      if(bits.length) html+='<div class="pext">Extended Sizes : '+bits.join(' &nbsp;&middot;&nbsp; ')+extNote+'</div>';
     }
     el.innerHTML=html;
     /* ⚠ display='' 로 두면 안 된다 — .pblock 의 CSS 가 display:none 이라

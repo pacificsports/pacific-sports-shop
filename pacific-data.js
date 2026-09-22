@@ -502,10 +502,34 @@ window.PacificData = (function () {
     return null;
   }
 
+  /* ⏳ 세일 종료일 (2026-09-22) ─────────────────────────────────────
+     sale_prices.ends_on = 세일 마지막 날 (그 날까지 세일가). NULL 이면 종료일 없음.
+     [stated] 하윤: "세일한 가격 나오는거 옆에 언제까지 한다 날짜 나오게 하자"
+
+     ⚠⚠ 이 규칙은 checkout 워커의 _saleFor 에도 **똑같이** 들어 있다.
+        한쪽만 고치면 화면 금액과 워커 금액이 갈려서 결제가 409 로 막힌다.
+     ⚠ "오늘" 은 America/New_York 으로 못 박는다. UTC 로 재면 미국 저녁에 이미
+        다음 날이라 세일이 하루 일찍 끝난다. 브라우저(손님 시간대)와 워커(UTC)가
+        서로 다른 답을 내면 역시 409 다.
+     ⚠ new Date('2026-10-15') 로 파싱하지 말 것 — UTC 로 읽어서 하루 밀린다.
+        'YYYY-MM-DD' 는 글자 비교만으로 날짜 비교가 된다. */
+  function _saleToday(){
+    try{
+      return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',
+        year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    }catch(e){ return new Date().toISOString().slice(0,10); }
+  }
+  function _saleLive(s){
+    const e = (s && s.ends_on) ? String(s.ends_on).slice(0,10) : '';
+    if(!e) return true;                /* 종료일 없음 = 계속 (칸이 아예 없는 DB 도 여기로 온다) */
+    return e >= _saleToday();          /* 마지막 날까지는 세일가 */
+  }
+
   /* 이 색·사이즈에 걸린 세일 중 제일 구체적인 것 하나 */
   function _saleFor(P, color, size){
     const c=String(color||'').toUpperCase(), z=String(size||'').toUpperCase();
     const hit=(P.sales||[]).filter(s=>{
+      if(!_saleLive(s)) return false;      /* ⏳ 지난 세일은 없는 것으로 본다 */
       const sc=s.color?String(s.color).toUpperCase():null;
       const sz=s.size ?String(s.size ).toUpperCase():null;
       return (!sc||sc===c) && (!sz||sz===z);
@@ -516,18 +540,20 @@ window.PacificData = (function () {
     return hit[0];
   }
 
-  /* 최종 단가 — { list, price, onSale } */
+  /* 최종 단가 — { list, price, onSale, endsOn } */
   function _priceOf(P, color, size){
     const list=_listPrice(P, size);
-    if(list==null) return {list:null, price:null, onSale:false};
+    if(list==null) return {list:null, price:null, onSale:false, endsOn:null};
     const s=_saleFor(P, color, size);
-    if(!s) return {list:list, price:list, onSale:false};
+    if(!s) return {list:list, price:list, onSale:false, endsOn:null};
     /* 💲 세일가 0 도 빈칸으로 본다 — 0 을 적어 공짜로 나가는 일이 없게 (2026-09-21) */
     const sv=_pnum(s.sale_price);
     let v = (sv!==undefined) ? sv
           : (s.percent_off!=null) ? (list*(1-Number(s.percent_off)/100)) : list;
     v = Math.round(v*100)/100;
-    return {list:list, price:v, onSale:(v<list)};
+    const on = (v<list);
+    /* endsOn 은 **세일이 실제로 값을 깎았을 때만** 준다 — 화면이 "언제까지" 를 찍는 조건과 같다 */
+    return {list:list, price:v, onSale:on, endsOn:(on && s.ends_on) ? String(s.ends_on).slice(0,10) : null};
   }
 
   /* ===== ⑥ 공개 API =================================================== */

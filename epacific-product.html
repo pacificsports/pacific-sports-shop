@@ -206,6 +206,10 @@
     color:var(--faint);padding:11px 0;border-bottom:1px solid var(--line)}
   .sptab dd{margin:0;font-size:13.5px;color:var(--ink);padding:10px 0;
     border-bottom:1px solid var(--line)}
+  /* FABGRP-v1 — 한 칸에 값이 여러 개일 때 (원단이 색·부위마다 다른 스타일) */
+  .sptab dd .spln{display:block}
+  .sptab dd .spln + .spln{margin-top:4px}
+  .sptab dd .spq{color:var(--faint);font-size:12.5px}
   /* 직원 Edit — 같은 표에서 값을 고치고 줄을 끌어 옮긴다 (2026-09-22)
      ⚠ 키 칸 폭은 손님 화면(86px)과 **합이 같아야** 한다: 18 + 68 = 86.
        안 맞추면 Edit 을 켜고 끌 때 글자가 좌우로 튄다. */
@@ -1861,6 +1865,29 @@
        · '100% Cotton' 은 원단, 'US Cotton' 은 원면 산지 — 정확히 일치로 가른다
      ⚠ 규칙에 안 걸리면 빈 글자를 돌려준다. 억지로 이름을 붙이지 않는다.
      ⚠ 'Certified' 라는 낱말은 쓰지 않는다 (BCI 회원사만 쓸 수 있는 말) -> BCI 줄의 키는 Cotton. */
+  /* FABGRP-v1 (2026-09-23) — 값 끝의 「(…)」 는 한정어다. 흐리게 뺀다.
+     예) `50% Polyester, 50% Rayon (All colors except Black)`
+         `100% Combed Ring-Spun Cotton (Body)`
+     ⚠ 맨 끝의 괄호 한 쌍만 본다. 없으면 예전과 똑같이 그린다. */
+  function spVal(c){
+    const s = String(c == null ? '' : c);
+    const m = s.match(/^(.*\S)\s*\(([^()]*)\)\s*$/);
+    return '<span class="spln">'
+      + (m ? (chipEsc(m[1]) + ' <span class="spq">(' + chipEsc(m[2]) + ')</span>')
+           : chipEsc(s))
+      + '</span>';
+  }
+  /* 같은 키의 칩을 한 칸에 모은다 — 키 차례는 처음 나온 순서를 지킨다.
+     ⚠ 이걸 안 하면 원단이 두 개인 스타일에서 FABRIC 줄이 두 개 나온다. */
+  function spGroups(list){
+    const out = [], at = {};
+    (list || []).forEach(c => {
+      const k = specKey(c) || '&nbsp;';
+      if(!(k in at)){ at[k] = out.length; out.push({ k: k, v: [] }); }
+      out[at[k]].v.push(c);
+    });
+    return out;
+  }
   function specKey(t){
     const s=String(t==null?'':t).trim().toLowerCase();
     if(/\boz\b|gram|sq\.?\s*yd/.test(s))  return 'Weight';
@@ -2013,7 +2040,7 @@
          [stated] 하윤: "저 내용들을 좀더 새련된 방법으로 보여주는걸 연구해보자" */
       const cp=casePackLine();
       box.innerHTML='<dl class="sptab">'
-        + act.map(c=>'<dt>'+(specKey(c)||'&nbsp;')+'</dt><dd>'+chipEsc(c)+'</dd>').join('')
+        + spGroups(act).map(g=>'<dt>'+g.k+'</dt><dd>'+g.v.map(spVal).join('')+'</dd>').join('')
         + (cp?'<dt>Case pack</dt><dd class="cpv">'+cp+'</dd>':'')
         + '</dl>';
     }

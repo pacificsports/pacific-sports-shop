@@ -3146,12 +3146,37 @@
 /* ===== 같은 컬렉션 관련 스타일 (description ↔ size guide 사이) ===== */
 (function(){
   // 같은 라인/컬렉션 묶음 — 필요시 배열만 추가하면 됨
+  /* FAMUNION-v1 (2026-09-23) - 묶음은 「원단이 같고 몸판만 다른 것」 기준이다.
+     STYLE_MASTER 이름이 같은 것끼리 묶었다. 카탈로그에 없는 번호는 아래에서
+     걸러지니 적어 둬도 안전하다.
+     ⭐ 한 스타일이 여러 묶음에 속할 수 있다 (1690 = 16/1 중량 + PFD). */
   const FAMILIES=[
-    ['8368','1368','1362','1348','1364','2388'],
-    ['1315','1322','1314','2316','2310','3310','5310'],
-    ['1210','1212','1214','2210','3210','5210']
+    /* 30/1 CVC */        ['8368','1368','1388','1362','1348','1364','2388','2382'],
+    /* 30/1 100% */       ['1315','1315R','1311','1322','1314','2310','2316','3310','5310'],
+    /* 22/1 100% */       ['1210','1212','1214','2210','2212','3210','3212','5210','5212'],
+    /* PFD */             ['1290','1292','1390','1392','1394','1690'],
+    /* 16/1 Heavyweight */['1600','1615','1690'],
+    /* Snow Htr */        ['1350','1351','1352','1354','2350','3350','5350'],
+    /* Triblend */        ['1530','1532','1534','5230'],
+    /* Tri Color */       ['1230','1232','1234'],
+    /* 22/1 Color Htr */  ['1260','1262','1264'],
+    /* 24/1 Slub */       ['1240','1248'],
+    /* Omni */            ['1330','1332'],
+    /* Siro */            ['1650','1652']
   ];
-  function famFor(no){ no=String(no); for(const g of FAMILIES){ if(g.map(String).indexOf(no)>-1) return g.map(String); } return null; }
+  /* ⭐ FAMUNION-v1 - 맞는 묶음을 **모두** 모은다 (전에는 첫 묶음에서 return 해서
+     한 스타일이 한 묶음에만 속했다. 그래서 1690 이 16/1 식구에만 보이고
+     PFD 식구에는 안 보였다). 순서는 묶음 순서 그대로, 중복은 뺀다. */
+  function famFor(no){
+    no = String(no);
+    const out = [], seen = {};
+    for(const g of FAMILIES){
+      const gs = g.map(String);
+      if(gs.indexOf(no) < 0) continue;
+      gs.forEach(n=>{ if(!seen[n]){ seen[n] = 1; out.push(n); } });
+    }
+    return out.length ? out : null;
+  }
   async function boot(){
     const box=document.getElementById('relatedStyles'); if(!box) return;
     const cur=String(new URLSearchParams(location.search).get('style')||'1368');

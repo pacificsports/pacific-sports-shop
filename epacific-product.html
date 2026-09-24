@@ -2372,14 +2372,10 @@
   function markActive(){
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', !!curName && x.dataset.name===curName));
   }
-  /* GALTHUMB-v1 - 작은 사진 줄이 기억하는 「마지막으로 본 색」.
-     모델 사진을 보는 동안에도 오른쪽 칸이 남아 있어야 다시 그 색으로 돌아갈 수 있다. */
-  let galColor = null;
   function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
     curName = c.name;
-    if(c && c.img) galColor = c;            /* 사진이 있는 색만 작은 칸에 올린다 */
     markActive();
     renderGalThumbs();
   }
@@ -2405,9 +2401,12 @@
       b.addEventListener('click', go);
       box.appendChild(b);
     };
+    /* GALTHUMB-v2 - 모델 칸 하나만 둔다.
+       [stated] 하윤: "저기 티셔츠 모양뜨는게 꼭 있어야하는건가??" -> 버린다
+       평면 사진은 아래 색 칩이 이미 보여준다. 없던 건 모델로 돌아갈 길뿐이었다.
+       ⚠ 큰 사진이 이미 모델일 때도 칸은 그대로 둔다 (자리가 움직이지 않게, 그리고
+         그런 단추가 있다는 것이 보이게). 그때는 테두리가 켜진 채다. */
     tile(cover, 'Model photo', !curName, ()=>setMainCover(cover));
-    const c = galColor || pickDefaultColor();
-    if(c && c.img) tile(c.img, c.name, curName === c.name, ()=>setMain(c));
   }
   /* ═══ 표지(모델) 사진을 큰 사진으로 (2026-09-15) ═══
      [stated] 하윤: "거기에도 나오고 클릭해서 들어오면 그 스타일 매인 사진으로 나오는거야"

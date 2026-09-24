@@ -120,12 +120,6 @@
   .main-img #mainImg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
   .main-img #mainImg img{width:100%;height:100%;object-fit:contain;padding:4px}
   .main-img #mainImg svg{width:70%;height:70%;filter:drop-shadow(0 14px 24px rgba(28,28,26,.13))}
-  /* GALTHUMB-v1 - 큰 사진 아래 작은 사진 줄 (모델 / 그 색 평면) */
-  .gal-thumbs{display:flex;gap:10px;margin:-6px 0 14px}
-  .gal-thumbs button{width:62px;height:62px;padding:3px;border-radius:12px;background:#fff;border:1px solid var(--line-2,#e3e2db);cursor:pointer;overflow:hidden;transition:border-color .12s,box-shadow .12s;display:block}
-  .gal-thumbs button img{width:100%;height:100%;object-fit:contain;display:block}
-  .gal-thumbs button:hover{border-color:var(--accent)}
-  .gal-thumbs button.active{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
   .main-img .tag{position:absolute;bottom:14px;left:14px;background:rgba(255,255,255,.92);backdrop-filter:blur(4px);color:var(--accent);font-size:11px;font-weight:600;letter-spacing:.04em;padding:6px 12px;border-radius:999px;box-shadow:0 2px 8px rgba(28,28,26,.08);z-index:2}
   /* 색상 칩 격자: 작은 동그라미들이 옹기종기. 마우스 올리면 메인 사진 바뀜 */
   /* ⚠ 표지(모델) 사진이 보일 때는 "Color: ○○" 를 비운다 — 그때 줄이 사라지면서 아래가
@@ -581,9 +575,6 @@
     <div class="main-img">
       <div id="mainImg"></div>
     </div>
-    <!-- GALTHUMB-v1 - 모델 사진 / 그 색 평면 사진을 오가는 작은 사진 줄.
-         표지(모델) 사진이 없는 스타일에서는 비어 있다 (script 가 안 그린다). -->
-    <div class="gal-thumbs" id="galThumbs"></div>
     <div class="sw-label" id="swLabel"></div>
     <!-- 카드 표지(모델) 사진 — 제품 목록 카드에만 쓰인다. 색이 아니므로 칼라칩·주문표에
          나오지 않는다. 직원 Edit 에서만 보인다 (2026-09-15). -->
@@ -2372,41 +2363,18 @@
   function markActive(){
     swEl.querySelectorAll('.sw').forEach(x=>x.classList.toggle('active', !!curName && x.dataset.name===curName));
   }
+  /* COVERLOCK-v1 (2026-09-24) - 표지(모델) 사진이 있으면 손님 화면의 큰 사진은 고정이다.
+     [stated] 하윤: "그냥 저기는 모델사진만 나오게 고정시킬까?"
+     ⚠ Edit 모드에서는 **false** 여야 한다 - 직원은 색 칩을 눌러 그 색 사진을 봐야 한다.
+     ⚠ 색을 크게 보는 길은 주문표 사진 클릭(zoomOpen)으로 남아 있다. */
+  function coverLocked(){
+    try{ return !editOn && !!(product && product.coverImg); }catch(e){ return false; }
+  }
   function setMain(c){
     mainImg.innerHTML = c.img ? `<img src="${c.img}" alt="${c.name}">` : teeSVG(c.hex,true);
     if(swLabel) swLabel.innerHTML = 'Color: <b>'+c.name+'</b>';
     curName = c.name;
     markActive();
-    renderGalThumbs();
-  }
-  /* GALTHUMB-v1 - 큰 사진 아래 작은 사진 두 개를 그린다.
-     ⚠ 표지(모델) 사진이 없으면 아무것도 그리지 않는다 - 한 장만 있는 줄은 군더더기다.
-     ⚠ src 를 innerHTML 로 박지 않는다 (URL 이 글자로 섞이면 안 된다). */
-  function renderGalThumbs(){
-    const box = document.getElementById('galThumbs');
-    if(!box) return;
-    const cover = (product && product.coverImg) || '';
-    box.textContent = '';
-    if(!cover){ box.style.display = 'none'; return; }
-    box.style.display = 'flex';
-    const tile = (url, alt, on, go) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = on ? 'active' : '';
-      b.title = alt;
-      b.setAttribute('aria-label', alt);
-      const im = document.createElement('img');
-      im.src = url; im.alt = alt; im.loading = 'lazy';
-      b.appendChild(im);
-      b.addEventListener('click', go);
-      box.appendChild(b);
-    };
-    /* GALTHUMB-v2 - 모델 칸 하나만 둔다.
-       [stated] 하윤: "저기 티셔츠 모양뜨는게 꼭 있어야하는건가??" -> 버린다
-       평면 사진은 아래 색 칩이 이미 보여준다. 없던 건 모델로 돌아갈 길뿐이었다.
-       ⚠ 큰 사진이 이미 모델일 때도 칸은 그대로 둔다 (자리가 움직이지 않게, 그리고
-         그런 단추가 있다는 것이 보이게). 그때는 테두리가 켜진 채다. */
-    tile(cover, 'Model photo', !curName, ()=>setMainCover(cover));
   }
   /* ═══ 표지(모델) 사진을 큰 사진으로 (2026-09-15) ═══
      [stated] 하윤: "거기에도 나오고 클릭해서 들어오면 그 스타일 매인 사진으로 나오는거야"
@@ -2421,7 +2389,6 @@
     if(swLabel) swLabel.textContent='';
     curName = null;
     markActive();
-    renderGalThumbs();      /* GALTHUMB-v1 */
   }
   function showCoverOrDefault(){
     const u = (product && product.coverImg) || '';
@@ -2476,7 +2443,8 @@
         sw.title = c.name + (isHidden?' (hidden)':'');
       }else{
         // 색 클릭: 사진 변경 + 주문표를 그 색으로 이동(사진 고정이라 보면서 주문 가능)
-        sw.addEventListener('click',()=>{ setMain(c); jumpTo(c.name); });
+        /* COVERLOCK-v1 - 표지가 있으면 사진은 그대로 두고 주문표만 이동한다 */
+        sw.addEventListener('click',()=>{ if(!coverLocked()) setMain(c); jumpTo(c.name); });
       }
       /* 마우스만 올려도 이름이 뜬다 — 누르지 않아도 뭔지 안다 */
       sw.addEventListener('mouseenter',()=>swTipShow(sw,c.name));
@@ -2514,8 +2482,9 @@
     const tr=cell.closest('tr'); const name=tr&&tr.dataset.color;
     const c=colors.find(x=>x.name===name);
     if(!c) return;
-    setMain(c);
-    /* 사진을 누르면 크게 — 색은 작게 보면 못 고른다 */
+    if(!coverLocked()) setMain(c);      /* COVERLOCK-v1 - 표지가 있으면 큰 사진 고정 */
+    /* 사진을 누르면 크게 — 색은 작게 보면 못 고른다.
+       ⚠ COVERLOCK 이어도 이 길은 남긴다 - 색을 크게 확인할 유일한 길이다. */
     if(e.target.closest('.cimg')) zoomOpen(c);
   });
   // 이름 더블클릭 → 그 자리에서 바로 수정

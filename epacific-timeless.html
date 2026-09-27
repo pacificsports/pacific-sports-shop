@@ -300,6 +300,33 @@
     text-transform:uppercase;color:var(--accent);margin-top:7px;opacity:0;transform:translateY(5px);
     transition:opacity .28s,transform .28s}
   .gm-tile:hover .gl i{opacity:1;transform:translateY(0)}
+  /* COTTON-1 (2026-09-27) - 기본부터 신경 쓴다 밴드.
+     왼쪽 색 판 + 오른쪽 원단 사진. 사진은 상품사진의 가슴 부분을 바싹 잘라 쓴다
+     (사진 속을 파고 들어가므로 흰 배경이 화면에 안 들어온다). */
+  .cot{display:grid;grid-template-columns:46% 54%;min-height:560px;background:#2f4632;
+    border-top:1px solid var(--line)}
+  .cot-txt{background:linear-gradient(152deg,#40603f 0%,#2b402e 100%);color:#f2f0e8;
+    padding:clamp(44px,5.4vw,92px);display:flex;flex-direction:column;justify-content:center}
+  .cot-eye{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:500;
+    letter-spacing:.09em;text-transform:uppercase;color:rgba(242,240,232,.62);margin-bottom:26px}
+  .cot-eye .cd{width:6px;height:6px;border-radius:50%;background:var(--warm)}
+  .cot h2{font-family:var(--display);font-weight:400;font-size:clamp(34px,5vw,60px);
+    line-height:1.04;letter-spacing:-.015em;margin:0 0 30px}
+  .cot h2 span{display:block}
+  .cot h2 em{font-style:italic;font-size:.42em;opacity:.55;letter-spacing:0;margin-right:.32em;
+    vertical-align:baseline}
+  .cot p{font-size:16px;font-weight:350;line-height:1.72;color:rgba(242,240,232,.8);max-width:46ch}
+  /* 하운 밌라우자에서 진짜 사진으로 세 번 맞추어 본 값이다.
+     185% 는 목·얼굴이 들어오고, 265% 는 오른손 아리 뒤로 흔 배경이 떠서
+     320% 로 정했다 - 원단 결리만 보이고 배경이 한 점도 안 들어오는 값. */
+  .cot-img{background:#2f4632 center/cover no-repeat;background-size:320%;
+    background-position:55% 40%}
+  @media(max-width:1000px){
+    .cot{grid-template-columns:1fr;min-height:0}
+    .cot-txt{padding:52px 24px 48px;order:1}
+    .cot-img{order:2;min-height:280px;background-size:320%;background-position:55% 40%}
+    .cot p{font-size:15px}
+  }
   .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px;font-weight:400;letter-spacing:.01em}
 
   @media(max-width:1000px){
@@ -712,6 +739,27 @@
   </div>
 </div>
 
+<!-- COTTON-1 (2026-09-27) - 기본부터 신경 쓴다 밴드 (옷 종류 진열 바로 아래).
+     [stated] 하윤: "cotton sourcing 부터 엄청 신경을 써서 부드러움과 comfort 를 완성시킨다"
+     ⚠ 인증·산지·수치는 넣지 않았다 - 확인된 것만 말한다.
+     오른쪽 사진은 아래 스크립트가 넣는다. 못 넣으면 사진 쪽을 접고 색 판만 폭 전체로 쓴다. -->
+<div class="cot" id="cotWrap">
+  <div class="cot-txt">
+    <div class="cot-eye"><span class="cd"></span>Where the comfort comes from</div>
+    <h2>
+      <span><em>the</em>cotton</span>
+      <span><em>the</em>spin</span>
+      <span><em>the</em>dye</span>
+      <span><em>the</em>hand</span>
+    </h2>
+    <p>Soft is not something you add at the end. It begins with the cotton we choose, and it
+       has to survive every step after it &mdash; how the yarn is spun, how the colour is dyed,
+       how the cloth is finished. We fuss over the plain parts, because that is where comfort
+       is either built in or lost for good.</p>
+  </div>
+  <div class="cot-img" id="cotImg"></div>
+</div>
+
 <footer>
   <div class="f-in">
     <div class="fb">
@@ -735,6 +783,54 @@
 <script src="pacific-config.js"></script>
 <script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
+
+<script>
+/* COTTON-1 (2026-09-27) - 밴드 오른쪽에 원단 사진을 넣는다.
+   ⚠ 8368 만 쓴다. 다른 사진은 모델 자세·구도가 달라서 자른 자리가 얼굴에 걸릴 수 있다.
+   ⚠ 8368 이 없거나 숨겨져 있으면 사진 쪽을 접고 색 판만 폭 전체로 쓴다 (밴드는 남는다). */
+(function(){
+  var USE = '8368';
+
+  function flat(){
+    var w = document.getElementById('cotWrap');
+    var i = document.getElementById('cotImg');
+    if(i) i.remove();
+    if(w) w.style.gridTemplateColumns = '1fr';
+  }
+
+  async function isHidden(n){
+    var C = window.PACIFIC_CONFIG || {};
+    if(!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) throw new Error('no config');
+    var r = await fetch(C.SUPABASE_URL + '/rest/v1/style_settings?select=is_hidden&style_number=eq.'
+      + encodeURIComponent(n), { headers:{ apikey:C.SUPABASE_ANON_KEY,
+        Authorization:'Bearer ' + C.SUPABASE_ANON_KEY } });
+    if(!r.ok) throw new Error('style_settings HTTP ' + r.status);
+    var d = await r.json();
+    return !!(d && d[0] && d[0].is_hidden);
+  }
+
+  async function boot(){
+    var box = document.getElementById('cotImg');
+    if(!box) return;
+    if(!(window.PacificData && PacificData.getStyleThumbs)){
+      console.error('COTTON-1: PacificData missing - band shown without the photo'); flat(); return; }
+    try{
+      if(await isHidden(USE)){ flat(); return; }
+      var t = await PacificData.getStyleThumbs();
+      var u = t && t[USE];
+      if(!u){ console.error('COTTON-1: no photo for ' + USE); flat(); return; }
+      var im = new Image();
+      im.onload = function(){ box.style.backgroundImage = 'url("' + u + '")'; };
+      im.onerror = function(){ console.error('COTTON-1: photo did not load'); flat(); };
+      im.src = u;
+    }catch(e){
+      console.error('COTTON-1: load failed - band shown without the photo', e); flat(); }
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
 
 <script>
 /* GARMENT-1 (2026-09-27) - 옷 종류 진열을 그린다.

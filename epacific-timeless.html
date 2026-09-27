@@ -269,10 +269,53 @@
   .fb p{font-size:13px;line-height:1.75;color:#7a7a70;max-width:38ch;font-weight:350}
   .f-bot{max-width:1240px;margin:52px auto 0;padding-top:24px;border-top:1px solid #313129;font-size:12px;color:#7a7a70;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
+  /* GARMENT-1 (2026-09-27) - 옷 종류 진열.
+     크기를 다르게 한 12칸 격자: 첫 칸이 6칸x2줄, 나머지 넷이 3칸x1줄.
+     ⚠⚠ 실측: 상품 사진은 PNG 지만 투명이 아니다 (바탕이 흰색으로 칠해져 있다).
+        그래서 색 판에 얹으면 흰 네모가 보인다. 아래 multiply 로 흰 부분을 뺀다.
+        바탕색도 흰색에서 1%만 벗어난 값이라 옷 색이 물들지 않는다.
+     ⚠ 글자는 사진 아래 빈 띠에 앉힌다 - 사진 위에 흰 그라데이션을 깔았더니
+        옷 아랫도리가 안개처럼 날아갔다 (하윤 브라우저에서 실제로 보고 고쳤다). */
+  .gmt{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:298px;gap:18px}
+  .gm-tile{position:relative;display:block;color:inherit;text-decoration:none;overflow:hidden;
+    border-radius:16px;border:1px solid var(--line);background:#faf9f5;
+    transition:border-color .3s,transform .5s cubic-bezier(.2,.7,.3,1)}
+  .gm-tile:hover{border-color:var(--line-2);transform:translateY(-3px)}
+  .gm-tile.big{grid-column:span 6;grid-row:span 2}
+  .gm-tile.sm{grid-column:span 3}
+  .gm-tile img{position:absolute;left:50%;transform:translateX(-50%);bottom:64px;height:76%;width:auto;
+    max-width:none;object-fit:contain;mix-blend-mode:multiply;transition:height .5s cubic-bezier(.2,.7,.3,1)}
+  .gm-tile.big img{bottom:80px;height:85%}
+  .gm-tile:hover img{height:79%}
+  .gm-tile.big:hover img{height:88%}
+  @supports not (mix-blend-mode: multiply){
+    .gm-tile{background:#fdfdfc}
+  }
+  .gm-tile .gl{position:absolute;left:22px;right:22px;bottom:18px}
+  .gm-tile .gl b{display:block;font-family:var(--display);font-weight:400;font-size:24px;
+    line-height:1.08;letter-spacing:-.01em;color:var(--ink)}
+  .gm-tile.big .gl{left:30px;right:30px;bottom:24px}
+  .gm-tile.big .gl b{font-size:38px}
+  .gm-tile .gl i{display:block;font-style:normal;font-size:12.5px;font-weight:500;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--accent);margin-top:7px;opacity:0;transform:translateY(5px);
+    transition:opacity .28s,transform .28s}
+  .gm-tile:hover .gl i{opacity:1;transform:translateY(0)}
   .demo-banner{background:var(--accent);color:#fff;text-align:center;padding:10px 20px;font-size:13px;font-weight:400;letter-spacing:.01em}
 
   @media(max-width:1000px){
     .cats{grid-template-columns:repeat(2,1fr)}
+    /* 폰: 큰 칸은 한 줄 전체, 나머지 넷은 두 칸씩.
+       ⚠ 사진 높이 + 아래 빈 띠가 칸 높이를 넘으면 머리가 잘린다 - 그래서 값이 따로다. */
+    .gmt{grid-template-columns:repeat(2,1fr);grid-auto-rows:216px;gap:12px}
+    .gm-tile.big{grid-column:span 2;grid-row:span 2}
+    .gm-tile.sm{grid-column:span 1}
+    .gm-tile img{bottom:48px;height:70%}
+    .gm-tile.big img{bottom:62px;height:82%}
+    .gm-tile .gl{left:15px;right:15px;bottom:12px}
+    .gm-tile .gl b{font-size:19px}
+    .gm-tile.big .gl{left:22px;right:22px;bottom:16px}
+    .gm-tile.big .gl b{font-size:30px}
+    .gm-tile .gl i{opacity:1;transform:none;margin-top:4px;font-size:11.5px}
     .demo-card{grid-template-columns:1fr}
     .di{min-height:300px}
     nav.main{display:none}
@@ -398,7 +441,7 @@
     { eyebrow:'Premium blank apparel · since 1992',
       title:'Blanks made to <i>be made into</i> something.',
       sub:'Premium blank tees, tanks, long sleeves, and hooded long sleeves built for print — across cotton, blends, heathers, and performance.',
-      btn:'Try the order grid', href:'#order',
+      btn:'Shop all styles', href:'epacific-category.html',   /* HOMEDEL-1 */
       btn2:'Become a reseller', href2:'epacific-login.html',
       bg:'#fbfbf9', fg:'#1c1c1a', mosaic:60 },   /* 10칸 x 6줄 딱 맞게 */
     { eyebrow:'Colour, not compromise',
@@ -410,7 +453,7 @@
     { eyebrow:'Sumter, SC · Eastvale, CA',
       title:'By the piece. Or <i>by the case.</i>',
       sub:'Fill in the sizes you want and order either way in one step — shipped from whichever warehouse is closer to you.',
-      btn:'Start an order', href:'#order',
+      btn:'Start an order', href:'epacific-category.html',   /* HOMEDEL-1 */
       btn2:'Talk to us', href2:'mailto:sales@peacepacificsports.com',
       bg:'#eceae2', fg:'#1c1c1a', style:'1348' }
   ];
@@ -650,58 +693,22 @@
   </div>
 </section>
 
-<div class="order" id="order">
+<!-- HOMEDEL-1 (2026-09-27) - 홈의 주문표 시연 블록을 없앴다.
+     [stated] 하윤: "경쟁업체들은 이미 다 저런식으로 오더가 되거든 저게 우리의 장점이 아니야"
+     ⓘ 그 기능 자체는 상품페이지에 그대로 있다 - 없앤 건 홈의 시연 블록뿐이다.
+     ⓘ 같이 지운 것: 알림 말풍선(#toast) · 이 블록만 쓰던 스크립트.
+        배너 1장·3장의 버튼이 여기(#order)를 가리키고 있어서 카탈로그로 돌렸다. -->
+
+<!-- GARMENT-1 (2026-09-27) - 옷 종류로 고르는 진열.
+     바깥 흰 띠는 지운 주문표가 쓰던 것을 새로 만들지 않고 그대로 다시 썼다.
+     사진이나 숨김 설정을 못 읽으면 아래 스크립트가 이 띠를 통째로 지운다. -->
+<div class="order" id="gmWrap" style="display:none">
   <div class="order-wrap">
-    <div class="order-intro">
-      <div class="eyebrow"><span class="dot"></span>The new way to order</div>
-      <h2>Pick a color. Type your sizes. <i>Add once.</i></h2>
-      <p>No more picking one size, adding to cart, going back, switching, adding again. Enter every size at once — just like a real wholesale order sheet.</p>
+    <div class="s-head">
+      <h2>Shop by Garment</h2>
+      <a href="epacific-category.html">View all styles &rarr;</a>
     </div>
-
-    <div class="demo-card">
-      <div class="di">
-        <div class="sn">Style #1368</div>
-        <div class="preview" id="preview">Natural<br>Short Sleeve</div>
-      </div>
-      <div class="db">
-        <div class="ct">Adult · 60/40 Combed Ring Spun (BCI)</div>
-        <h3>1368 Short Sleeve Crew</h3>
-        <div class="spec">4.3 oz / 145 gram · Tear-away label · BCI Cotton</div>
-
-        <label class="flabel"><span class="n">1</span> Choose Color</label>
-        <div class="sw" id="swatches">
-          <div class="swatch active" style="background:#f1ece0" data-name="Natural"><span>Natural</span></div>
-          <div class="swatch" style="background:#2c2c2c" data-name="Black"><span>Black</span></div>
-          <div class="swatch" style="background:#6b7b5e" data-name="Army Green"><span>Army Green</span></div>
-          <div class="swatch" style="background:#8a9aa8" data-name="Smoke"><span>Smoke</span></div>
-          <div class="swatch" style="background:#b0383a" data-name="Red"><span>Red</span></div>
-          <div class="swatch" style="background:#33414f" data-name="Navy"><span>Navy</span></div>
-          <div class="swatch" style="background:#6e6e6e" data-name="Charcoal"><span>Charcoal</span></div>
-        </div>
-
-        <label class="flabel"><span class="n">2</span> Enter Quantities by Size</label>
-        <div class="grid-wrap">
-          <table>
-            <thead><tr><th>XS</th><th>S</th><th>M</th><th>L</th><th>XL</th><th>2XL</th><th>3XL</th></tr></thead>
-            <tbody><tr>
-              <td><input type="number" min="0" value="0" data-price="3.20"><div class="pr">$3.20</div></td>
-              <td><input type="number" min="0" value="0" data-price="3.20"><div class="pr">$3.20</div></td>
-              <td><input type="number" min="0" value="0" data-price="3.20"><div class="pr">$3.20</div></td>
-              <td><input type="number" min="0" value="0" data-price="3.20"><div class="pr">$3.20</div></td>
-              <td><input type="number" min="0" value="0" data-price="3.20"><div class="pr">$3.20</div></td>
-              <td><input type="number" min="0" value="0" data-price="4.10"><div class="pr">$4.10</div></td>
-              <td><input type="number" min="0" value="0" data-price="4.60"><div class="pr">$4.60</div></td>
-            </tr></tbody>
-          </table>
-        </div>
-
-        <div class="summary">
-          <div class="blk"><small>Total Units</small><b id="totalUnits">0</b></div>
-          <div class="blk" style="text-align:right"><small>Subtotal</small><b id="subtotal">$0.00</b></div>
-          <button class="addbtn" id="addBtn" disabled>Add to Order</button>
-        </div>
-      </div>
-    </div>
+    <div class="gmt" id="gmGrid"></div>
   </div>
 </div>
 
@@ -722,33 +729,121 @@
   </div>
 </footer>
 
-<div class="toast" id="toast">✓ Added to order</div>
 
-<script>
-  const swatches=document.querySelectorAll('.swatch');
-  const preview=document.getElementById('preview');
-  swatches.forEach(s=>s.addEventListener('click',()=>{swatches.forEach(x=>x.classList.remove('active'));s.classList.add('active');preview.innerHTML=s.dataset.name+'<br>Short Sleeve'}));
-  const inputs=document.querySelectorAll('.grid-wrap input');
-  const tU=document.getElementById('totalUnits'),sT=document.getElementById('subtotal'),addBtn=document.getElementById('addBtn');
-  function recalc(){let u=0,m=0;inputs.forEach(i=>{const q=parseInt(i.value)||0;u+=q;m+=q*parseFloat(i.dataset.price)});tU.textContent=u;sT.textContent='$'+m.toFixed(2);addBtn.disabled=u===0}
-  inputs.forEach(i=>i.addEventListener('input',recalc));
-  const SIZES_HOME=['XS','S','M','L','XL','2XL','3XL'];
-  const toast=document.getElementById('toast');
-  addBtn.addEventListener('click',()=>{
-    const color=document.querySelector('.swatch.active').dataset.name;
-    const items=[]; let u=0;
-    inputs.forEach((inp,idx)=>{ const q=parseInt(inp.value)||0; if(q>0){ u+=q; items.push({style:'1368',styleName:'1368 30/1 60:40 Short Sleeve Crew',color:color,wh:'SC',size:SIZES_HOME[idx]||('S'),qty:q}); } });
-    if(u===0) return;
-    if(window.PacificCart) window.PacificCart.add(items);
-    toast.textContent='\u2713 '+u+' units added ('+color+') \u2014 see Cart';
-    toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2400);
-    inputs.forEach(i=>i.value=0); recalc();
-  });
-</script>
+
 
 <script src="pacific-config.js"></script>
 <script src="pacific-admin-auth.js"></script>
 <script src="pacific-data.js"></script>
+
+<script>
+/* GARMENT-1 (2026-09-27) - 옷 종류 진열을 그린다.
+   ⚠ 개수는 적지 않는다 (Hoodie 가 2개뿐이라 적으면 없어 보인다).
+   ⚠ 가격은 그리지 않는다. 도매라 로그인해야 가격이 보인다.
+   ⚠ 링크는 머리글 메뉴에 이미 있는 주소 그대로다. */
+(function(){
+  /* cats = 이 칸이 묶는 카테고리들 (앞에서부터 대표 사진을 찾는다)
+     pref = 대표로 쓰고 싶은 스타일. 사진이 없으면 같은 카테고리에서 아무거나 고른다.
+     ⓘ 바탕색을 칸마다 다르게 해봤다가 없앴다 - 사진 안에 스튜디오 배경 얼룩이 있어서
+        색 판에 얹으면 사진 네모가 드러났다. 지금은 한 가지 색이다.
+     ⚠ 1348 은 사진 배경이 흰색이 아니라 흰회색(248)이라 네모가 드러났다.
+        그래서 Hoodies 대표를 1248 (252~254, 깨끗함) 으로 바꿨다. 나머지는 전부 깨끗하다. */
+  var TILES = [
+    { key:'ss',  name:'Short Sleeve',  big:true,
+      cats:['Adult S/S'],          pref:'8368',
+      href:'epacific-category.html?cat=Adult%20S%2FS' },
+    { key:'ls',  name:'Long Sleeve',
+      cats:['Adult L/S'],          pref:'1362',
+      href:'epacific-category.html?cat=Adult%20L%2FS' },
+    { key:'tk',  name:'Tank Tops',
+      cats:['Adult Tank Top'],     pref:'1364',
+      href:'epacific-category.html?cat=Adult%20Tank%20Top' },
+    { key:'hd',  name:'Hoodies',
+      cats:['Adult Hoodie L/S'],   pref:'1248',
+      href:'epacific-category.html?cat=Adult%20Hoodie%20L%2FS' },
+    { key:'kd',  name:'Kids &amp; Youth',
+      cats:['Kids S/S','Youth S/S','Youth L/S','Toddler S/S','Juvy S/S'],
+      pref:'2388',
+      href:'epacific-category.html?cat=Kids%20S%2FS' }
+  ];
+  var MIN = 3;   /* 세 칸도 못 채우면 진열을 아예 안 보여준다 */
+
+  function bye(){ var w = document.getElementById('gmWrap'); if(w) w.remove(); }
+  function esc3(t){ return String(t == null ? '' : t)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  async function hiddenSet(){
+    /* WEBSAFE-1 과 같은 규칙: 못 읽으면 삼키지 않고 위로 올려보낸다.
+       삼키면 숨겨둔 스타일 사진이 홈 첫 화면에 걸릴 수 있다. */
+    var C = window.PACIFIC_CONFIG || {};
+    if(!C.SUPABASE_URL || !C.SUPABASE_ANON_KEY) throw new Error('no config');
+    var r = await fetch(C.SUPABASE_URL + '/rest/v1/style_settings?select=style_number,is_hidden&limit=100000',
+      { headers:{ apikey:C.SUPABASE_ANON_KEY, Authorization:'Bearer ' + C.SUPABASE_ANON_KEY } });
+    if(!r.ok) throw new Error('style_settings HTTP ' + r.status);
+    var out = {};
+    (await r.json() || []).forEach(function(x){ if(x && x.is_hidden) out[String(x.style_number)] = 1; });
+    return out;
+  }
+
+  async function boot(){
+    var grid = document.getElementById('gmGrid');
+    var wrap = document.getElementById('gmWrap');
+    if(!grid || !wrap) return;
+    if(!(window.PacificData && PacificData.getStyles && PacificData.getStyleThumbs)){
+      console.error('GARMENT-1: PacificData missing - shelf not shown'); bye(); return; }
+
+    var styles, thumbs, hide;
+    try{
+      styles = await PacificData.getStyles();
+      thumbs = await PacificData.getStyleThumbs();
+      hide   = await hiddenSet();
+    }catch(e){
+      console.error('GARMENT-1: load failed - shelf not shown', e); bye(); return; }
+
+    /* 카테고리별 명단 (숨긴 것·사진 없는 것은 빼고) */
+    var pool = {};
+    (styles || []).forEach(function(x){
+      if(!x || !x.no) return;
+      var n = String(x.no);
+      if(hide[n] || !thumbs[n]) return;
+      var c = String(x.cat || '');
+      (pool[c] = pool[c] || []).push(n);
+    });
+    Object.keys(pool).forEach(function(c){
+      pool[c].sort(function(a,b){ return a.localeCompare(b, undefined, {numeric:true}); }); });
+
+    var html = '', made = 0;
+    TILES.forEach(function(t){
+      var pick = null;
+      /* 원하는 스타일이 쓸 수 있으면 그것으로 */
+      for(var i = 0; i < t.cats.length && !pick; i++){
+        var lst = pool[t.cats[i]] || [];
+        if(t.pref && lst.indexOf(t.pref) >= 0) pick = t.pref;
+      }
+      /* 아니면 그 칸이 묶는 카테고리에서 앞에 있는 것 */
+      for(var j = 0; j < t.cats.length && !pick; j++){
+        var l2 = pool[t.cats[j]] || [];
+        if(l2.length) pick = l2[0];
+      }
+      if(!pick) return;                  /* 사진이 하나도 없는 종류는 칸을 만들지 않는다 */
+      made++;
+      html += '<a class="gm-tile ' + (t.big ? 'big' : 'sm') + '" href="' + t.href + '"'
+            + ' aria-label="' + esc3(t.name.replace('&amp;','and')) + '">'
+            + '<img src="' + esc3(thumbs[pick]) + '" alt="" loading="lazy">'
+            + '<span class="gl"><b>' + t.name + '</b><i>View styles &rarr;</i></span></a>';
+    });
+
+    if(made < MIN){
+      console.error('GARMENT-1: only ' + made + ' garment types have a photo - shelf not shown');
+      bye(); return; }
+    grid.innerHTML = html;
+    wrap.style.display = '';
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+</script>
 
 
 

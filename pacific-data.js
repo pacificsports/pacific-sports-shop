@@ -420,14 +420,30 @@ window.PacificData = (function () {
      우선순위: 거래처가 > 기본가 → 그 위에 세일 적용.
      로그인 안 했으면 아무것도 안 가져온다 (가격은 승인된 거래처만 본다). */
   function _sess(){ try{ return JSON.parse(localStorage.getItem('pacific_user')||'null'); }catch(e){ return null; } }
+  /* WEBSAFE-1 (2026-09-27) - ⚠⚠ 이 함수는 **세 가지 다른 일**을 똑같이 `null` 로 돌려준다:
+       ① 로그인 안 했다        <- 정상. 가격은 승인된 거래처만 본다
+       ② 토큰이 죽었다(401/403) <- 실패. 그런데 화면은 ①과 구분을 못 한다
+       ③ 서버·네트워크 오류     <- 실패. 역시 구분을 못 한다
+     ②③ 이면 **카탈로그 전체가 「가격 없음 = 주문 불가」** 로 보인다. 에러는 안 뜬다.
+
+     이번 패치는 **동작을 하나도 안 바꾼다** - 실패 이유만 적어둔다.
+     화면에 「로그인이 만료됐습니다」 를 띄우는 것은 글이 붙는 일이라 다음 패치에서
+     미리보기를 보여주고 한다. 그때 `PacificData.lastAuthError()` 를 읽으면 된다.
+       null  = 실패 없음 (①이거나 정상)
+       {code: 401|403|5xx} = HTTP 실패
+       {code: 0}           = 네트워크 실패 */
+  let _authErr = null;
   async function _authGet(path){
-    const ss=_sess(); if(!ss||!ss.token) return null;
+    const ss=_sess(); if(!ss||!ss.token) return null;   /* ① 로그인 안 함 - 실패 아님 */
+    let r;
     try{
-      const r=await fetch(SUPABASE_URL+'/rest/v1/'+path,
+      r=await fetch(SUPABASE_URL+'/rest/v1/'+path,
         {headers:{apikey:SUPABASE_ANON_KEY, Authorization:'Bearer '+ss.token}});
-      if(!r.ok) return null;
-      return await r.json();
-    }catch(e){ return null; }
+    }catch(e){ _authErr={code:0}; console.error('authGet network fail', path, e); return null; }
+    if(!r.ok){ _authErr={code:r.status}; console.error('authGet HTTP '+r.status, path); return null; }
+    _authErr=null;
+    try{ return await r.json(); }
+    catch(e){ _authErr={code:-1}; console.error('authGet bad JSON', path, e); return null; }
   }
   let _myCustomerId; // undefined=아직 안 봄, null=없음
   async function _customerId(){
@@ -646,6 +662,10 @@ window.PacificData = (function () {
     colorDisplay: function (styleNo, raw) { return displayColorName(String(styleNo), raw); },
     colorHidden:  function (styleNo, raw) { return isHiddenColor(String(styleNo), raw); },
     colorPretty:  function (raw) { return prettyColor(raw); },
+
+    /* WEBSAFE-1 - 마지막 인증 읽기가 실패했나. 화면이 「로그인 만료」 를 띄울 때 쓴다.
+       null = 실패 없음 · {code:401|403} = 토큰 문제 · {code:0} = 네트워크 · {code:-1} = 응답 깨짐 */
+    lastAuthError: function () { return _authErr; },
 
     // 전체 스타일 목록 (제품 목록/카테고리 화면용)
     getStyles: async function () {

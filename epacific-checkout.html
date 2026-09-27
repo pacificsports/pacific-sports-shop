@@ -198,12 +198,23 @@
     const mult=adult?(SIZE_MULT[String(size||'').toUpperCase()]||1):1;
     return base*mult;
   }
+  /* WEBSAFE-1 (2026-09-27) - ⚠⚠ 전에는 `styles` 표를 **여기서 또** 읽었다.
+     그 읽기가 실패하면 `STYLE_CAT` 이 비고, 그러면 모든 장이 `DEFAULT_W`(0.60lb)로
+     계산돼 **UPS 견적이 실물보다 훨씬 비싸게** 나온다 (Adult S/S 실제 0.45).
+     에러도 안 뜨고 그냥 비싼 값이 손님에게 보인다.
+
+     ⭐ 그래서 `PacificData.getStyles()` 를 쓴다. 그 함수는 표를 못 읽으면
+        **파일에 내장된 카탈로그(STYLE_LIST 69개, category 포함)** 로 떨어지므로
+        카테고리가 빌 수가 없다. 같은 걸 읽는 두 번째 사본을 지우는 것이기도 하다. */
   async function loadStyleCats(){
     try{
-      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/styles?select=style_number,category',
-        {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+_C.SUPABASE_ANON_KEY}});
-      if(r.ok){ const d=await r.json(); d.forEach(s=>{ STYLE_CAT[String(s.style_number)]=s.category; }); }
-    }catch(e){}
+      if(window.PacificData && PacificData.getStyles){
+        const rows = await PacificData.getStyles();
+        (rows||[]).forEach(s=>{ if(s && s.no && s.cat) STYLE_CAT[String(s.no)]=s.cat; });
+      }
+    }catch(e){ console.error('style categories failed', e); }
+    if(!Object.keys(STYLE_CAT).length)
+      console.error('STYLE_CAT is empty - every piece will use DEFAULT_W ' + DEFAULT_W + 'lb');
   }
   const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
   function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }

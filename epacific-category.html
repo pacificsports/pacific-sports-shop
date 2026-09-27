@@ -334,11 +334,15 @@
   function sortStylesByRank(){ allStyles.sort((a,b)=>effRank(a.no)-effRank(b.no) || String(a.no).localeCompare(String(b.no),undefined,{numeric:true})); }
 
   // 스타일 설정 로드: 숨김 / color_names / ★메인색 / 진열순서(rank)
+  /* WEBSAFE-1 (2026-09-27) - ⚠⚠ 여기서 조용히 돌아가면 **숨긴 것이 다 공개된다.**
+     `hiddenStyles` 가 빈 Set 으로 남아서 화면이 「숨긴 게 하나도 없다」 로 그린다.
+     그래서 못 읽으면 던진다 - `initCategory` 의 catch 가 상품을 안 그리고
+     「Could not load the style list.」 를 띄운다. 모르면 안 보여준다. */
   async function loadHiddenStyles(){
     try{
       const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings?select=style_number,is_hidden,color_names,default_color,hidden_colors,hidden_sizes&limit=100000',
         {headers:_anonH()});
-      if(!r.ok) return;
+      if(!r.ok) throw new Error('style_settings HTTP '+r.status);
       const d=await r.json();
       hiddenStyles=new Set((d||[]).filter(x=>x.is_hidden).map(x=>String(x.style_number)));
       /* 감춘 사이즈 — 카드의 사이즈 범위에서 뺀다 (2026-09-15) */
@@ -348,7 +352,11 @@
         if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
         if(Array.isArray(x.hidden_colors)&&x.hidden_colors.length) styleHiddenColors[no]=x.hidden_colors.map(c=>String(c).toUpperCase());
         const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk; });
-    }catch(e){}
+    }catch(e){
+      /* WEBSAFE-1 - 삼켜서는 안 된다 (위 주석 참고). 밖으로 올려보낸다. */
+      console.error('style_settings load failed - catalogue not rendered', e);
+      throw e;
+    }
   }
   // 스타일별 실제 색상 목록 로드 (★메인색 썸네일 매핑용)
   async function loadStyleColors(){

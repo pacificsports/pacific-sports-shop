@@ -1,0 +1,23 @@
+# Pacific Sports — B2B wholesale storefront
+#
+# 2026-09-27: the site is not open yet. Every page carries
+# `X-Robots-Tag: noindex, nofollow` (see _headers), so search engines are
+# asked to keep the whole site out of their results.
+#
+# Crawling is deliberately ALLOWED here: a crawler that is blocked by
+# robots.txt never sees the noindex header, and URLs it already knows can
+# stay in the results. Letting it read the page is what removes it.
+#
+# The Disallow lines below stay after launch — these pages must never be
+# indexed. Prices and stock are only visible to approved, signed-in
+# customers, so there is nothing here for a search engine.
+
+User-agent: *
+Disallow: /epacific-login
+Disallow: /epacific-account
+Disallow: /epacific-cart
+Disallow: /epacific-checkout
+Disallow: /epacific-order
+Disallow: /reset-password
+Disallow: /admin-
+Allow: /

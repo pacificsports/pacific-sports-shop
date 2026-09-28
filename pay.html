@@ -10,83 +10,102 @@
   :root{--paper:#fdfdfb;--bg:#f6f5f1;--ink:#1c1c1a;--soft-ink:#4c4a44;--faint:#8b8880;--line:#e7e4dc;--line-2:#d6d2c6;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f}
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Geist','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
-  header{background:rgba(251,251,249,.9);border-bottom:1px solid var(--line);padding:18px 30px}
-  .brand{font-family:'Instrument Serif',serif;font-size:22px;letter-spacing:.5px}
-  .wrap{max-width:560px;margin:34px auto 60px;padding:0 18px}
-  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px 24px}
-  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;line-height:1.15}
-  .sub{color:var(--faint);font-size:13.5px;margin-top:6px}
-  .amt{font-family:'Instrument Serif',serif;font-size:52px;line-height:1;margin:22px 0 4px;letter-spacing:-1px}
-  .amtlab{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  header{background:var(--paper);border-bottom:1px solid var(--line);padding:16px 26px;display:flex;align-items:center;gap:12px}
+  header .wm{font-family:'Instrument Serif',serif;font-size:23px;letter-spacing:.4px;line-height:1}
+  header img{height:26px;width:auto;display:block}
+  header .tag{margin-left:auto;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:600}
+  .wrap{max-width:600px;margin:30px auto 56px;padding:0 16px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .pad{padding:26px 26px 24px}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:29px;line-height:1.15}
+  .who{font-size:15px;font-weight:600;margin-top:10px}
+  .sub{color:var(--faint);font-size:13px;margin-top:4px}
+  .amtlab{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600;margin-top:22px}
+  .amt{font-family:'Instrument Serif',serif;font-size:48px;line-height:1;margin-top:4px;letter-spacing:-1px}
   table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13.5px}
-  th{text-align:left;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 0 7px;border-bottom:1px solid var(--line)}
-  td{padding:9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+  th{text-align:left;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:600;padding:0 0 7px;border-bottom:1px solid var(--line)}
+  td{padding:9px 0;border-bottom:1px solid var(--line)}
   td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .btn{display:block;width:100%;margin-top:24px;background:var(--accent);color:#fff;border:none;border-radius:11px;padding:17px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer}
-  .btn:disabled{opacity:.5;cursor:default}
-  .btn.sec{background:transparent;color:var(--soft-ink);border:1px solid var(--line-2);font-size:14px;padding:13px}
-  .note{margin-top:16px;font-size:12px;color:var(--faint);line-height:1.6;text-align:center}
-  .msg{margin-top:18px;padding:13px 15px;border-radius:10px;font-size:13.5px;line-height:1.5}
+  .btn:disabled{opacity:.55;cursor:default}
+  .safe{margin-top:14px;font-size:12px;color:var(--soft-ink);line-height:1.6;display:flex;gap:9px;align-items:flex-start}
+  .safe svg{flex:0 0 15px;margin-top:2px}
+  .msg{margin-top:18px;padding:13px 15px;border-radius:10px;font-size:13.5px;line-height:1.55}
   .msg.bad{background:#fbf0ef;border:1px solid #e6c5c2;color:var(--err)}
-  .msg.good{background:var(--accent-soft);border:1px solid #c8d6c9;color:var(--accent)}
-  .paidbox{margin-top:22px;padding:20px;border-radius:12px;background:var(--accent-soft);border:1px solid #c8d6c9;text-align:center}
+  /* 카드 폼 자리 - 페이지 안에 그대로 박힌다. 덮지 않는다. */
+  #paybox{display:none;border-top:1px solid var(--line);background:#fff}
+  #paybox.on{display:block}
+  .payhead{padding:17px 26px 3px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .payhead b{font-size:14px;font-weight:600}
+  .payhead span{font-size:12.5px;color:var(--faint);margin-left:auto;font-variant-numeric:tabular-nums}
+  #lbf{width:100%;height:640px;border:0;display:block}
+  .paidbox{margin-top:22px;padding:22px;border-radius:12px;background:var(--accent-soft);border:1px solid #c8d6c9;text-align:center}
   .paidbox .big{font-family:'Instrument Serif',serif;font-size:27px;color:var(--accent)}
-  .paidbox .sm{font-size:12.5px;color:var(--soft-ink);margin-top:7px;line-height:1.6}
-  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:7px}
+  .paidbox .sm{font-size:12.5px;color:var(--soft-ink);margin-top:8px;line-height:1.7}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px;margin-right:8px}
   @keyframes sp{to{transform:rotate(360deg)}}
-  #lb{position:fixed;inset:0;background:rgba(28,28,26,.72);z-index:90;display:none;align-items:center;justify-content:center;padding:14px}
-  #lb.on{display:flex}
-  #lbin{background:#fff;border-radius:12px;width:100%;max-width:560px;max-height:94vh;overflow:hidden;position:relative;box-shadow:0 24px 70px rgba(0,0,0,.35)}
-  #lbf{width:100%;height:760px;border:0;display:block}
-  #lbx{position:absolute;top:8px;right:10px;background:rgba(255,255,255,.92);border:1px solid var(--line-2);border-radius:8px;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;color:var(--soft-ink);z-index:2}
-  footer{text-align:center;color:var(--faint);font-size:11.5px;padding:0 18px 40px;line-height:1.7}
-  @media(max-width:520px){ .amt{font-size:42px} .wrap{margin-top:22px} header{padding:15px 18px} }
+  footer{margin-top:26px;font-size:11.5px;color:var(--faint);line-height:1.8}
+  footer .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px}
+  footer b{color:var(--soft-ink);font-weight:600;display:block}
+  footer a{color:var(--faint);text-decoration:none}
+  @media(max-width:520px){ .amt{font-size:39px} .pad{padding:22px 18px} .payhead{padding:15px 18px 3px} header{padding:14px 18px} }
 </style>
 </head>
 <body>
 
-<header><div class="brand">Pacific Sports</div></header>
+<header>
+  <img id="logo" src="logo-pacific.png" alt="Pacific Sports">
+  <div class="wm" id="wm" style="display:none">Pacific Sports</div>
+  <div class="tag">Secure payment</div>
+</header>
 
 <div class="wrap">
-  <div class="card" id="card">
-    <div class="sub" id="boot">Loading…</div>
+  <div class="card">
+    <div class="pad" id="top"><div class="sub">Loading&hellip;</div></div>
+    <div id="paybox">
+      <div class="payhead"><b>Enter your card</b><span id="payamt"></span></div>
+      <iframe id="lbf" name="payframe" frameborder="0" scrolling="no" title="Secure card form"></iframe>
+    </div>
   </div>
-  <footer id="foot"></footer>
-</div>
 
-<div id="lb"><div id="lbin">
-  <button id="lbx" type="button" title="Close">&times;</button>
-  <iframe id="lbf" name="payframe" frameborder="0" scrolling="no"></iframe>
-</div></div>
+  <footer>
+    <b>Peace Textile America Inc. &nbsp;dba Pacific Sports</b>
+    <div class="row">
+      <span>1605 South Guignard Parkway<br>Sumter, SC 29150<br><a href="tel:8037732177">803-773-2177</a></span>
+      <span>14129 The Merge Street, Unit B<br>Eastvale, CA 92880<br><a href="tel:8034470012">803-447-0012</a></span>
+      <span><a href="mailto:sales@peacepacificsports.com">sales@peacepacificsports.com</a></span>
+    </div>
+  </footer>
+</div>
 
 <form id="payform" method="post" target="payframe" action="https://accept.authorize.net/payment/payment" style="display:none">
   <input type="hidden" name="token" id="ptok">
 </form>
 
 <script>
-/* Pacific Sports 결제 링크 페이지 (2026-09-28)
-   손님이 인보이스를 카드로 내는 화면. 로그인 없다.
-   카드 번호는 이 페이지에 절대 들어오지 않는다 - Authorize.Net 창 안에서만 친다.
-   금액도 이 페이지가 정하지 않는다 - 서버가 DB 에서 읽은 값만 쓴다. */
+/* Pacific Sports 결제 링크 페이지 (2026-09-28, v2)
+   [stated] 하윤: "저러면 거래처가 어떻케 믿고 정보를 넣을수있겠어" + "다 보이지도 않는데"
+   그래서 화면을 덮는 팝업을 없앴다. 카드 폼은 우리 페이지 안에 그대로 박히고,
+   그 위에 회사 이름 / 거래처 이름 / 인보이스 번호 / 금액이 계속 보인다.
+   카드 번호는 이 페이지에 들어오지 않는다. Authorize.Net 창 안에서만 친다. */
 (function () {
   var API = 'https://payreq.hjbae.workers.dev';
   var TOKEN = (new URLSearchParams(location.search).get('t') || '').trim();
-  var card = document.getElementById('card');
-  var lb = document.getElementById('lb');
-  var lbf = document.getElementById('lbf');
-  var state = null;
-  var busy = false;
+  var top = document.getElementById('top');
+  var box = document.getElementById('paybox');
+  var frame = document.getElementById('lbf');
+  var state = null, busy = false;
+
+  var lg = document.getElementById('logo');
+  lg.onerror = function () { lg.style.display = 'none'; document.getElementById('wm').style.display = 'block'; };
 
   function esc(s){ return String(s == null ? '' : s)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function money(n){ return '$' + (Number(n)||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-  function foot(t){ document.getElementById('foot').innerHTML = t || ''; }
+  function hideBox(){ box.classList.remove('on'); try{ frame.src = 'about:blank'; }catch(e){} }
 
-  function showError(t){
-    card.innerHTML = '<h1>Payment link</h1><div class="msg bad">' + esc(t) + '</div>'
-      + '<div class="note">Questions? Reply to the email this link came from and we will help.</div>';
-    foot('');
-  }
+  var LOCK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#3d5a40" stroke-width="2">'
+    + '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>';
 
   function itemRows(items){
     if(!items || !items.length) return '';
@@ -99,38 +118,45 @@
     return r + '</tbody></table>';
   }
 
+  function showError(t){
+    hideBox();
+    top.innerHTML = '<h1>Payment link</h1><div class="msg bad">' + esc(t) + '</div>'
+      + '<div class="safe" style="color:var(--faint)">Please reply to the email this link came from and we will help.</div>';
+  }
+
   function showPaid(s){
-    card.innerHTML = '<h1>Thank you</h1>'
-      + '<div class="sub">' + esc(s.cust || '') + '</div>'
-      + '<div class="paidbox"><div class="big">' + money(s.amount) + ' paid</div>'
-      + '<div class="sm">'
+    hideBox();
+    top.innerHTML = '<h1>Thank you</h1>'
+      + '<div class="who">' + esc(s.cust || '') + '</div>'
+      + '<div class="paidbox"><div class="big">' + money(s.amount) + ' paid</div><div class="sm">'
       + (s.acct ? ('Card ending ' + esc(s.acct) + '<br>') : '')
-      + (s.authCode ? ('Approval ' + esc(s.authCode) + '<br>') : '')
+      + (s.authCode ? ('Approval code ' + esc(s.authCode) + '<br>') : '')
       + (s.paidAt ? new Date(s.paidAt).toLocaleString('en-US') : '')
       + '</div></div>'
       + itemRows(s.items)
-      + '<div class="note">A receipt has been recorded on your account. You can close this page.</div>';
-    foot('');
+      + '<div class="safe">' + LOCK + '<span>This payment has been recorded on your account. '
+      + 'You can close this page.</span></div>';
   }
 
   function showPay(s){
-    card.innerHTML = '<h1>Pay your invoice</h1>'
-      + '<div class="sub">' + esc(s.cust || '') + '</div>'
-      + '<div class="amtlab" style="margin-top:20px">Amount due</div>'
+    top.innerHTML = '<h1>Pay your invoice</h1>'
+      + '<div class="who">' + esc(s.cust || '') + '</div>'
+      + '<div class="sub">Pacific Sports &middot; Peace Textile America Inc.</div>'
+      + '<div class="amtlab">Amount due</div>'
       + '<div class="amt">' + money(s.amount) + '</div>'
       + itemRows(s.items)
-      + (s.note ? '<div class="note" style="text-align:left">' + esc(s.note) + '</div>' : '')
+      + (s.note ? '<div class="sub" style="margin-top:12px">' + esc(s.note) + '</div>' : '')
       + '<button class="btn" id="go" type="button">Pay by credit card</button>'
       + '<div id="slot"></div>'
-      + '<div class="note">Your card is entered on Authorize.Net’s secure form.<br>'
-      + 'Pacific Sports never sees or stores your card number.</div>';
+      + '<div class="safe">' + LOCK + '<span>Your card details are entered on a secure form hosted by '
+      + '<b>Authorize.Net</b>, our payment processor. Pacific Sports never sees or stores your card number.</span></div>';
     document.getElementById('go').onclick = go;
-    foot('Pacific Sports &middot; Peace Textile America Inc.');
+    document.getElementById('payamt').textContent = money(s.amount) + ' due';
   }
 
-  function say(kind, t){
+  function say(t){
     var slot = document.getElementById('slot');
-    if(slot) slot.innerHTML = '<div class="msg ' + kind + '">' + esc(t) + '</div>';
+    if(slot) slot.innerHTML = t ? '<div class="msg bad">' + esc(t) + '</div>' : '';
   }
 
   async function load(){
@@ -154,7 +180,7 @@
     busy = true;
     var b = document.getElementById('go');
     if(b){ b.disabled = true; b.innerHTML = '<span class="spin"></span>Opening secure form…'; }
-    say('good', '');
+    say('');
     var j = null;
     try{
       var r = await fetch(API + '/start', { method:'POST', headers:{'Content-Type':'application/json'},
@@ -165,24 +191,18 @@
       busy = false;
       if(b){ b.disabled = false; b.textContent = 'Pay by credit card'; }
       if(j && j.paid){ load(); return; }
-      say('bad', (j && j.error) || 'We could not open the payment form. Please try again.');
+      say((j && j.error) || 'We could not open the payment form. Please try again.');
       return;
     }
     document.getElementById('ptok').value = j.formToken;
-    lb.classList.add('on');
+    box.classList.add('on');
     document.getElementById('payform').submit();
-    if(b){ b.disabled = false; b.textContent = 'Pay by credit card'; }
+    if(b){ b.disabled = true; b.textContent = 'Card form is open below'; }
+    setTimeout(function(){ try{ box.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 250);
     busy = false;
   }
 
-  function closeLb(){
-    lb.classList.remove('on');
-    try{ lbf.src = 'about:blank'; }catch(e){}
-  }
-  document.getElementById('lbx').onclick = function(){ closeLb(); };
-
-  /* Authorize.Net 결제창이 ifc.html 을 거쳐 결과를 보내온다.
-     우리 주소에서 온 것만 받는다. */
+  /* Authorize.Net 결제창이 ifc.html 을 거쳐 결과를 보내온다. 우리 주소에서 온 것만 받는다. */
   window.addEventListener('message', async function (ev) {
     if(ev.origin !== window.location.origin) return;
     if(typeof ev.data !== 'string' || !ev.data) return;
@@ -192,22 +212,27 @@
 
     if(action === 'resizeWindow'){
       var h = parseInt(p.get('height'), 10);
-      if(h > 200 && h < 3000) lbf.style.height = (h + 24) + 'px';
+      if(h > 200 && h < 4000) frame.style.height = (h + 20) + 'px';
       return;
     }
-    if(action === 'cancel'){ closeLb(); return; }
+    if(action === 'cancel'){
+      hideBox();
+      var b0 = document.getElementById('go');
+      if(b0){ b0.disabled = false; b0.textContent = 'Pay by credit card'; }
+      return;
+    }
     if(action !== 'transactResponse') return;
 
     var res = null;
     try{ res = JSON.parse(p.get('response') || '{}'); }catch(e){ res = {}; }
     var transId = String(res.transId || (res.transactionResponse && res.transactionResponse.transId) || '').trim();
 
-    closeLb();
-    card.innerHTML = '<h1>Checking your payment…</h1>'
-      + '<div class="sub">One moment — please do not close this page.</div>';
+    hideBox();
+    top.innerHTML = '<h1>Checking your payment&hellip;</h1>'
+      + '<div class="sub">One moment. Please do not close this page.</div>';
 
     if(!transId){
-      showError('We did not get a transaction number back. If your card was charged, contact us before trying again.');
+      showError('We did not get a transaction number back. If your card was charged, please contact us before trying again.');
       return;
     }
     var c = null;

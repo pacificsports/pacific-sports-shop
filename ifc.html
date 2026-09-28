@@ -12,9 +12,17 @@
    Authorize.Net 이 이 주소 뒤에 #action=... 을 붙여서 불러오면,
    그것을 우리 결제 페이지(부모 창)로 그대로 넘긴다. 다른 일은 하지 않는다. */
 (function () {
+  /* IFC-FIX (2026-09-28) - Authorize.Net 은 이 파일을 자기 결제창 iframe **안에** 띄운다.
+     그래서 우리 결제 페이지는 parent 가 아니라 parent.parent 다.
+     parent 로만 보내면 결제창 안에서 메시지가 끝나 버려서, 결제가 됐는데도
+     우리 화면이 Processing 에서 안 넘어간다. 둘 다에게 보낸다. */
   function toParent(s) {
     if (typeof s !== 'string' || !s) return;
-    try { window.parent.postMessage(s, window.location.origin); } catch (e) {}
+    var o = window.location.origin;
+    try { if (window.parent && window.parent.parent && window.parent.parent !== window.parent)
+            window.parent.parent.postMessage(s, o); } catch (e) {}
+    try { if (window.parent && window.parent !== window) window.parent.postMessage(s, o); } catch (e) {}
+    try { if (window.top && window.top !== window) window.top.postMessage(s, o); } catch (e) {}
   }
   function onMsg(e) { if (e && typeof e.data === 'string') toParent(e.data); }
   if (window.addEventListener) window.addEventListener('message', onMsg, false);

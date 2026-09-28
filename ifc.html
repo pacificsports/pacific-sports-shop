@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>.</title>
+<meta name="robots" content="noindex">
+</head>
+<body>
+<script>
+/* Authorize.Net IFrameCommunicator (2026-09-28)
+   결제창이 결과를 우리 페이지로 넘겨주는 통로. 이 파일은 눈에 보이지 않는다.
+   Authorize.Net 이 이 주소 뒤에 #action=... 을 붙여서 불러오면,
+   그것을 우리 결제 페이지(부모 창)로 그대로 넘긴다. 다른 일은 하지 않는다. */
+(function () {
+  function toParent(s) {
+    if (typeof s !== 'string' || !s) return;
+    try { window.parent.postMessage(s, window.location.origin); } catch (e) {}
+  }
+  function onMsg(e) { if (e && typeof e.data === 'string') toParent(e.data); }
+  if (window.addEventListener) window.addEventListener('message', onMsg, false);
+  else if (window.attachEvent) window.attachEvent('onmessage', onMsg);
+  if (window.location.hash && window.location.hash.length > 1) {
+    toParent(window.location.hash.substring(1));
+  }
+})();
+</script>
+</body>
+</html>

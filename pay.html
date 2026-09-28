@@ -189,7 +189,7 @@
     }catch(e){ j = { ok:false, error:'We could not reach our payment service. Please try again.' }; }
     if(!j || !j.ok || !j.formToken){
       busy = false;
-      if(b){ b.disabled = false; b.textContent = 'Pay by credit card'; }
+      if(b){ b.disabled = false; b.style.display = ''; b.textContent = 'Pay by credit card'; }
       if(j && j.paid){ load(); return; }
       say((j && j.error) || 'We could not open the payment form. Please try again.');
       return;
@@ -197,7 +197,7 @@
     document.getElementById('ptok').value = j.formToken;
     box.classList.add('on');
     document.getElementById('payform').submit();
-    if(b){ b.disabled = true; b.textContent = 'Card form is open below'; }
+    if(b){ b.style.display = 'none'; }   /* 폼이 바로 아래 있으니 단추는 치운다 */
     setTimeout(function(){ try{ box.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 250);
     busy = false;
   }
@@ -218,7 +218,7 @@
     if(action === 'cancel'){
       hideBox();
       var b0 = document.getElementById('go');
-      if(b0){ b0.disabled = false; b0.textContent = 'Pay by credit card'; }
+      if(b0){ b0.disabled = false; b0.style.display = ''; b0.textContent = 'Pay by credit card'; }
       return;
     }
     if(action !== 'transactResponse') return;

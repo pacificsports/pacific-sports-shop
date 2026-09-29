@@ -114,10 +114,11 @@
 
   function itemRows(items){
     if(!items || !items.length) return '';
-    var r = '<table><thead><tr><th>Invoice</th><th>PO</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
+    /* WHLABEL-1 - 어느 창고에서 나가는 몫인지 보여 준다. 인보이스가 난 줄도 마찬가지다. */
+    var r = '<table><thead><tr><th>From</th><th>Invoice</th><th>PO</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
     for(var i=0;i<items.length;i++){
       var it = items[i] || {};
-      r += '<tr><td>' + esc(it.invNo || '-') + '</td><td>' + esc(it.po || '-') + '</td>'
+      r += '<tr><td>' + esc(it.wh || '-') + '</td><td>' + esc(it.invNo || '-') + '</td><td>' + esc(it.po || '-') + '</td>'
          + '<td class="n">' + money(it.amount) + '</td></tr>';
     }
     return r + '</tbody></table>';

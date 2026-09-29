@@ -178,6 +178,10 @@
     if(j.expiresAt && new Date(j.expiresAt).getTime() < Date.now()){
       showError('This payment link has expired. Please contact us for a new one.'); return; }
     showPay(j);
+    /* AUTOOPEN-1 - 메일에서 이미 한 번 눌렀는데 여기서 또 누르라고 하면
+       거래처는 "또?" 하게 된다. 그래서 카드 칸을 바로 연다.
+       열다가 실패하면 go() 가 단추를 되살려 주므로 길이 막히지는 않는다. */
+    go();
   }
 
   async function go(){
@@ -203,6 +207,7 @@
     box.classList.add('on');
     document.getElementById('payform').submit();
     startWatch();   /* PAYWATCH - 결과를 못 받아도 스스로 알아낸다 */
+    startFormTimer();   /* AUTOOPEN-1 */
     if(b){ b.style.display = 'none'; }   /* 폼이 바로 아래 있으니 단추는 치운다 */
     setTimeout(function(){ try{ box.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){} }, 250);
     busy = false;
@@ -214,6 +219,23 @@
      "이 링크로 들어온 카드 거래가 있나" 를 결제사에 직접 확인하는 길이다. */
   var watchT = null, watchN = 0;
   function stopWatch(){ if(watchT){ clearInterval(watchT); watchT = null; } }
+
+  /* AUTOOPEN-1 - Authorize.Net 의 결제창 표는 15분 뒤에 죽는다.
+     이제 페이지를 열자마자 여니까 그 시계가 먼저 돌기 시작한다.
+     14분이 지나면 조용히 죽은 칸을 남기지 말고 다시 열 수 있게 해 준다. */
+  var formT = null;
+  function stopFormTimer(){ if(formT){ clearTimeout(formT); formT = null; } }
+  function startFormTimer(){
+    stopFormTimer();
+    formT = setTimeout(function(){
+      stopWatch(); hideBox();
+      var warn = document.getElementById('paywarn');
+      if(warn) warn.style.display = 'none';
+      var b = document.getElementById('go');
+      if(b){ b.disabled = false; b.style.display = ''; b.textContent = 'Reopen the payment form'; }
+      say('For your security the card form timed out. Press the button to open a fresh one.');
+    }, 14 * 60 * 1000);
+  }
   function startWatch(){
     stopWatch(); watchN = 0;
     var warn = document.getElementById('paywarn');
@@ -229,6 +251,7 @@
       }catch(e){ return; }
       if(c && c.ok && (c.found || c.already)){
         stopWatch();
+        stopFormTimer();   /* AUTOOPEN-1 */
         hideBox();
         showPaid({ cust: (state && state.cust) || '', amount: c.amount, acct: c.acct,
                    authCode: c.authCode, paidAt: new Date().toISOString(),
@@ -252,6 +275,7 @@
     }
     if(action === 'cancel'){
       stopWatch();
+      stopFormTimer();   /* AUTOOPEN-1 */
       hideBox();
       var b0 = document.getElementById('go');
       if(b0){ b0.disabled = false; b0.style.display = ''; b0.textContent = 'Pay by credit card'; }
@@ -259,6 +283,7 @@
     }
     if(action !== 'transactResponse') return;
     stopWatch();
+    stopFormTimer();   /* AUTOOPEN-1 */
 
     var res = null;
     try{ res = JSON.parse(p.get('response') || '{}'); }catch(e){ res = {}; }

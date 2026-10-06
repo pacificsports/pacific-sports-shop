@@ -23,3 +23,16 @@
   X-Frame-Options: SAMEORIGIN
   Permissions-Policy: geolocation=(), camera=(), microphone=(), payment=()
   X-Robots-Tag: noindex, nofollow
+
+
+# ════════════════════════════════════════
+# Accept Hosted 결제칸 중계 파일 (2026-10-06)
+#   카드 입력칸은 accept.authorize.net 이 그리고, 그 칸이 우리에게
+#   결과를 알려줄 때 이 파일을 자기 창 안에서 연다.
+#   위 /* 의 X-Frame-Options: SAMEORIGIN 이 그대로 걸리면 그 칸 안에서
+#   이 파일이 안 열려서 결제가 끝나도 우리가 모른다. 그래서 이 주소만 뗀다.
+#   뗀 것은 X-Frame-Options 한 줄뿐이다 - 나머지는 위에서 그대로 내려온다.
+# ════════════════════════════════════════
+
+/IFrameCommunicator.html
+  ! X-Frame-Options

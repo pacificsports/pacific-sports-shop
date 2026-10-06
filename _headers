@@ -34,9 +34,11 @@
 #   뗀 것은 X-Frame-Options 한 줄뿐이다 - 나머지는 위에서 그대로 내려온다.
 # ════════════════════════════════════════
 
+# Cloudflare Pages 는 규칙 블록 안에 들여쓴 # 주석을 못 읽는다 (2026-10-06 실측:
+#   그래서 아래 규칙이 통째로 무시됐다). 설명은 전부 규칙 위에 둔다.
+# ! 로 떼는 것도 안 먹었다 - 그래서 frame-ancestors 로 덮어쓴다.
+#   최신 브라우저는 frame-ancestors 를 X-Frame-Options 보다 먼저 본다.
+#   덤으로 더 좁다: Authorize.net 말고는 아무도 이 파일을 자기 창에 못 넣는다.
 /IFrameCommunicator.html
   ! X-Frame-Options
   Content-Security-Policy: frame-ancestors https://accept.authorize.net https://test.authorize.net
-  # Cloudflare Pages 에서 ! 로 떼는 것이 안 먹었다 (2026-10-06 실측: 그래도 SAMEORIGIN 이 남는다).
-  # 그래서 frame-ancestors 로 덮어쓴다 - 최신 브라우저는 이걸 X-Frame-Options 보다 먼저 본다.
-  # 덤으로 더 좁다: Authorize.net 말고는 아무도 이 파일을 자기 창에 못 넣는다.

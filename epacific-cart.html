@@ -32,6 +32,8 @@
   .lineamt{font-weight:700;color:var(--accent)}
   .totals{display:flex;justify-content:space-between;align-items:center;font-size:15px}
   .totals b{font-size:22px}
+  input[type=text]{width:100%;padding:11px 12px;border:1.5px solid var(--line-2);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+  input[type=text]:focus{outline:none;border-color:var(--accent)}
   textarea{width:100%;min-height:80px;border:1px solid var(--line-2);border-radius:10px;padding:12px;font-family:inherit;font-size:14px;resize:vertical}
   .btn{background:var(--accent);color:#fff;border:none;padding:14px 30px;border-radius:10px;font-size:15.5px;font-weight:600;cursor:pointer;width:100%}
   .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -76,8 +78,14 @@
     </div>
 
     <div class="panel">
-      <label style="font-size:13px;font-weight:600;color:var(--soft-ink);display:block;margin-bottom:8px">Order notes (optional) — PO number, requested ship date, etc.</label>
-      <textarea id="orderNotes" placeholder="e.g. PO #12345 · Please ship by Friday"></textarea>
+      <label style="font-size:13px;font-weight:600;color:var(--soft-ink);display:block;margin-bottom:8px">Your PO number (optional)</label>
+      <input type="text" id="poNumber" maxlength="40" placeholder="e.g. 80054398">
+      <div style="font-size:12px;color:var(--faint);margin-top:7px">For your own reference — we put it on your order confirmation.</div>
+    </div>
+
+    <div class="panel">
+      <label style="font-size:13px;font-weight:600;color:var(--soft-ink);display:block;margin-bottom:8px">Notes (optional)</label>
+      <textarea id="orderNotes" placeholder="e.g. Please ship by Friday · split shipment is OK"></textarea>
     </div>
 
     <button class="btn" id="checkoutBtn" onclick="location.href='epacific-checkout.html'">Check Out →</button>
@@ -103,6 +111,33 @@
   function cartSet(c){ try{localStorage.setItem('pacific_cart',JSON.stringify(c));}catch(e){} }
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
   function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
+  /* PONUM-1 - 손님이 적은 PO 번호와 메모. 카트에서 적은 것을 checkout 으로 들고 간다.
+     전에는 카트의 메모 칸이 Check Out 을 누르는 순간 그냥 사라졌다 (쓰는 곳이 없었다). */
+  function poRead(){ try{ return localStorage.getItem('pacific_po')||''; }catch(e){ return ''; } }
+  function noteRead(){ try{ return localStorage.getItem('pacific_note')||''; }catch(e){ return ''; } }
+  function poKeep(){
+    try{
+      const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+      if(p) localStorage.setItem('pacific_po', p.value.trim());
+      if(n) localStorage.setItem('pacific_note', n.value.trim());
+    }catch(e){}
+  }
+  function poForget(){ try{ localStorage.removeItem('pacific_po'); localStorage.removeItem('pacific_note'); }catch(e){} }
+  function poFill(){
+    const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+    if(p && !p.value) p.value = poRead();
+    if(n && !n.value) n.value = noteRead();
+    if(p) p.addEventListener('input', poKeep);
+    if(n) n.addEventListener('input', poKeep);
+  }
+  /* 주문·메일·psflowx 가 보는 글은 **여기서만** 만든다 - 두 군데서 만들면 꼭 어긋난다.
+     PO 는 첫 줄에 따로 적는다. 창고와 accounting 이 제일 먼저 읽는 자리다. */
+  function notesPayload(){
+    const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+    const po = p ? String(p.value||'').trim() : '';
+    const nt = n ? String(n.value||'').trim() : '';
+    return [po ? ('PO# ' + po) : '', nt].filter(Boolean).join('\n') || null;
+  }
   function esc(t){ return String(t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
   function fmtMoney(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   // 카트 금액 합계: unit_price 가 있는 항목만 합산 (없는 옛 항목은 '—' 표시)
@@ -185,6 +220,7 @@
 
   async function init(){
     render();
+    poFill();
     // 권한: 승인된 거래처(또는 직원)만 제출 가능
     const s=session();
     const note=document.getElementById('lockNote');
@@ -230,7 +266,7 @@
           company_name:cust.company_name||null, contact_name:cust.contact_name||null, phone:cust.phone||null,
           items:cart, total_pcs:total,
           total_amount:(()=>{ const a=cartAmount(cart); return a.priced>0 ? Math.round(a.amt*100)/100 : null; })(),
-          notes:document.getElementById('orderNotes').value.trim()||null,
+          notes:notesPayload(),
           status:'new'
         })
       });
@@ -239,11 +275,11 @@
         fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({type:'order',to:s.email,data:{
             order_number:ono,total_pcs:total,items:cart,
-            notes:document.getElementById('orderNotes').value.trim()||null,
+            notes:notesPayload(),
             company_name:cust.company_name||null,contact_name:cust.contact_name||null,phone:cust.phone||null
           }})}).catch(()=>{});
       }
-      cartSet([]);
+      cartSet([]); poForget();
       document.getElementById('orderArea').style.display='none';
       document.getElementById('okBox').style.display='block';
       document.getElementById('okNo').textContent='Order '+ono;

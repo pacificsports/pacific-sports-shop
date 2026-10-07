@@ -1,0 +1,18 @@
+{
+  "name": "Pacific Sports Box Label",
+  "short_name": "Box Label",
+  "description": "Carton label maker, 6x4 in. Works without internet once opened.",
+  "id": "/boxlabel/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eef2f6",
+  "theme_color": "#1e3a5f",
+  "lang": "en",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

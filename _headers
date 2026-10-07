@@ -77,3 +77,16 @@
 
 /ifc.html
   Content-Security-Policy: frame-ancestors https://accept.authorize.net https://test.authorize.net
+
+# ════════════════════════════════════════════════════════════════════════
+# 🏷 아이티 박스 라벨 도구 (/boxlabel/) - 2026-10-07
+#   한 번 열면 그 컴퓨터에 저장돼서 인터넷 없이도 열린다 (service worker).
+#   ⚠ sw.js 는 캐시하면 안 된다 - 새 버전을 영영 못 받는다.
+# ════════════════════════════════════════════════════════════════════════
+
+/boxlabel/*
+  X-Frame-Options: SAMEORIGIN
+
+/boxlabel/sw.js
+  Cache-Control: no-cache
+  X-Frame-Options: SAMEORIGIN

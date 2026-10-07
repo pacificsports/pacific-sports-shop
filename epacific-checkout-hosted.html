@@ -1,0 +1,981 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pacific Sports — Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--paper:#fdfdfb;--bg:#f6f5f1;--ink:#1c1c1a;--soft-ink:#4c4a44;--faint:#8b8880;--line:#e7e4dc;--line-2:#d6d2c6;--accent:#3d5a40;--accent-soft:#eef1ec;--err:#a8463f}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Geist','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+  header{background:rgba(251,251,249,.9);border-bottom:1px solid var(--line);padding:18px 30px;display:flex;align-items:center;justify-content:space-between}
+  header a.back{color:var(--accent);text-decoration:none;font-size:14px;font-weight:600}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:34px}
+  .wrap{max-width:1060px;margin:30px auto;padding:0 18px;display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+  @media(max-width:860px){.wrap{grid-template-columns:1fr}}
+  .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-bottom:16px}
+  .panel h2{font-size:16px;font-weight:700;margin-bottom:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+  label{font-size:12px;font-weight:600;color:var(--soft-ink);display:block;margin:10px 0 4px}
+  input[type=text],input[type=tel],input[type=email],select{width:100%;padding:11px 12px;border:1.5px solid var(--line-2);border-radius:9px;font-size:14px;font-family:inherit;background:#fff}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .rateopt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line-2);border-radius:11px;padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:14.5px}
+  .rateopt.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .rateopt{flex-wrap:wrap}
+  .rateopt .rname{font-weight:600;flex:1}
+  /* 창고별 내역 — 줄 안에서 이름 밑으로 내려간다 (2026-09-18) */
+  .rateopt .rlegs{flex:0 0 100%;margin:5px 0 0 30px;font-size:12.5px;color:var(--faint);font-weight:500}
+  .rateopt .rprice{font-weight:700}
+  .btn{background:var(--accent);color:#fff;border:none;padding:14px 30px;border-radius:10px;font-size:15.5px;font-weight:600;cursor:pointer;width:100%}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn2{background:var(--paper);color:var(--soft-ink);border:1.5px solid var(--line-2);padding:12px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;width:100%}
+  .sumrow{display:flex;justify-content:space-between;font-size:14.5px;padding:7px 0}
+  .sumrow.grand{border-top:1.5px solid var(--line-2);margin-top:8px;padding-top:13px;font-size:17px;font-weight:700}
+  .itline{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--soft-ink);padding:5px 0;border-bottom:1px dashed var(--line)}
+  #msg{display:none;margin-top:12px;padding:12px 16px;border-radius:10px;font-size:14px}
+  .okbox{display:none;text-align:center;padding:60px 20px;background:var(--paper);border:1px solid var(--line);border-radius:14px}
+  .okbox h2{font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;margin-bottom:10px}
+  .lock-note{background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:13px 16px;font-size:14px;color:var(--soft-ink);margin-bottom:16px;grid-column:1/-1}
+  .secure{font-size:12px;color:var(--faint);text-align:center;margin-top:10px}
+  .splitnote{font-size:12.5px;color:var(--faint);margin-top:6px}
+  .subhead{font-size:14px;font-weight:700;margin:22px 0 8px;padding-top:16px;border-top:1px solid var(--line)}
+  .chk{font-size:14px;color:var(--soft-ink);display:flex;align-items:center;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <span style="width:120px"></span>
+  <h1>Checkout</h1>
+  <span style="width:120px;text-align:right"><a class="back" href="epacific-timeless.html" style="display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line-2);padding:8px 14px;border-radius:9px;background:var(--paper)">&#8962; Home</a></span>
+</header>
+
+<div class="wrap" id="checkoutArea">
+  <div class="lock-note" id="lockNote" style="display:none"></div>
+
+  <div>
+    <!-- 연락처 -->
+    <div class="panel">
+      <h2>Contact</h2>
+      <label>Email *</label><input type="email" id="fEmail" autocomplete="email" placeholder="you@company.com">
+    </div>
+
+    <!-- 배송지 -->
+    <div class="panel">
+      <h2>Shipping address</h2>
+      <div id="savedAddrWrap" style="display:none;margin-bottom:14px">
+        <label>Ship to a saved address</label>
+        <select id="savedAddr"></select>
+      </div>
+      <div class="grid2">
+        <div><label>Full name *</label><input type="text" id="fName" autocomplete="name"></div>
+        <div><label>Company</label><input type="text" id="fCompany" autocomplete="organization"></div>
+      </div>
+      <label>Address line 1 *</label><input type="text" id="fAddr1" autocomplete="address-line1">
+      <label>Address line 2</label><input type="text" id="fAddr2" autocomplete="address-line2" placeholder="Suite, unit, etc. (optional)">
+      <div class="grid3">
+        <div><label>City *</label><input type="text" id="fCity" autocomplete="address-level2"></div>
+        <div><label>State *</label><select id="fState"></select></div>
+        <div><label>ZIP *</label><input type="text" id="fZip" autocomplete="postal-code" inputmode="numeric"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Phone *</label><input type="tel" id="fPhone" autocomplete="tel"></div>
+        <!-- 주소 종류는 UPS 가 판정한다 (checkout 워커 upsClassify) — 손님에게 안 묻는다 (2026-09-07).
+             요소는 남겨둔다: 아래 JS 몇 곳이 이걸 찾는다 -->
+        <div style="display:none"><label style="margin-top:26px"><input type="checkbox" id="fResidential" style="width:auto;margin-right:6px">Residential address</label></div>
+      </div>
+      <div style="margin-top:16px"><button class="btn2" id="rateBtn">Get shipping rates →</button></div>
+    </div>
+
+    <!-- 배송 방법 -->
+    <div class="panel" id="ratePanel" style="display:none">
+      <h2>Shipping method</h2>
+      <div id="rateList"></div>
+      <div class="splitnote" id="splitNote" style="display:none">📦 This order ships from both SC and CA warehouses — rates shown are the combined total of both shipments.</div>
+      <div id="legNote" style="display:none"></div>
+      <div id="combineBox" style="display:none;margin-top:10px;padding:11px 14px;border:1.5px solid #bfe0c9;background:#f2f9f4;border-radius:10px;font-size:13.5px;color:#1f5133">
+        <span id="combineMsg"></span>
+        <button type="button" id="combineBtn" style="margin-left:10px;background:#1f5133;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:700;cursor:pointer"></button>
+      </div>
+    </div>
+
+    <!-- 카드 -->
+    <div class="panel" id="payPanel">
+      <h2>Payment</h2>
+      <!-- HOSTEDUI-1 - 옛 카드칸. 지우지 않고 감춰 둔다 (pmPaint / pmApply 가 아직 건드린다).
+           5단계에서 Accept.js 와 함께 걷어낸다. -->
+      <div id="oldPay" style="display:none">
+      <!-- 💳 저장된 카드 (My Account → Payment methods). 없으면 이 블록은 안 보인다. -->
+      <div id="pmWrap" style="display:none;margin-bottom:6px">
+        <label>Pay with</label>
+        <div id="pmList"></div>
+      </div>
+      <div id="newCardFields">
+        <label>Card number *</label><input type="text" id="cardNum" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••">
+        <div class="grid3">
+          <div><label>Exp. month (MM) *</label><input type="text" id="cardMo" inputmode="numeric" autocomplete="cc-exp-month" placeholder="MM" maxlength="2"></div>
+          <div><label>Exp. year (YYYY) *</label><input type="text" id="cardYr" inputmode="numeric" autocomplete="cc-exp-year" placeholder="YYYY" maxlength="4"></div>
+          <div><label>CVV *</label><input type="text" id="cardCvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4"></div>
+        </div>
+      </div>
+      <!-- 🔐 저장된 카드도 CVV 는 매번 받는다 — 우리도 Authorize.net 도 CVV 를 저장하지 않는다 -->
+      <div id="savedCvvWrap" style="display:none">
+        <label>Security code (CVV) *</label>
+        <input type="text" id="savedCvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" style="max-width:130px">
+        <div style="font-size:12.5px;color:var(--faint);margin-top:5px">3 or 4 digits on your card. We ask for it every time — it is never stored.</div>
+      </div>
+      </div><!-- /oldPay -->
+      <div id="billingBlock">
+      <h3 class="subhead">Billing address</h3>
+      <label class="chk"><input type="checkbox" id="bSame" checked style="width:auto;margin-right:7px">Same as shipping address</label>
+      <div id="billingFields" style="display:none;margin-top:8px">
+        <div id="bSavedWrap" style="display:none;margin-bottom:12px">
+          <label>Use a saved address for billing</label>
+          <select id="bSaved"></select>
+        </div>
+        <label>Full name *</label><input type="text" id="bName" autocomplete="cc-name">
+        <label>Address line 1 *</label><input type="text" id="bAddr1">
+        <label>Address line 2</label><input type="text" id="bAddr2" placeholder="Suite, unit, etc. (optional)">
+        <div class="grid3">
+          <div><label>City *</label><input type="text" id="bCity"></div>
+          <div><label>State *</label><select id="bState"></select></div>
+          <div><label>ZIP *</label><input type="text" id="bZip" inputmode="numeric"></div>
+        </div>
+      </div>
+      </div><!-- /billingBlock -->
+
+      <label style="margin-top:14px">Your PO number (optional)</label><input type="text" id="poNumber" maxlength="40" placeholder="e.g. 80054398">
+      <label style="margin-top:14px">Notes (optional)</label><input type="text" id="orderNotes" placeholder="e.g. Please ship by Friday">
+      <!-- HOSTEDUI-1 - 옛 Pay 버튼. summary() 가 글자와 잠금을 아직 건드리므로 남겨 두고 감춘다 -->
+      <div id="oldPayBtn" style="display:none;margin-top:18px"><button class="btn" id="payBtn" disabled>Pay — $0.00</button></div>
+
+      <div id="hostedWrap" style="margin-top:18px">
+        <div id="hostedNote" style="font-size:12.5px;color:var(--soft-ink);background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:12px">
+          Check the billing address and PO number above, then continue. The card form opens right here on this page.
+        </div>
+        <button class="btn" id="hostedBtn" disabled>Continue to payment &rarr;</button>
+        <!-- 저 칸은 가로 575px 가 필요하다. 상자 안쪽 여백(24px)을 넘어가게 해서 폭을 번다 -->
+        <div id="hostedBox" style="display:none;margin:14px -24px 0;overflow-x:auto">
+          <iframe id="hostedFrame" name="hostedFrame" title="Payment" frameborder="0" scrolling="no"
+                  style="display:block;width:100%;min-width:575px;height:360px;border:0"></iframe>
+        </div>
+        <form id="hostedForm" method="post" target="hostedFrame" style="display:none">
+          <input type="hidden" name="token" id="hostedToken">
+        </form>
+        <div id="hostedExp" style="display:none;margin-top:12px;font-size:13px;color:var(--err);font-weight:600"></div>
+      </div>
+      <div class="secure">🔒 Your card is typed into Authorize.net's own form above — the numbers never reach our website or our servers.</div>
+      <div id="msg"></div>
+    </div>
+  </div>
+
+  <!-- 주문 요약 -->
+  <div class="panel" style="position:sticky;top:18px">
+    <h2>Order summary</h2>
+    <div id="itemList"></div>
+    <div style="margin-top:10px">
+      <div class="sumrow"><span>Subtotal (<span id="sumPcs">0</span> pcs)</span><b id="sumGoods">$0.00</b></div>
+      <div class="sumrow"><span>Shipping<span id="sumShipName" style="color:var(--faint);font-size:12px"></span></span><b id="sumShip">—</b></div>
+      <div class="sumrow grand"><span>Total</span><span id="sumTotal">$0.00</span></div>
+    </div>
+    <!-- 장바구니로 돌아가기 — 하윤 요청으로 머리띠에서 Total 아래로 내렸다 (2026-09-18) -->
+    <a href="epacific-cart.html" style="display:block;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+       text-align:center;color:var(--accent);text-decoration:none;font-size:14px;font-weight:600">← Back to cart</a>
+  </div>
+</div>
+
+<div class="okbox" id="okBox" style="max-width:560px;margin:60px auto">
+  <h2>Payment received ✓</h2>
+  <div style="font-size:18px;font-weight:700;color:var(--accent);margin-bottom:8px" id="okNo"></div>
+  <div style="font-size:14px;color:var(--soft-ink)" id="okDetail"></div>
+  <div id="okWarn" style="display:none;margin-top:12px;padding:10px 12px;border:1px solid #ecd6d3;background:#f8ecea;color:var(--err);border-radius:8px;font-size:13.5px;text-align:left"></div>
+  <p style="color:var(--soft-ink);font-size:14.5px;line-height:1.7;margin-top:14px">We've received your paid order and will ship it shortly.<br>A confirmation email is on its way.</p>
+  <p style="margin-top:22px"><a href="epacific-account.html#orders" style="color:var(--accent)">View order history →</a></p>
+</div>
+
+<script src="pacific-config.js"></script>
+<!-- 📦 재고를 읽어 「한 창고로 합치기」를 제안하려고 불러온다 (2026-09-18) -->
+<script src="pacific-data.js"></script>
+<script src="pacific-admin-auth.js"></script>
+<script>
+  const _C=window.PACIFIC_CONFIG||{};
+  const WORKER=_C.CHECKOUT_WORKER||'';
+  const WEIGHT_PER_PC=_C.WEIGHT_PER_PC||0.5;    // (구) 균일 추정 — 아래 품목별 무게로 대체, 폴백용
+  // ── 배송 무게: 품목(카테고리)별 × 사이즈별. 절대 적게 안 받도록 보수적 + 안전버퍼 ──
+  // 각 카테고리 무게는 그 그룹에서 무거운 스타일을 커버하도록 잡음(Adult M 기준, lbs).
+  const CAT_WEIGHT={
+    'Adult S/S':0.45,'Adult L/S':0.60,'Adult Tank Top':0.34,'Adult Performance':0.40,
+    'Adult Hoodie L/S':0.90,'Adult V-Neck S/S':0.42,'Adult Raglan':0.55,
+    'Youth S/S':0.30,'Youth L/S':0.40,'Kids S/S':0.26,'Kids L/S':0.34,
+    'Juvy S/S':0.24,'Juvy L/S':0.32,'Toddler S/S':0.20,'Toddler L/S':0.26 };
+  const SIZE_MULT={ XS:0.85,S:0.92,M:1.0,L:1.08,XL:1.16,'2XL':1.30,'3XL':1.45,'4XL':1.58,'5XL':1.72 };
+  const DEFAULT_W=0.60;        // 모르는 스타일은 안전하게 높게
+  const SHIP_BUFFER=1.10;      // 박스·포장·오차 안전 마진 (언더차지 방지). 너무 비싸면 낮추기
+  const STYLE_CAT={};          // {스타일번호: 카테고리} — init()에서 채움
+  function pieceWeight(style,size){
+    const cat=STYLE_CAT[String(style)];
+    const base=(cat&&CAT_WEIGHT[cat]!=null)?CAT_WEIGHT[cat]:DEFAULT_W;
+    const adult=cat&&/^Adult/.test(cat);          // 사이즈 배율은 어른 품목에만
+    const mult=adult?(SIZE_MULT[String(size||'').toUpperCase()]||1):1;
+    return base*mult;
+  }
+  /* WEBSAFE-1 (2026-09-27) - ⚠⚠ 전에는 `styles` 표를 **여기서 또** 읽었다.
+     그 읽기가 실패하면 `STYLE_CAT` 이 비고, 그러면 모든 장이 `DEFAULT_W`(0.60lb)로
+     계산돼 **UPS 견적이 실물보다 훨씬 비싸게** 나온다 (Adult S/S 실제 0.45).
+     에러도 안 뜨고 그냥 비싼 값이 손님에게 보인다.
+
+     ⭐ 그래서 `PacificData.getStyles()` 를 쓴다. 그 함수는 표를 못 읽으면
+        **파일에 내장된 카탈로그(STYLE_LIST 69개, category 포함)** 로 떨어지므로
+        카테고리가 빌 수가 없다. 같은 걸 읽는 두 번째 사본을 지우는 것이기도 하다. */
+  async function loadStyleCats(){
+    try{
+      if(window.PacificData && PacificData.getStyles){
+        const rows = await PacificData.getStyles();
+        (rows||[]).forEach(s=>{ if(s && s.no && s.cat) STYLE_CAT[String(s.no)]=s.cat; });
+      }
+    }catch(e){ console.error('style categories failed', e); }
+    if(!Object.keys(STYLE_CAT).length)
+      console.error('STYLE_CAT is empty - every piece will use DEFAULT_W ' + DEFAULT_W + 'lb');
+  }
+  const EMAIL_WORKER='https://shop-email.hjbae.workers.dev';
+  function cartGet(){ try{return JSON.parse(localStorage.getItem('pacific_cart')||'[]');}catch(e){return [];} }
+  /* 운임 조회에 같이 보내는 장바구니 줄. 결제(/pay)의 payItems 와 **같은 모양**이어야
+     워커가 화면과 결제에서 똑같은 박스를 만든다 (2026-09-19). wh 를 주면 그 창고로 몰아준다. */
+  function rateItems(forceWh){
+    return cartGet().map(i=>({style:i.style, color:i.color, size:i.size,
+                              wh: forceWh || i.wh, qty:i.qty}));
+  }
+  function cartSet(c){ try{localStorage.setItem('pacific_cart',JSON.stringify(c));}catch(e){} }
+  /* PONUM-1 - 손님이 적은 PO 번호와 메모. 카트에서 적은 것을 checkout 으로 들고 간다.
+     전에는 카트의 메모 칸이 Check Out 을 누르는 순간 그냥 사라졌다 (쓰는 곳이 없었다). */
+  function poRead(){ try{ return localStorage.getItem('pacific_po')||''; }catch(e){ return ''; } }
+  function noteRead(){ try{ return localStorage.getItem('pacific_note')||''; }catch(e){ return ''; } }
+  function poKeep(){
+    try{
+      const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+      if(p) localStorage.setItem('pacific_po', p.value.trim());
+      if(n) localStorage.setItem('pacific_note', n.value.trim());
+    }catch(e){}
+  }
+  function poForget(){ try{ localStorage.removeItem('pacific_po'); localStorage.removeItem('pacific_note'); }catch(e){} }
+  function poFill(){
+    const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+    if(p && !p.value) p.value = poRead();
+    if(n && !n.value) n.value = noteRead();
+    if(p) p.addEventListener('input', poKeep);
+    if(n) n.addEventListener('input', poKeep);
+  }
+  /* 주문·메일·psflowx 가 보는 글은 **여기서만** 만든다 - 두 군데서 만들면 꼭 어긋난다.
+     PO 는 첫 줄에 따로 적는다. 창고와 accounting 이 제일 먼저 읽는 자리다. */
+  function notesPayload(){
+    const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
+    const po = p ? String(p.value||'').trim() : '';
+    const nt = n ? String(n.value||'').trim() : '';
+    return [po ? ('PO# ' + po) : '', nt].filter(Boolean).join('\n') || null;
+  }
+
+  function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
+  const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // 미국 주
+  const STATES='AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC PR'.split(' ');
+  const stateOpts='<option value="">—</option>'+STATES.map(s=>'<option>'+s+'</option>').join('');
+  document.getElementById('fState').innerHTML=stateOpts;
+  document.getElementById('bState').innerHTML=stateOpts;
+  (function(){ const cb=document.getElementById('bSame'), bf=document.getElementById('billingFields');
+    cb.addEventListener('change',()=>{ bf.style.display=cb.checked?'none':''; }); })();
+  function billToObj(){
+    if(document.getElementById('bSame').checked){ const st=shipToObj(); const nm=(st.name||'').split(' '); return {firstName:nm[0]||'',lastName:nm.slice(1).join(' ')||'-',company:st.company,addr1:st.addr1,city:st.city,state:st.state,zip:st.zip}; }
+    const nm=document.getElementById('bName').value.trim().split(' ');
+    return {firstName:nm[0]||'',lastName:nm.slice(1).join(' ')||'-',company:'',addr1:document.getElementById('bAddr1').value.trim(),city:document.getElementById('bCity').value.trim(),state:document.getElementById('bState').value,zip:document.getElementById('bZip').value.trim()};
+  }
+
+  /* ── 💳 저장된 카드 ──────────────────────────────────────────────
+     pmSel = '' 이면 새 카드, 아니면 Authorize.net 의 paymentProfileId.
+     ⚠ 이 id 는 화면이 보내는 값이지만 워커가 「내 프로필 안에 있는 카드인지」를
+        다시 확인한다 (whoAmI → description 대조 → 카드 목록 대조). 여기서 바꿔도 못 뚫린다. */
+  let pmCards=[], pmSel='';
+  const pmBrand=b=>({visa:'Visa',mastercard:'Mastercard',amex:'Amex',americanexpress:'Amex',discover:'Discover'}[String(b||'').toLowerCase().replace(/[^a-z]/g,'')]||b||'Card');
+  function pmExp(e){ const m=String(e||'').match(/^(\d{4})-(\d{2})$/); return m?(m[2]+'/'+m[1].slice(2)):''; }
+  function pmPaint(){
+    const wrap=document.getElementById('pmWrap'), list=document.getElementById('pmList');
+    if(!wrap||!list) return;
+    if(!pmCards.length){ wrap.style.display='none'; pmApply(); return; }
+    wrap.style.display='';
+    const row=(id,label,sub)=>`<label class="chk" style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer">`
+      +`<input type="radio" name="pmPick" value="${esc(id)}" style="width:auto;margin:0" ${pmSel===id?'checked':''}>`
+      +`<span style="flex:1"><b>${esc(label)}</b>${sub?`<span style="color:var(--faint);font-weight:400"> · ${esc(sub)}</span>`:''}</span></label>`;
+    list.innerHTML = pmCards.map(c=>row(c.id, pmBrand(c.brand)+' ···· '+esc(c.last4), pmExp(c.exp)?('exp '+pmExp(c.exp)):''))
+                             .join('') + row('', 'Use a new card', '');
+    list.querySelectorAll('input[name="pmPick"]').forEach(r=>r.addEventListener('change',()=>{ pmSel=r.value; pmApply(); }));
+    pmApply();
+  }
+  /* 고른 것에 맞춰 칸을 보이거나 감춘다 */
+  function pmApply(){
+    const saved=!!pmSel;
+    const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display=on?'':'none'; };
+    show('newCardFields', !saved);
+    show('savedCvvWrap', saved);
+    /* 저장 카드는 Authorize.net 프로필에 붙어 있는 billing address 로 승인된다 →
+       화면에서 청구지를 다시 물어볼 필요가 없다 */
+    show('billingBlock', !saved);
+    if(saved){ const e=document.getElementById('savedCvv'); if(e) e.value=''; }
+  }
+  async function pmLoad(){
+    try{
+      const s=session(); if(!s||!s.token||!WORKER) return;
+      const r=await fetch(WORKER+'/pm/list',{method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},body:'{}'});
+      if(!r.ok) return;                       /* 옛 워커·오류 → 지금 화면 그대로 (폴백) */
+      const d=await r.json();
+      pmCards=Array.isArray(d&&d.cards)?d.cards:[];
+      pmSel = pmCards.length ? String(pmCards[0].id) : '';
+      pmPaint();
+    }catch(e){}
+  }
+
+  let goods=0, pcs=0, scLbs=0, caLbs=0, shipCost=null, shipMethod=null, allPriced=true;
+
+  function summary(){
+    const cart=cartGet();
+    goods=0; pcs=0; scLbs=0; caLbs=0; allPriced=true;
+    const lines={};
+    cart.forEach(i=>{
+      pcs+=i.qty||0;
+      const w=(i.qty||0)*pieceWeight(i.style,i.size);
+      if(i.wh==='CA') caLbs+=w; else scLbs+=w;
+      if(i.unit_price!=null) goods+=(i.qty||0)*Number(i.unit_price); else allPriced=false;
+      const k=i.style+'|'+i.color+'|'+i.wh;
+      if(!lines[k]) lines[k]={style:i.style,color:i.color,wh:i.wh,qty:0,amt:0};
+      lines[k].qty+=i.qty||0;
+      if(i.unit_price!=null) lines[k].amt+=(i.qty||0)*Number(i.unit_price);
+    });
+    document.getElementById('itemList').innerHTML=Object.values(lines).map(l=>
+      `<div class="itline"><span><b>${esc(l.style)}</b> ${esc(l.color)} <span style="color:var(--faint)">(${esc(l.wh)})</span></span><span>${l.qty} pcs · ${money(l.amt)}</span></div>`).join('')
+      ||'<div style="color:var(--faint);font-size:13.5px">Cart is empty.</div>';
+    document.getElementById('sumPcs').textContent=pcs;
+    document.getElementById('sumGoods').textContent=money(goods);
+    document.getElementById('sumShip').textContent= shipCost!=null?money(shipCost):'—';
+    document.getElementById('sumShipName').textContent= shipMethod?(' · '+shipMethod.name):'';
+    const total=goods+(shipCost||0);
+    document.getElementById('sumTotal').textContent=money(total);
+    const pb=document.getElementById('payBtn');
+    pb.textContent='Pay — '+money(total);
+    pb.disabled=!(pcs>0&&shipCost!=null&&allPriced);
+    /* HOSTEDUI-1 - 금액·배송방법이 바뀌면 이미 받아 둔 결제칸은 낡은 금액을 들고 있다.
+       낡은 칸으로 결제하게 두면 안 되므로 닫고 다시 받게 한다. */
+    try{
+      if(_hostOk && _hostSigNow()!==_hostSig)
+        hostedReset('Your order changed. Press "Continue to payment" to open the card form again.');
+      else hostedBtnState();
+    }catch(e){}
+  }
+
+  function shipToObj(){
+    return {
+      name:document.getElementById('fName').value.trim(),
+      company:document.getElementById('fCompany').value.trim(),
+      addr1:document.getElementById('fAddr1').value.trim(),
+      addr2:document.getElementById('fAddr2').value.trim(),
+      city:document.getElementById('fCity').value.trim(),
+      state:document.getElementById('fState').value,
+      zip:document.getElementById('fZip').value.trim(),
+      phone:document.getElementById('fPhone').value.trim(),
+      residential:false   /* UPS Address Validation 이 워커에서 판정한다 (2026-09-07) */
+    };
+  }
+
+  // ── 1) UPS 배송비 ──
+  // 주소 다 채워지면 자동으로 배송비 조회 (디바운스 700ms)
+  (function(){
+    var _rt=null, _lastSig='';
+    function _maybeAuto(){
+      var s; try{ s=shipToObj(); }catch(e){ return; }
+      if(!s.name||!s.addr1||!s.city||!s.state||!s.zip||!s.phone) return;
+      var res=document.getElementById('fResidential');
+      var sig=[s.name,s.addr1,s.addr2,s.city,s.state,s.zip,s.phone,(res&&res.checked)].join('|');
+      if(sig===_lastSig) return; _lastSig=sig;
+      var b=document.getElementById('rateBtn'); if(b && !b.disabled) b.click();
+    }
+    var sched=function(){ clearTimeout(_rt); _rt=setTimeout(_maybeAuto, 700); };
+    ['fName','fCompany','fAddr1','fAddr2','fCity','fState','fZip','fPhone'].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el){ el.addEventListener('input', sched); el.addEventListener('change', sched); }
+    });
+    var r=document.getElementById('fResidential'); if(r) r.addEventListener('change', _maybeAuto);
+  })();
+  document.getElementById('rateBtn').addEventListener('click',async()=>{
+    const st=shipToObj();
+    if(!st.name||!st.addr1||!st.city||!st.state||!st.zip||!st.phone){ alert('이름/주소/도시/주/우편번호/전화를 입력해 주세요.'); return; }
+    if(!WORKER){ alert('Checkout worker is not configured yet (pacific-config.js → CHECKOUT_WORKER).'); return; }
+    const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting UPS rates…';
+    try{
+      const r=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10,
+                             items:rateItems()})});
+      const d=await r.json();
+      if(!r.ok||d.error) throw new Error(d.error||r.status);
+      const list=document.getElementById('rateList');
+      /* 🚚 손님이 내는 운임은 `bill` 이다 — UPS 정가 기준 (2026-09-18).
+         전에는 `s.total` 을 썼는데 그건 **우리가 UPS 에 내는 협상요율**이라 마진이 0 이었다.
+         일반 PO 거래처는 원래 정가로 청구받는다 (psflowx 라벨: list + handling).
+         ⚠ `total` 은 워커에 협상요율로 그대로 남는다 (psflowx 라벨 화면이 쓴다) — 여기서만 안 쓴다.
+         ⚠ 옛 워커면 `bill` 이 안 오니 `total` 로 폴백한다. 배포 순서를 틀려도 화면이 안 깨진다. */
+      const rateBill = x => Number((x && x.bill != null) ? x.bill : ((x && x.total) || 0));
+      /* 창고별 금액을 줄 안에 같이 적는다 — 합계 하나만 보여주면 어디서 얼마인지 알 수 없다 */
+      const legsHtml = s => {
+        const L = s && s.legs; if(!L) return '';
+        const has = k => L[k] !== undefined && L[k] !== null;
+        const part = [];
+        if(has('SC')) part.push('Sumter, SC ' + (L.SC===0 ? 'you pick up' : money(L.SC)));
+        if(has('CA')) part.push('Eastvale, CA ' + (L.CA===0 ? 'you pick up' : money(L.CA)));
+        return part.length>1 ? ('<div class="rlegs">'+part.join('  ·  ')+'</div>') : '';
+      };
+      list.innerHTML=d.services.map((s,i)=>
+        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(rateBill(s))}</span>${legsHtml(s)}</div>`).join('');
+      document.getElementById('ratePanel').style.display='';
+      document.getElementById('splitNote').style.display=d.splitShipment?'':'none';
+      document.getElementById('payPanel').style.display='';
+      const pick=i=>{ shipMethod=d.services[i]; shipCost=rateBill(d.services[i]);
+        list.querySelectorAll('.rateopt').forEach((el,j)=>{el.classList.toggle('sel',j===i); el.querySelector('input').checked=(j===i);});
+        showLegs(d.services[i]);
+        summary();
+        /* 고른 서비스가 바뀌면 절약액도 달라진다 — 다시 계산 */
+        offerCombine(st, d, i); };
+      list.querySelectorAll('.rateopt').forEach(el=>el.addEventListener('click',()=>pick(parseInt(el.dataset.i))));
+      pick(0);
+    }catch(e){ alert('배송비 조회 실패: '+e.message); }
+    btn.disabled=false; btn.textContent='Get shipping rates →';
+  });
+
+  /* ═══════ 📦 창고별 운임 표시 + 한 창고로 합치기 (2026-09-18) ═══════
+     워커는 원래 창고마다 UPS 에 따로 물어보고 **합쳐서 한 줄**만 줬다.
+     이제 `legs: {SC:21.67, CA:22.38}` 도 같이 오므로 손님에게 내역을 보여주고,
+     한쪽 창고에 재고가 다 있으면 합쳐서 얼마를 아끼는지까지 알려준다. */
+  function showLegs(svc){
+    const box=document.getElementById('legNote');
+    const legs=(svc&&svc.legs)||null;
+    /* 🚚 직접 가져가는 옵션 (Local pickup · LTL) — 무엇이 무료인지 분명히 적는다 */
+    if(svc && svc.selfService){
+      box.style.display='';
+      box.textContent = (legs && legs.CA===0 && legs.SC!=null)
+        ? ('Eastvale, CA — you pick up (no charge)  ·  Sumter, SC — UPS Ground '+money(legs.SC))
+        : 'No shipping charge — you arrange the pickup. We will have the order ready and call you.';
+      return;
+    }
+    if(!legs || Object.keys(legs).length<2){ box.style.display='none'; box.textContent=''; return; }
+    box.style.display='';
+    box.textContent='Sumter SC warehouse '+money(legs.SC||0)+'  ·  Eastvale CA warehouse '+money(legs.CA||0);
+  }
+
+  /* ⚠ 서비스를 바꿔 고를 때마다 UPS 를 다시 부르면 느리고 낭비다.
+     한 번 받으면 모든 서비스 가격이 다 들어 있으니 (장바구니+주소) 기준으로 가직고 있는다. */
+  let _combineBusy=false, _combineCache=null, _combineDone=null;
+  /* 합친 뒤 그 자리에 남기는 문구 — 확인창을 없앤 대신 무엇이 바뀌었는지는 보여준다 */
+  function showCombined(info){
+    const box=document.getElementById('combineBox'), btn=document.getElementById('combineBtn');
+    if(!box) return;
+    if(btn) btn.style.display='none';
+    document.getElementById('combineMsg').innerHTML =
+      '\u2713 Everything now ships from our <b>' + (info.wh==='SC' ? 'Sumter, SC' : 'Eastvale, CA')
+      + '</b> warehouse \u2014 you saved <b>' + money(info.save) + '</b> on shipping.';
+    box.style.display='';
+  }
+  async function offerCombine(st, d, idx){
+    const box=document.getElementById('combineBox');
+    const svc=(d.services||[])[idx];
+    box.style.display='none';
+    /* 합친 직후에는 제안 대신 「이렇게 바뀌었다」 를 그대로 남겨둔다 */
+    if(_combineDone && !d.splitShipment){ showCombined(_combineDone); return; }
+    /* ⚠ 직접 가져가는 옵션에는 합치기를 제안하지 않는다 — 아낄 운임이 없거나 이미 $0 다 */
+    if(!d.splitShipment || !svc || svc.selfService || _combineBusy) return;
+    const cart=cartGet();
+    const sig=JSON.stringify(cart.map(i=>[i.style,i.color,i.size,i.wh,i.qty]))+'|'+st.zip+'|'+st.state;
+    _combineBusy=true;
+    try{
+      if(!_combineCache || _combineCache.sig!==sig){
+        /* ① 한 창고가 장바구니 전체를 커버하나 — 재고를 합쳐서 본다 */
+        const can = (window.PacificData && PacificData.canCombine) ? await PacificData.canCombine(cart) : {SC:false,CA:false};
+        const cands = ['SC','CA'].filter(w=>can[w]);
+        const quotes = {};
+        /* ② 그 창고에서 다 나간다고 치고 UPS 에 다시 물어본다 (창고당 한 번만) */
+        const totLbs = Math.round((scLbs+caLbs)*SHIP_BUFFER*10)/10;
+        for(const w of cands){
+          const _it = rateItems(w);
+          const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0, items:_it}
+                                  : {shipTo:st, scLbs:0, caLbs:totLbs, items:_it};
+          try{
+            const rr=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            const j=await rr.json();
+            if(rr.ok && !j.error && Array.isArray(j.services)) quotes[w]=j.services;
+          }catch(e){}
+        }
+        _combineCache = { sig:sig, quotes:quotes };
+      }
+      /* ⚠ 비교도 손님이 내는 값(bill)으로 해야 한다 — 기준이 다르면 "you save $X" 가 틀린다 */
+      const _bill = x => Number((x && x.bill != null) ? x.bill : ((x && x.total) || 0));
+      let best=null;
+      Object.keys(_combineCache.quotes).forEach(w=>{
+        const hit=(_combineCache.quotes[w]||[]).find(x=>String(x.code)===String(svc.code));
+        if(hit && (!best || _bill(hit) < best.total)) best={wh:w, total:_bill(hit)};
+      });
+      /* ③ 진짜 싸질 때만 제안한다 */
+      if(!best) return;
+      const save=Math.round((_bill(svc)-best.total)*100)/100;
+      if(!(save > 0.005)) return;
+      _combineSig=sig;
+      const name=(best.wh==='SC')?'Sumter, SC':'Eastvale, CA';
+      document.getElementById('combineMsg').innerHTML=
+        'Everything in your cart is available at our <b>'+esc(name)+'</b> warehouse. '
+        +'Shipping from one warehouse costs <b>'+money(best.total)+'</b> instead of '+money(_bill(svc))
+        +' — you save <b>'+money(save)+'</b>.';
+      const btn=document.getElementById('combineBtn');
+      btn.textContent='Combine to '+best.wh+' warehouse';
+      btn.onclick=()=>doCombine(best.wh, save);
+      box.style.display='';
+    } finally { _combineBusy=false; }
+  }
+
+  function doCombine(wh, save){
+    const cart=cartGet();
+    if(!cart.length) return;
+    /* 확인창 없이 바로 바꾼다 (하윤 요청). 주문 내용은 안 바뀌고 나가는 창고만 바뀐다 —
+       되돌리려면 장바구니로 가면 되므로 되돌릴 수 없는 일이 아니다. */
+    /* 같은 (스타일|색|사이즈) 줄이 양쪽에 있으면 한 줄로 합친다 */
+    const merged={};
+    cart.forEach(i=>{
+      const k=String(i.style)+'|'+String(i.color)+'|'+String(i.size);
+      if(!merged[k]) merged[k]={...i, wh:wh, qty:0};
+      merged[k].qty += (Number(i.qty)||0);
+    });
+    const out=Object.values(merged);
+    try{ localStorage.setItem('pacific_cart', JSON.stringify(out)); }catch(e){ alert('Could not update your cart.'); return; }
+    _combineCache=null;   /* 장바구니가 바뀌었으니 캐시를 버린다 */
+    _combineDone = { wh:wh, save:save };
+    showCombined(_combineDone);
+    document.getElementById('legNote').style.display='none';
+    shipCost=null; shipMethod=null;
+    summary();
+    /* 창고가 바뀌었으니 배송비를 다시 받는다 */
+    const b=document.getElementById('rateBtn'); if(b) b.click();
+  }
+
+  // ── 2) 결제 (Accept.js 토큰 → 워커 → 주문 생성) ──
+  function showMsg(t,bad){ const m=document.getElementById('msg'); m.style.display='block';
+    m.style.background=bad?'#f8ecea':'var(--accent-soft)'; m.style.color=bad?'var(--err)':'var(--accent)';
+    m.style.border='1px solid '+(bad?'#ecd6d3':'var(--line)'); m.textContent=t; }
+
+  document.getElementById('payBtn').addEventListener('click',()=>{
+    /* 💳 저장된 카드로 결제 — 카드번호가 없으니 Accept.js 가 필요 없다.
+       CVV 만 받아서 워커로 넘기고, 워커는 Authorize.net 프로필로 긁는다. */
+    if(pmSel){
+      const cv=(document.getElementById('savedCvv').value||'').replace(/[^0-9]/g,'');
+      if(cv.length<3||cv.length>4){ showMsg('Please enter the 3 or 4 digit security code (CVV) on your card.',true);
+        const e=document.getElementById('savedCvv'); if(e) e.focus(); return; }
+      const b2=document.getElementById('payBtn'); b2.disabled=true; b2.textContent='Processing…';
+      charge(null, b2, { id: pmSel, cvv: cv });
+      return;
+    }
+    if(!window.Accept){ showMsg('결제 모듈(Accept.js)을 불러오지 못했습니다. 새로고침 해주세요.',true); return; }
+    if(!_C.ANET_API_LOGIN_ID||!_C.ANET_CLIENT_KEY){ showMsg('결제 키가 아직 설정되지 않았습니다 (pacific-config.js).',true); return; }
+    const num=document.getElementById('cardNum').value.replace(/\s/g,'');
+    const mo=document.getElementById('cardMo').value.trim(), yr=document.getElementById('cardYr').value.trim(), cvv=document.getElementById('cardCvv').value.trim();
+    if(num.length<13||!mo||yr.length<4||!cvv){ showMsg('카드 정보를 확인해 주세요.',true); return; }
+    const btn=document.getElementById('payBtn'); btn.disabled=true; btn.textContent='Processing…';
+    Accept.dispatchData({
+      authData:{ clientKey:_C.ANET_CLIENT_KEY, apiLoginID:_C.ANET_API_LOGIN_ID },
+      cardData:{ cardNumber:num, month:mo, year:yr, cardCode:cvv }
+    }, async resp=>{
+      if(resp.messages.resultCode==='Error'){
+        showMsg(resp.messages.message.map(m=>m.text).join(' / '),true);
+        btn.disabled=false; summary(); return;
+      }
+      await charge(resp.opaqueData, btn);
+    });
+  });
+
+  /* saved 가 있으면 저장 카드({id,cvv}), 없으면 새 카드(opaqueData).
+     ⚠ 둘을 같이 보내면 워커가 400 으로 막는다 — 어느 카드로 긁혔는지 모르게 되니까. */
+  async function charge(opaqueData, btn, saved, hostedTid){
+    const s=session(); const cust=customer()||{}; const st=shipToObj();
+    const d=new Date();
+    /* ⚠ 이건 **폴백 전용**이다. 진짜 주문번호는 워커가 DB 에서 뽑아 응답으로 준다(`d2.orderNumber`).
+       옛 워커가 돌고 있을 때만 이 값이 쓰인다. 브라우저가 만든 번호는 손님이 바꿀 수 있으므로
+       새 워커는 이걸 아예 무시한다. */
+    const ono='WEB-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+    const total=Math.round((goods+(shipCost||0))*100)/100;
+    const names=st.name.split(' ');
+    try{
+      /* 🔒 워커가 값을 **직접** 매길 수 있도록 장바구니와 로그인 토큰을 같이 보낸다 (2026-09-17).
+         · `amount` 는 아직 같이 보낸다 — 지금 워커가 그걸 쓰기 때문이다. 새 워커는
+           `amount` 를 무시하고 자기가 계산한 값을 긁으며, `clientTotal` 과 1센트 이상
+           다르면 **거절한다** (손님이 본 금액과 다른 금액을 청구하지 않는다).
+         · `items` 는 값을 매기는 데 필요한 것만 보낸다 — `unit_price` 는 일부러 안 보낸다.
+           그건 손님 브라우저에 있던 값이라 믿을 수 없다. */
+      const payItems = cartGet().map(i=>({style:i.style, color:i.color, size:i.size, wh:i.wh, qty:i.qty}));
+      const r=await fetch(WORKER+'/pay',{method:'POST',
+        headers:{'Content-Type':'application/json', ...(s&&s.token?{Authorization:'Bearer '+s.token}:{})},
+        body:JSON.stringify(Object.assign(
+          hostedTid ? { hostedTransId: hostedTid }
+                    : (saved ? { savedCardId: saved.id, cardCode: saved.cvv } : { opaqueData }),
+          { amount:total, invoice:ono, email:(document.getElementById('fEmail').value.trim()||s.email),
+          billTo: (saved || hostedTid) ? undefined : billToObj(),
+          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null, clientTotal:total,
+          /* 🔒 주문을 **워커가** 쓰게 넘긴다 (2026-09-18). 지금은 브라우저가 쓰는데,
+             그러면 손님이 자기 이름으로 total_amount·payment_status 를 아무렇게나
+             적을 수 있다. 새 워커는 자기가 계산한 금액으로 주문을 쓰고
+             `orderSaved: true` 를 돌려준다 → 그때는 아래 브라우저 저장을 건너뛴다.
+             ⚠ 지금 워커는 이걸 무시하므로 예전과 똑같이 브라우저가 쓴다 (동작 불변). */
+          saveOrder: true,
+          order: { order_number: ono, email: (document.getElementById('fEmail').value.trim()||s.email),
+                   company_name: st.company||cust.company_name||null,
+                   contact_name: st.name||cust.contact_name||null, phone: st.phone||null,
+                   ship_to: st, shipping_method: shipMethod?shipMethod.name:null,
+                   notes: notesPayload() }}))});
+      const d2=await r.json();
+      if(!r.ok||!d2.ok) throw new Error(d2.error||('결제 실패 ('+r.status+')'));
+      /* 🔢 주문번호는 **워커(=DB)** 가 정한다 (2026-09-18). `W10001` 형태로 오고,
+         같은 번호가 Authorize.Net 의 invoice 칸에도 찍혀 있다.
+         ⚠ 옛 워커면 안 올 수 있으니 그때만 위에서 만든 ono 를 쓴다 — 번호 없는
+            확인 화면·메일이 나가지 않게. */
+      const ordNo = (d2 && d2.orderNumber) ? String(d2.orderNumber) : ono;
+      // 결제 성공 → 주문 저장 (저장 실패해도 결제는 이미 됨 → 화면에 안내)
+      const cart=cartGet();
+      /* 🔒 새 워커가 이미 주문을 썼으면 여기서 또 쓰지 않는다 — 안 그러면 두 줄이 생긴다 */
+      const _workerSaved = (d2 && d2.orderSaved === true);
+      /* 🔐 CVV 관련 경고. 'CVV 검사가 안 돌았다' 는 계정 설정 문제라 손님에게 보일
+         내용이 아니다 → 콘솔에만. 돈이 빠졌는데 자동취소가 실패한 경우만 화면에. */
+      let _payWarn = null;
+      if(d2 && d2.cvvWarn){ try{ console.warn('[pacific] cvvResult=', d2.cvvResult, d2.cvvWarn); }catch(e){}
+        if(/자동취소/.test(d2.cvvWarn)) _payWarn = d2.cvvWarn; }
+      if(_workerSaved && d2.orderError){ showMsg('결제는 됐습니다. 주문 기록에 문제가 있어 확인이 필요합니다: '+d2.orderError, true); }
+      try{
+        if(_workerSaved) throw {_skip:true};
+        const or=await fetch(_C.SUPABASE_URL+'/rest/v1/web_orders',{method:'POST',
+          headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+          body:JSON.stringify({
+            order_number:ordNo, user_id:s.userId, email:s.email,
+            company_name:st.company||cust.company_name||null, contact_name:st.name||cust.contact_name||null, phone:st.phone||null,
+            items:cart, total_pcs:pcs,
+            total_amount:total,
+            ship_to:st, shipping_method:shipMethod?shipMethod.name:null, shipping_cost:shipCost,
+            payment_status:'paid', transaction_id:d2.transId, paid_at:new Date().toISOString(),
+            notes:notesPayload(),
+            status:'new'
+          })});
+        if(!or.ok){
+          console.warn('order save failed', or.status);
+          /* ⚠ 예전엔 조용히 넘어갔다 — 돈은 빠졌는데 주문이 없으면 아무도 모른다 */
+          showMsg('결제는 완료됐습니다 ('+money(total)+'). 다만 주문 기록 저장이 실패했습니다 — 주문번호 '+ordNo+' 로 연락 주세요.', true);
+        }
+      }catch(e){ if(!(e&&e._skip)) console.warn('order save failed', e); }
+      if(EMAIL_WORKER){
+        fetch(EMAIL_WORKER,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({type:'order',to:s.email,data:{order_number:ordNo,total_pcs:pcs,items:cart,total_amount:total,shipping_cost:shipCost,shipping_method:shipMethod?shipMethod.name:null,ship_to:st,
+            /* 📝 손님이 적은 메모는 손님 것 그대로 — 예전엔 여기에 결제 요약을 넣어서
+               손님 메모가 메일에서 사라졌다 (2026-09-21 고침). 결제 요약은 pay_note 로. */
+            notes:notesPayload(),
+            pay_note:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
+            company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
+      }
+      saveAddressIfNew(st);
+      cartSet([]); poForget();
+      document.getElementById('checkoutArea').style.display='none';
+      const ok=document.getElementById('okBox'); ok.style.display='block';
+      document.getElementById('okNo').textContent='Order '+ordNo;
+      document.getElementById('okDetail').textContent=money(total)+' charged to card ending '+(d2.last4||'')+' · '+(shipMethod?shipMethod.name:'');
+      /* ⚠ 알려야 할 게 있으면 확인 화면에 띄운다 — showMsg 는 이 시점에 안 보인다 */
+      if(_payWarn){ const w=document.getElementById('okWarn'); if(w){ w.style.display='block'; w.textContent=_payWarn; } }
+    }catch(e){
+      showMsg(String(e.message||e),true);
+      /* HOSTEDUI-1 - 끼워넣기 결제는 카드가 **이미** 긁혔다. 버튼을 되살려서 또 긁게 하면
+         이중청구가 된다. 그 대신 「주문 저장만 다시」 로 바꾼다 (워커가 같은 결제번호를
+         보고 이미 만든 주문이 있으면 그 번호를 돌려주므로 두 번 눌러도 안전하다). */
+      if(hostedTid){
+        _hostRetryTid = hostedTid;
+        if(btn){ btn.disabled=false; btn.style.display=''; btn.textContent='Try saving the order again'; }
+        return;
+      }
+      btn.disabled=false; summary();
+    }
+  }
+
+  /* ══════ 💳 Accept Hosted - 카드칸을 Authorize.net 에게 맡긴다 (HOSTEDUI-1) ══════
+     카드 번호는 저 칸 안에서만 움직인다. 우리 페이지에도 우리 서버에도 한 번도 안 들어온다.
+     흐름: 배송방법 고름 -> [Continue to payment] -> 워커 /hostedtoken -> 저 칸이 열린다
+           -> 손님이 저 칸에서 결제 -> IFrameCommunicator.html 이 결과를 이 창으로 넘긴다
+           -> 우리는 **결제번호만** 받아서 워커 /pay 로 넘긴다 (워커가 다시 확인하고 주문 저장).
+     ⚠ 저 칸이 보낸 글자를 믿고 주문을 쓰지 않는다 - 워커가 Authorize.net 에 되물어 확인한다. */
+  let _hostOk=false, _hostTimer=null, _hostSig='', _hostRetryTid='';
+  function _hostSigNow(){
+    try{
+      return JSON.stringify([ Math.round((goods+(shipCost||0))*100),
+        (shipMethod&&shipMethod.code)||'', billToObj(),
+        (document.getElementById('fEmail')||{}).value||'' ]);
+    }catch(e){ return ''; }
+  }
+  function hostedBtnState(){
+    const b=document.getElementById('hostedBtn'); if(!b) return;
+    if(_hostOk){ b.style.display='none'; return; }
+    if(_hostRetryTid) return;              /* 저장 재시도 중이면 건드리지 않는다 */
+    b.style.display='';
+    b.disabled = !(pcs>0 && shipCost!=null && allPriced);
+  }
+  function hostedReset(msg){
+    _hostOk=false;
+    if(_hostTimer){ clearTimeout(_hostTimer); _hostTimer=null; }
+    const box=document.getElementById('hostedBox'); if(box) box.style.display='none';
+    const f=document.getElementById('hostedFrame'); if(f){ try{ f.removeAttribute('src'); }catch(e){} }
+    const b=document.getElementById('hostedBtn');
+    if(b){ b.style.display=''; b.textContent='Continue to payment →'; }
+    const ex=document.getElementById('hostedExp');
+    if(ex){ if(msg){ ex.style.display=''; ex.textContent=msg; } else { ex.style.display='none'; ex.textContent=''; } }
+    hostedBtnState();
+  }
+  function _hostInv(){
+    const d=new Date();
+    return 'WEB-'+d.getFullYear().toString().slice(2)+String(d.getMonth()+1).padStart(2,'0')
+      +String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+  }
+  async function hostedOpen(){
+    const b=document.getElementById('hostedBtn');
+    const s=session();
+    if(!s||!s.token){ showMsg('Please log in again.',true); return; }
+    if(!(pcs>0 && shipCost!=null && allPriced)){ showMsg('Please pick a shipping method first.',true); return; }
+    b.disabled=true; b.textContent='Opening the card form...';
+    try{
+      const payItems=cartGet().map(i=>({style:i.style,color:i.color,size:i.size,wh:i.wh,qty:i.qty}));
+      const st=shipToObj();
+      const r=await fetch(WORKER+'/hostedtoken',{method:'POST',
+        headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},
+        body:JSON.stringify({ items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null,
+          email:(document.getElementById('fEmail').value.trim()||s.email),
+          billTo: billToObj(), invoice: _hostInv() })});
+      const d=await r.json().catch(()=>null);
+      if(!r.ok||!d||!d.ok||!d.token) throw new Error((d&&d.error)||('HTTP '+r.status));
+      document.getElementById('hostedToken').value=d.token;
+      const fm=document.getElementById('hostedForm'); fm.action=d.formUrl;
+      document.getElementById('hostedBox').style.display='';
+      fm.submit();
+      _hostOk=true; _hostSig=_hostSigNow();
+      b.style.display='none';
+      const ex=document.getElementById('hostedExp'); if(ex){ ex.style.display='none'; ex.textContent=''; }
+      /* 토큰은 15분이면 죽는다. 죽은 칸에서 눌러보게 두지 않고 14분에 우리가 먼저 말한다 */
+      _hostTimer=setTimeout(function(){
+        hostedReset('The card form timed out. Press "Continue to payment" to open a fresh one.');
+      }, 14*60*1000);
+    }catch(e){
+      showMsg('Could not open the card form: '+(e.message||e),true);
+      b.disabled=false; b.textContent='Continue to payment →';
+    }
+  }
+  /* Authorize.net 이 IFrameCommunicator.html 을 통해 이 함수를 부른다 */
+  window.AuthorizeNetIFrame = {
+    onReceiveCommunication: function(qstr){
+      const p={};
+      String(qstr||'').replace(/^[?#]/,'').split('&').forEach(function(kv){
+        const i=kv.indexOf('='); if(i>0) p[kv.slice(0,i)]=decodeURIComponent(kv.slice(i+1).replace(/\+/g,' '));
+      });
+      const f=document.getElementById('hostedFrame');
+      if(p.action==='resizeWindow'){
+        const h=Math.max(260, Math.min(1600, parseInt(p.height,10)||360));
+        if(f) f.style.height=(h+20)+'px';
+        return;
+      }
+      if(p.action==='cancel'){ hostedReset(''); return; }
+      if(p.action==='successfulSave'){ return; }
+      if(p.action==='transactResponse'){
+        let resp=null; try{ resp=JSON.parse(p.response); }catch(e){}
+        const tid=String((resp&&(resp.transId||resp.transactionId||resp.x_trans_id))||'').replace(/[^0-9]/g,'');
+        if(!tid){
+          showMsg('The payment went through but we did not get a reference number. Please contact us before trying again - do not pay twice.',true);
+          return;
+        }
+        if(_hostTimer){ clearTimeout(_hostTimer); _hostTimer=null; }
+        const box=document.getElementById('hostedBox'); if(box) box.style.display='none';
+        const b=document.getElementById('hostedBtn');
+        if(b){ b.style.display=''; b.disabled=true; b.textContent='Saving your order...'; }
+        showMsg('Payment approved - saving your order...',false);
+        charge(null, b || document.getElementById('payBtn'), null, tid);
+      }
+    }
+  };
+
+  document.getElementById('hostedBtn').addEventListener('click',function(){
+    /* 저장 재시도 중이면 다시 긁지 않고 **주문 저장만** 다시 시킨다 */
+    if(_hostRetryTid){
+      const b=this, tid=_hostRetryTid;
+      b.disabled=true; b.textContent='Saving your order...';
+      charge(null, b, null, tid);
+      return;
+    }
+    hostedOpen();
+  });
+  /* 청구주소·메일을 고치면 칸을 닫는다 - 그 칸의 토큰에는 고치기 전 주소가 박혀 있다 (AVS) */
+  ['bSame','bName','bAddr1','bAddr2','bCity','bState','bZip','fEmail'].forEach(function(id){
+    const el=document.getElementById(id); if(!el) return;
+    el.addEventListener('change',function(){
+      try{ if(_hostOk && _hostSigNow()!==_hostSig)
+        hostedReset('Billing details changed. Press "Continue to payment" to open the card form again.'); }catch(e){}
+    });
+  });
+
+  // ── 진입: 로그인+승인 확인 ──
+  // ── 저장된 배송지 주소록 ──
+  let savedAddrList=[];
+  function fillAddr(a){
+    const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v||''); };
+    set('fName',a.name); set('fCompany',a.company); set('fAddr1',a.addr1); set('fAddr2',a.addr2);
+    set('fCity',a.city); set('fZip',a.zip); set('fPhone',a.phone);
+    const ss=document.getElementById('fState'); if(ss) ss.value=a.state||'';
+    const rc=document.getElementById('fResidential'); if(rc) rc.checked=!!a.residential;
+    // 주소 바꾸면 기존 배송요율 무효화
+    shipCost=null; shipMethod=null;
+    document.getElementById('ratePanel').style.display='none';
+    summary();
+    /* 저장된 주소로 채운 경우에도 운임이 저절로 나오게 한다 (2026-09-19).
+       el.value 로 직접 넣으면 브라우저가 input/change 를 안 쏘기 때문에,
+       위쪽 자동조회 장치가 아무것도 못 듣고 있었다. 여기서 한 번 쏴 준다.
+       주소가 덜 찼거나 같은 주소면 그 장치가 알아서 넘어간다. */
+    try{
+      const _n=document.getElementById('fName');
+      if(_n) _n.dispatchEvent(new Event('change',{bubbles:true}));
+    }catch(e){}
+  }
+  function clearAddr(){ ['fName','fCompany','fAddr1','fAddr2','fCity','fZip','fPhone'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); const ss=document.getElementById('fState'); if(ss) ss.value=''; const rc=document.getElementById('fResidential'); if(rc) rc.checked=false; }
+  async function loadSavedAddresses(){
+    const s=session(); if(!s||!s.token) return;
+    try{
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses?select=*&order=created_at.desc&limit=50',
+        {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+      if(!r.ok) return;
+      const all=await r.json();
+      /* 배송지만 고르게 하고, 기본 배송지를 맨 위로 (2026-09-06 kind/is_default 도입) */
+      const kindOf=a=>((a&&a.kind)==='billing'?'billing':'shipping');
+      savedAddrList=all.filter(a=>kindOf(a)==='shipping');
+      const billList=all.filter(a=>kindOf(a)==='billing');
+      savedAddrList.sort((x,y)=>(y.is_default?1:0)-(x.is_default?1:0));
+      const sel=document.getElementById('savedAddr'); const wrap=document.getElementById('savedAddrWrap');
+      if(!savedAddrList.length){ wrap.style.display='none'; return; }
+      wrap.style.display='';
+      sel.innerHTML=savedAddrList.map((a,i)=>{
+        const lbl=(a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||'')))+(a.is_default?'  ★ default':'');
+        return '<option value="'+i+'">'+esc(lbl)+'</option>';
+      }).join('')+'<option value="new">+ Ship to a new address…</option>';
+      // 기본 배송지 자동 선택해서 채움
+      fillAddr(savedAddrList[0]);
+      sel.value='0';
+      sel.addEventListener('change',()=>{ if(sel.value==='new') clearAddr(); else fillAddr(savedAddrList[parseInt(sel.value)]); });
+      // billing 용 저장주소 드롭다운도 채움
+      const bsel=document.getElementById('bSaved'), bwrap=document.getElementById('bSavedWrap');
+      if(bsel){
+        bwrap.style.display='';
+        /* 청구지로 저장해 둔 게 있으면 그걸 먼저 보여주고, 없으면 배송지들 */
+        const bOpts = billList.length ? billList : savedAddrList;
+        window.__bOpts = bOpts;
+        bsel.innerHTML='<option value="">— Enter billing address below —</option>'+bOpts.map((a,i)=>{
+          const lbl=a.label||((a.company||a.name||'')+' — '+(a.city||'')+', '+(a.state||''));
+          return '<option value="'+i+'">'+esc(lbl)+'</option>';
+        }).join('');
+        bsel.addEventListener('change',()=>{ if(bsel.value==='') return; const a=(window.__bOpts||[])[parseInt(bsel.value)]; if(!a) return;
+          const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v||''); };
+          set('bName',a.name||a.company); set('bAddr1',a.addr1); set('bAddr2',a.addr2);
+          set('bCity',a.city); set('bZip',a.zip); const ss=document.getElementById('bState'); if(ss) ss.value=a.state||'';
+        });
+      }
+    }catch(e){}
+  }
+  // 주문 완료 후 새 주소면 주소록에 저장
+  async function saveAddressIfNew(st){
+    const s=session(); if(!s||!s.token) return;
+    const same=savedAddrList.some(a=>(a.addr1||'').trim().toLowerCase()===(st.addr1||'').trim().toLowerCase() && (a.zip||'')===(st.zip||''));
+    if(same) return;
+    const cust=customer()||{};
+    try{
+      await fetch(_C.SUPABASE_URL+'/rest/v1/customer_addresses',{method:'POST',
+        headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+        body:JSON.stringify({ customer_id:cust.customer_id||null,
+          name:st.name, company:st.company, addr1:st.addr1, addr2:st.addr2,
+          city:st.city, state:st.state, zip:st.zip, phone:st.phone, residential:!!st.residential,
+          kind:'shipping', is_default:false })});
+    }catch(e){}
+  }
+
+  async function init(){
+    poFill();
+    await loadStyleCats();
+    summary();
+    const s=session(); const note=document.getElementById('lockNote');
+    if(!s||!s.token){
+      note.style.display='block';
+      note.innerHTML='🔒 <a href="epacific-login.html?next='+encodeURIComponent('epacific-checkout.html')+'" style="color:var(--accent);font-weight:700">Log in</a> with an approved wholesale account to check out.';
+      document.getElementById('rateBtn').disabled=true; return;
+    }
+    let allowed=false;
+    try{ const st=await PacificAuth.currentStaff(); if(st) allowed=true; }catch(e){}
+    if(!allowed){
+      try{
+        const r=await fetch(_C.SUPABASE_URL+'/rest/v1/customer_applications?user_id=eq.'+s.userId+'&select=status,company_name,contact_name,phone',
+          {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        if(r.ok){ const rows=await r.json();
+          if(rows&&rows[0]&&rows[0].status==='approved'){ allowed=true; localStorage.setItem('pacific_customer',JSON.stringify(rows[0])); }
+          else { note.style.display='block'; note.textContent='🔒 Your wholesale account is pending approval.'; } }
+      }catch(e){}
+    }
+    if(!allowed){ document.getElementById('rateBtn').disabled=true; return; }
+    if(!allPriced){
+      note.style.display='block';
+      note.innerHTML='⚠️ Some cart items were added before pricing was enabled and have no price. Please <a href="epacific-cart.html" style="color:var(--accent);font-weight:700">remove and re-add them</a> before paying.';
+    }
+    if(pcs===0){
+      note.style.display='block';
+      note.innerHTML='Your cart is empty. <a href="epacific-category.html" style="color:var(--accent);font-weight:700">Browse styles →</a>';
+      document.getElementById('rateBtn').disabled=true;
+    }
+    // ── 자동채우기 (웹사이트 자체 데이터 — IMS 없이도 동작) ──
+    const cust=customer()||{};
+    const setIf=(id,v)=>{ const el=document.getElementById(id); if(el&&!el.value&&v) el.value=v; };
+    // 1) 연락처: 로그인 이메일 + 가입 신청서 정보
+    setIf('fEmail', s.email);
+    setIf('fName', cust.contact_name);
+    setIf('fCompany', cust.company_name);
+    setIf('fPhone', cust.phone);
+    // 2) 저장된 배송지 주소록 드롭다운 (거래처 공유, IMS 없이도 동작)
+    await loadSavedAddresses();
+    // 2-b) 저장된 카드 — 있으면 첫 카드가 골라진 상태로 보인다
+    pmLoad();
+    // 3) (보너스) IMS 거래처가 연결돼 있으면 그 주소도 시도 — 없어도 무방
+    try{
+      if(cust.customer_id){
+        const cr=await fetch(_C.SUPABASE_URL+'/rest/v1/customers?id=eq.'+cust.customer_id+'&select=name,ship_address,phone',
+          {headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+s.token}});
+        if(cr.ok){ const c=(await cr.json())[0];
+          if(c){ setIf('fCompany', c.name); setIf('fPhone', c.phone);
+            // ship_address 는 여러 줄 텍스트일 수 있어 1번째 줄만 addr1로
+            if(c.ship_address && !document.getElementById('fAddr1').value){
+              document.getElementById('fAddr1').value=String(c.ship_address).split('\n')[0].trim();
+            }
+          }
+        }
+      }
+    }catch(e){}
+  }
+  init();
+</script>
+<script>
+  // Accept.js 로드 (sandbox/production은 pacific-config.js의 ANET_ENV 따라)
+  (function(){
+    const env=(window.PACIFIC_CONFIG||{}).ANET_ENV||'sandbox';
+    const s=document.createElement('script');
+    s.src= env==='production' ? 'https://js.authorize.net/v1/Accept.js' : 'https://jstest.authorize.net/v1/Accept.js';
+    s.charset='utf-8';
+    document.head.appendChild(s);
+  })();
+</script>
+<script src="pacific-nav.js"></script>
+</body>
+<!-- v2026-09-19 checkout-savedcard -->
+</html>

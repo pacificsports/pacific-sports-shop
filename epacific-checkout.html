@@ -145,16 +145,19 @@
       </div>
       </div><!-- /billingBlock -->
 
-      <label style="margin-top:14px">Your PO number (optional)</label><input type="text" id="poNumber" maxlength="40" placeholder="e.g. 80054398">
-      <label style="margin-top:14px">Notes (optional)</label><input type="text" id="orderNotes" placeholder="e.g. Please ship by Friday">
+      <!-- HOSTEDAUTO-1 - PO 번호와 메모 칸은 여기서 뺐다. 이미 **카트 화면**에 있고
+           거기서 적은 것이 localStorage 로 넘어온다 (notesPayload 가 거기서 읽는다).
+           두 군데 두면 손님이 어디에 적었는지 헷갈리고, 결제칸 바로 위에 끼어서 흐름을 끊는다. -->
       <!-- HOSTEDUI-1 - 옛 Pay 버튼. summary() 가 글자와 잠금을 아직 건드리므로 남겨 두고 감춘다 -->
       <div id="oldPayBtn" style="display:none;margin-top:18px"><button class="btn" id="payBtn" disabled>Pay — $0.00</button></div>
 
       <div id="hostedWrap" style="margin-top:18px">
         <div id="hostedNote" style="font-size:12.5px;color:var(--soft-ink);background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:12px">
-          Check the billing address and PO number above, then continue. The card form opens right here on this page.
+          Loading the card form&hellip;
         </div>
-        <button class="btn" id="hostedBtn" disabled>Continue to payment &rarr;</button>
+        <!-- HOSTEDAUTO-1 - 이 단추는 **문제가 있을 때만** 보인다 (칸이 낡음 / 주문 저장 재시도).
+             평소에는 손님이 아무것도 누르지 않고 바로 카드를 넣는다. -->
+        <button class="btn" id="hostedBtn" style="display:none">Reload the card form</button>
         <!-- 저 칸은 가로 575px 가 필요하다. 상자 안쪽 여백(24px)을 넘어가게 해서 폭을 번다 -->
         <div id="hostedBox" style="display:none;margin:14px -24px 0;overflow-x:auto">
           <iframe id="hostedFrame" name="hostedFrame" title="Payment" frameborder="0" scrolling="no"
@@ -269,9 +272,11 @@
   /* 주문·메일·psflowx 가 보는 글은 **여기서만** 만든다 - 두 군데서 만들면 꼭 어긋난다.
      PO 는 첫 줄에 따로 적는다. 창고와 accounting 이 제일 먼저 읽는 자리다. */
   function notesPayload(){
-    const p=document.getElementById('poNumber'), n=document.getElementById('orderNotes');
-    const po = p ? String(p.value||'').trim() : '';
-    const nt = n ? String(n.value||'').trim() : '';
+    /* HOSTEDAUTO-1 - 칸이 이 화면에서 빠졌으므로 **카트가 남긴 값**을 읽는다.
+       ⚠ 화면 칸을 먼저 보지 않는다 - 없는 칸을 보면 조용히 빈 값이 되어
+         손님이 카트에 적은 PO 가 주문·메일·psflowx 에서 통째로 사라진다. */
+    const po = String(poRead()||'').trim();
+    const nt = String(noteRead()||'').trim();
     return [po ? ('PO# ' + po) : '', nt].filter(Boolean).join('\n') || null;
   }
 
@@ -368,13 +373,10 @@
     const pb=document.getElementById('payBtn');
     pb.textContent='Pay — '+money(total);
     pb.disabled=!(pcs>0&&shipCost!=null&&allPriced);
-    /* HOSTEDUI-1 - 금액·배송방법이 바뀌면 이미 받아 둔 결제칸은 낡은 금액을 들고 있다.
-       낡은 칸으로 결제하게 두면 안 되므로 닫고 다시 받게 한다. */
-    try{
-      if(_hostOk && _hostSigNow()!==_hostSig)
-        hostedReset('Your order changed. Press "Continue to payment" to open the card form again.');
-      else hostedBtnState();
-    }catch(e){}
+    /* HOSTEDAUTO-1 - 결제칸 판단은 **_hostKick 한 곳**에서만 한다.
+       열기·다시 열기·닫기를 여기저기 적으면 반드시 어긋난다
+       (금액이 바뀐 낡은 칸이 열린 채 남는 식으로). */
+    try{ _hostKick(); }catch(e){}
   }
 
   function shipToObj(){
@@ -708,11 +710,16 @@
 
   /* ══════ 💳 Accept Hosted - 카드칸을 Authorize.net 에게 맡긴다 (HOSTEDUI-1) ══════
      카드 번호는 저 칸 안에서만 움직인다. 우리 페이지에도 우리 서버에도 한 번도 안 들어온다.
-     흐름: 배송방법 고름 -> [Continue to payment] -> 워커 /hostedtoken -> 저 칸이 열린다
+     흐름: 배송방법이 정해지면 **저절로** 워커 /hostedtoken -> 저 칸이 열린다 (누를 것이 없다)
            -> 손님이 저 칸에서 결제 -> IFrameCommunicator.html 이 결과를 이 창으로 넘긴다
            -> 우리는 **결제번호만** 받아서 워커 /pay 로 넘긴다 (워커가 다시 확인하고 주문 저장).
      ⚠ 저 칸이 보낸 글자를 믿고 주문을 쓰지 않는다 - 워커가 Authorize.net 에 되물어 확인한다. */
   let _hostOk=false, _hostTimer=null, _hostSig='', _hostRetryTid='';
+  /* HOSTEDAUTO-1 - 자동으로 열기 때문에 세 가지를 더 들고 있어야 한다:
+       _hostBusy  = 지금 토큰을 받고 있다 (두 번 받으러 가지 않는다)
+       _hostErr   = 어떤 상태에서 실패했나 (같은 상태로 무한히 다시 시도하지 않는다)
+       _hostKickT = 묶어서 한 번만 (배송요금이 오는 동안 summary 가 여러 번 불린다) */
+  let _hostBusy=false, _hostErr='', _hostKickT=null;
   function _hostSigNow(){
     try{
       return JSON.stringify([ Math.round((goods+(shipCost||0))*100),
@@ -720,25 +727,62 @@
         (document.getElementById('fEmail')||{}).value||'' ]);
     }catch(e){ return ''; }
   }
+  function hostedReady(){ return !!(pcs>0 && shipCost!=null && allPriced); }
+  /* 안내문 한 줄. 노랑 = 손님이 알아야 하는 변화 */
+  function hostedSay(txt, warn){
+    const nt=document.getElementById('hostedNote'); if(!nt) return;
+    nt.textContent=txt;
+    nt.style.background  = warn ? '#fff8e6' : 'var(--accent-soft)';
+    nt.style.borderColor = warn ? '#f0dba8' : 'var(--line)';
+    nt.style.color       = warn ? '#8a5405' : 'var(--soft-ink)';
+  }
+  /* 평소에는 단추가 없다. 문제가 있을 때만 낸다 */
   function hostedBtnState(){
     const b=document.getElementById('hostedBtn'); if(!b) return;
-    if(_hostOk){ b.style.display='none'; return; }
     if(_hostRetryTid) return;              /* 저장 재시도 중이면 건드리지 않는다 */
-    b.style.display='';
-    b.disabled = !(pcs>0 && shipCost!=null && allPriced);
+    b.style.display='none';
   }
-  function hostedReset(msg){
+  function hostedShowBtn(label){
+    const b=document.getElementById('hostedBtn'); if(!b) return;
+    b.style.display=''; b.disabled=false; b.textContent=label;
+  }
+  function hostedClose(){
     _hostOk=false;
     if(_hostTimer){ clearTimeout(_hostTimer); _hostTimer=null; }
     const box=document.getElementById('hostedBox'); if(box) box.style.display='none';
     const f=document.getElementById('hostedFrame'); if(f){ try{ f.removeAttribute('src'); }catch(e){} }
-    const b=document.getElementById('hostedBtn');
-    if(b){ b.style.display=''; b.textContent='Continue to payment →'; }
-    const nt=document.getElementById('hostedNote');
-    if(nt) nt.textContent='Check the billing address and PO number above, then continue. The card form opens right here on this page.';
-    const ex=document.getElementById('hostedExp');
-    if(ex){ if(msg){ ex.style.display=''; ex.textContent=msg; } else { ex.style.display='none'; ex.textContent=''; } }
-    hostedBtnState();
+    const ex=document.getElementById('hostedExp'); if(ex){ ex.style.display='none'; ex.textContent=''; }
+  }
+  /* 손이 필요한 자리 - 칸이 낡았거나 열다가 실패했다 */
+  function hostedStall(msg){
+    hostedClose();
+    hostedSay(msg, true);
+    hostedShowBtn('Reload the card form');
+  }
+  /* ⭐⭐⭐ 결제칸을 열지/다시 열지/닫을지는 **이 함수 하나만** 정한다.
+     summary() 와 청구주소 칸이 전부 여기로 들어온다. */
+  function _hostKick(){
+    if(_hostKickT) clearTimeout(_hostKickT);
+    _hostKickT=setTimeout(function(){
+      _hostKickT=null;
+      try{
+        if(_hostRetryTid || _hostBusy) return;            /* 저장 재시도 중 / 받는 중 */
+        if(!hostedReady()){
+          hostedClose(); hostedBtnState();
+          hostedSay('Pick a shipping method above and the card form will open here.', false);
+          return;
+        }
+        const sig=_hostSigNow();
+        if(_hostOk && sig===_hostSig) return;             /* 맞는 칸이 이미 열려 있다 */
+        if(_hostErr && _hostErr===sig) return;            /* 같은 상태로 또 실패하러 가지 않는다 */
+        /* 금액·주소가 바뀌었다 - 낡은 칸의 토큰에는 옛 금액이 박혀 있으므로 반드시 갈아야 한다 */
+        if(_hostOk){
+          hostedClose();
+          hostedSay('Your order changed — reloading the card form with the new total.', true);
+        }
+        hostedOpen();
+      }catch(e){}
+    }, 700);
   }
   function _hostInv(){
     const d=new Date();
@@ -746,11 +790,13 @@
       +String(d.getDate()).padStart(2,'0')+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
   }
   async function hostedOpen(){
-    const b=document.getElementById('hostedBtn');
     const s=session();
     if(!s||!s.token){ showMsg('Please log in again.',true); return; }
-    if(!(pcs>0 && shipCost!=null && allPriced)){ showMsg('Please pick a shipping method first.',true); return; }
-    b.disabled=true; b.textContent='Opening the card form...';
+    if(!hostedReady()) return;                 /* 조용히 그만둔다 - 저절로 부르는 길이라 경고를 띄우면 안 된다 */
+    if(_hostBusy) return;
+    _hostBusy=true; _hostErr='';
+    hostedBtnState();
+    hostedSay('Loading the card form...', false);
     try{
       const payItems=cartGet().map(i=>({style:i.style,color:i.color,size:i.size,wh:i.wh,qty:i.qty}));
       const st=shipToObj();
@@ -765,18 +811,20 @@
       const fm=document.getElementById('hostedForm'); fm.action=d.formUrl;
       document.getElementById('hostedBox').style.display='';
       fm.submit();
-      _hostOk=true; _hostSig=_hostSigNow();
-      b.style.display='none';
-      const nt=document.getElementById('hostedNote');
-      if(nt) nt.textContent='The form below belongs to Authorize.net. Pick a saved card or add a new one, then press Pay.';
+      _hostOk=true; _hostSig=_hostSigNow(); _hostBusy=false;
+      hostedBtnState();
+      hostedSay('Pick a saved card or add a new one below, then press Pay. The form belongs to Authorize.net.', false);
       const ex=document.getElementById('hostedExp'); if(ex){ ex.style.display='none'; ex.textContent=''; }
-      /* 토큰은 15분이면 죽는다. 죽은 칸에서 눌러보게 두지 않고 14분에 우리가 먼저 말한다 */
+      /* 토큰은 15분이면 죽는다. 14분에 우리가 먼저 말한다.
+         ⚠ 여기서 몰래 다시 열지 않는다 - 손님이 카드번호를 적던 중이면 그게 지워진다.
+            그래서 이때만 단추를 낸다. */
       _hostTimer=setTimeout(function(){
-        hostedReset('The card form timed out. Press "Continue to payment" to open a fresh one.');
+        hostedStall('The card form timed out for safety. Reload it and your card details stay with Authorize.net.');
       }, 14*60*1000);
     }catch(e){
-      showMsg('Could not open the card form: '+(e.message||e),true);
-      b.disabled=false; b.textContent='Continue to payment →';
+      _hostBusy=false;
+      _hostErr=_hostSigNow();                  /* 같은 상태로 계속 다시 시도하지 않는다 */
+      hostedStall('Could not open the card form: '+(e.message||e));
     }
   }
   /* Authorize.net 이 IFrameCommunicator.html 을 통해 이 함수를 부른다 */
@@ -792,7 +840,9 @@
         if(f) f.style.height=(h+20)+'px';
         return;
       }
-      if(p.action==='cancel'){ hostedReset(''); return; }
+      /* HOSTEDAUTO-1 - 저 칸 안의 Cancel. 우리 화면에서는 「칸을 처음부터 다시」 가 맞다.
+         (닫아 놓으면 손님이 다시 열 길을 찾아야 한다 - 단추를 없앤 이유와 어긋난다) */
+      if(p.action==='cancel'){ hostedClose(); _hostErr=''; hostedSay('Card form reset — loading a fresh one...', false); hostedOpen(); return; }
       if(p.action==='successfulSave'){ return; }
       if(p.action==='transactResponse'){
         let resp=null; try{ resp=JSON.parse(p.response); }catch(e){}
@@ -819,15 +869,14 @@
       charge(null, b, null, tid);
       return;
     }
+    _hostErr='';                 /* 손으로 눌렀으면 막아 둔 재시도를 푼다 */
     hostedOpen();
   });
-  /* 청구주소·메일을 고치면 칸을 닫는다 - 그 칸의 토큰에는 고치기 전 주소가 박혀 있다 (AVS) */
+  /* 청구주소·메일을 고치면 칸을 갈아야 한다 - 그 칸의 토큰에는 고치기 전 주소가 박혀 있다 (AVS).
+     ⚠ 판단은 _hostKick 이 한다 (여기서 또 적으면 두 군데가 어긋난다) */
   ['bSame','bName','bAddr1','bAddr2','bCity','bState','bZip','fEmail'].forEach(function(id){
     const el=document.getElementById(id); if(!el) return;
-    el.addEventListener('change',function(){
-      try{ if(_hostOk && _hostSigNow()!==_hostSig)
-        hostedReset('Billing details changed. Press "Continue to payment" to open the card form again.'); }catch(e){}
-    });
+    el.addEventListener('change',function(){ try{ _hostKick(); }catch(e){} });
   });
 
   // ── 진입: 로그인+승인 확인 ──

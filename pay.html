@@ -48,6 +48,12 @@
   .okrow span{font-size:13px;line-height:1.5;max-width:620px}
   .okrow b{font-weight:600}
   .okrow i{font-style:normal;color:var(--faint);font-size:11.5px;line-height:1.55;display:block;margin-top:3px}
+  /* MITHINT-1 - 동의를 체크하면 「카드 저장도 같이 눌러 달라」 를 크게 띄운다.
+     Authorize.Net 네모는 저쪽 창 안이라 우리가 대신 눌러 줄 수 없다. 그래서 말로 한다. */
+  #mithint{display:none;margin:10px 26px 0;background:#fdf6e3;border:1px solid #e3cf8f;border-left:4px solid #c99a2e;
+           border-radius:9px;padding:11px 13px;font-size:13px;line-height:1.55;color:#6b5312}
+  #mithint.on{display:block}
+  #mithint b{font-weight:700}
   .paidbox{margin-top:22px;padding:22px;border-radius:12px;background:var(--accent-soft);border:1px solid #c8d6c9;text-align:center}
   .paidbox .big{font-family:'Instrument Serif',serif;font-size:27px;color:var(--accent)}
   .paidbox .sm{font-size:12.5px;color:var(--soft-ink);margin-top:8px;line-height:1.7}
@@ -57,7 +63,7 @@
   footer .row{display:flex;gap:26px;flex-wrap:wrap;margin-top:8px}
   footer b{color:var(--soft-ink);font-weight:600;display:block}
   footer a{color:var(--faint);text-decoration:none}
-  @media(max-width:520px){ .amt{font-size:39px} .pad{padding:22px 18px} .payhead{padding:15px 18px 3px} header{padding:14px 18px} #lbf{min-width:0} .okbox{margin:4px 18px 0} }
+  @media(max-width:520px){ .amt{font-size:39px} .pad{padding:22px 18px} .payhead{padding:15px 18px 3px} header{padding:14px 18px} #lbf{min-width:0} .okbox{margin:4px 18px 0} #mithint{margin:10px 18px 0} }
 </style>
 </head>
 <body>
@@ -82,6 +88,9 @@
             on the card form below as well. You can cancel this at any time by replying to any Pacific Sports email.</i></span>
         </label>
       </div>
+      <div id="mithint">👇 One more step &mdash; on the card form below, also tick
+        <b>&ldquo;Save this Credit Card information for the future.&rdquo;</b>
+        Without it we have no card on file to charge, and we would have to email you a link again next time.</div>
       <iframe id="lbf" name="payframe" frameborder="0" scrolling="no" title="Secure card form"></iframe>
       <div id="paywarn" style="display:none;padding:0 26px 18px;font-size:12px;color:var(--soft-ink);line-height:1.6;">
         After you press Pay, please wait on this page. If it takes a moment, do not pay again &mdash;
@@ -240,6 +249,17 @@
   function mitOk(){
     try{ var c = document.getElementById('mitok'); return !!(c && c.checked); }catch(e){ return false; }
   }
+  /* MITHINT-1 - 체크하면 안내가 뜨고, 끄면 사라진다. 판정은 mitOk() 하나만 본다. */
+  function mitHint(){
+    try{
+      var h = document.getElementById('mithint'); if(!h) return;
+      if(mitOk()) h.classList.add('on'); else h.classList.remove('on');
+    }catch(e){}
+  }
+  try{
+    var _mc = document.getElementById('mitok');
+    if(_mc) _mc.addEventListener('change', mitHint);
+  }catch(e){}
   var watchT = null, watchN = 0;
   function stopWatch(){ if(watchT){ clearInterval(watchT); watchT = null; } }
 

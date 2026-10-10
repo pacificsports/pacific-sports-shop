@@ -683,7 +683,13 @@
             /* 📝 손님이 적은 메모는 손님 것 그대로 — 예전엔 여기에 결제 요약을 넣어서
                손님 메모가 메일에서 사라졌다 (2026-09-21 고침). 결제 요약은 pay_note 로. */
             notes:notesPayload(),
-            pay_note:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')+' to '+st.city+', '+st.state,
+            /* SELFSHIP-1 (2026-10-10) - 픽업/LTL 에는 도착지를 안 붙인다.
+               예전에는 무조건 붙여서 "Local pickup - Eastvale, CA to sumter, SC" 처럼
+               앞뒤가 안 맞는 줄이 손님 메일에 나갔다.
+               ⚠ PICKUP_CA+03 은 SC 창고 몫이 진짜 배송되므로 그대로 붙인다. */
+            pay_note:'PAID '+money(total)+' (card …'+(d2.last4||'')+') · '+(shipMethod?shipMethod.name:'')
+                     +((shipMethod && (shipMethod.code==='PICKUP_CA' || shipMethod.code==='LTL_CUST'))
+                        ? '' : (' to '+st.city+', '+st.state)),
             company_name:st.company||cust.company_name||null,contact_name:st.name,phone:st.phone}})}).catch(()=>{});
       }
       saveAddressIfNew(st);

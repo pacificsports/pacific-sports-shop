@@ -138,7 +138,7 @@
   .o-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
   .o-line1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .o-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-  .d-shipped{background:var(--accent)}.d-processing{background:#c79a3a}.d-transit{background:#2f5b7a}.d-rejected{background:#a8463f}
+  .d-shipped{background:var(--accent)}.d-processing{background:#c79a3a}.d-transit{background:#2f5b7a}.d-rejected{background:#a8463f}.d-ready{background:#2f7a4a}
   .o-line2{font-size:13.5px;color:var(--soft-ink)}
   .o-line2 b{font-weight:600;color:var(--ink)}
   .o-line3{font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -830,7 +830,9 @@
   async function refreshTok(s){ try{ const rr=await fetch(_C.SUPABASE_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{apikey:_C.SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:s.refresh})}); if(!rr.ok) return null; const j=await rr.json(); s.token=j.access_token; s.refresh=j.refresh_token; s.expires_at=j.expires_at; localStorage.setItem('pacific_user',JSON.stringify(s)); return s; }catch(e){ return null; } }
   const ordersEl=document.getElementById('orders');
   let orders=[];
-  const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], shipped:['shipped','Shipped'], rejected:['rejected','Rejected'] };
+  /* READY-1 (2026-10-11) `ready` = 포장 끝나고 손님이 찾으러 오기를 기다리는 상태.
+     psflowx 가 Packing List 를 저장할 때 이 값으로 민다 (픽업 주문만). */
+  const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], ready:['ready','Ready for pickup'], shipped:['shipped','Shipped'], rejected:['rejected','Rejected'] };
 
   function groupLines(items){
     const map={}, out=[];
@@ -898,6 +900,7 @@
   /* 상태를 한 줄 제목으로 — Next Level 처럼 "지금 어디까지 왔나"가 먼저 보이게 */
   function headline(o){
     if(o.status==='shipped')   return 'Shipped '+niceDate(o.date);
+    if(o.status==='ready')     return 'Ready for pickup';   /* READY-1 */
     if(o.status==='rejected')  return 'Cancelled';
     if(o.statusLabel==='Accepted') return 'Accepted — preparing to ship';
     return 'Processing';

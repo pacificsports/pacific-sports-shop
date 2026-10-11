@@ -858,9 +858,27 @@
     return t;
   }
   const sizesStr=l=>sizeOrder.filter(z=>l.sizes[z]).map(z=>`${z} <b>${l.sizes[z]}</b>`).join('  ');
+  /* PICKWHERE-1 (2026-10-11) 픽업 건은 손님 주소로 가는 게 아니다.
+     psflowx 종이 세 장(PICKUP-2)이 CUSTOMER PICKUP 으로 바뀌었는데 이 줄만 안 따라와서,
+     손님 화면에 「sumter, SC 로 보냄」처럼 읽혔다.
+     판정도 장소도 여기 한 군데에만 적는다 - 두 군데 적으면 반드시 어긋난다. */
+  function isPickupOrder(o){
+    return /local\s*pick\s*-?\s*up/i.test(String((o && o.shipMethod) || ''));
+  }
+  /* 창고 이름을 코드에 박지 않는다. 주문에 적힌 'Local pickup — Eastvale, CA' 에서
+     앞머리만 떼어 쓰니까, 나중에 SC 픽업을 열어도 저절로 따라간다.
+     — – - 어느 줄표가 와도 떨어진다. */
+  function pickupWhere(o){
+    return String((o && o.shipMethod) || '')
+             .replace(/^\s*local\s*pick\s*-?\s*up\s*[—–-]*\s*/i, '').trim();
+  }
   function shipToStr(o){
     const st=o.ship_to||{};
     const who=st.company||st.name||'';
+    if(isPickupOrder(o)){
+      const w = pickupWhere(o);
+      return [who, 'Pickup at ' + (w || 'our warehouse')].filter(Boolean).join(' · ');
+    }
     const where=[st.city,st.state].filter(Boolean).join(', ');
     return [who,where].filter(Boolean).join(' · ');
   }

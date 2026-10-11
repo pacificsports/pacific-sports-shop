@@ -138,7 +138,7 @@
   .o-meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
   .o-line1{font-size:16px;font-weight:600;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .o-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-  .d-shipped{background:var(--accent)}.d-processing{background:#c79a3a}.d-transit{background:#2f5b7a}.d-rejected{background:#a8463f}.d-ready{background:#2f7a4a}
+  .d-shipped{background:var(--accent)}.d-processing{background:#c79a3a}.d-transit{background:#2f5b7a}.d-rejected{background:#a8463f}.d-ready{background:#2f7a4a}.d-picked_up{background:var(--accent)}
   .o-line2{font-size:13.5px;color:var(--soft-ink)}
   .o-line2 b{font-weight:600;color:var(--ink)}
   .o-line3{font-size:13px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -832,7 +832,7 @@
   let orders=[];
   /* READY-1 (2026-10-11) `ready` = 포장 끝나고 손님이 찾으러 오기를 기다리는 상태.
      psflowx 가 Packing List 를 저장할 때 이 값으로 민다 (픽업 주문만). */
-  const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], ready:['ready','Ready for pickup'], shipped:['shipped','Shipped'], rejected:['rejected','Rejected'] };
+  const STATUS_MAP={ new:['processing','Processing'], accepted:['processing','Accepted'], ready:['ready','Ready for pickup'], picked_up:['picked_up','Picked up'], shipped:['shipped','Shipped'], rejected:['rejected','Rejected'] };
 
   function groupLines(items){
     const map={}, out=[];
@@ -901,6 +901,8 @@
   function headline(o){
     if(o.status==='shipped')   return 'Shipped '+niceDate(o.date);
     if(o.status==='ready')     return 'Ready for pickup';   /* READY-1 */
+    /* PICKED-1 - 픽업은 배송이 아니다. 날짜는 shipped_at(우리 손을 떠난 시각)에서 온다 */
+    if(o.status==='picked_up') return 'Picked up'+(o.shippedAt?(' '+niceDate(String(o.shippedAt).slice(0,10))):'');
     if(o.status==='rejected')  return 'Cancelled';
     if(o.statusLabel==='Accepted') return 'Accepted — preparing to ship';
     return 'Processing';
@@ -957,7 +959,11 @@
      UPS 는 박스가 나간 다음부터만 아니까, 우리 것 위에 UPS 이력을 얹는다. */
   function ourSteps(o){
     var s=[];
-    if(o.shippedAt) s.push({status:'Shipped from '+(o.wh||'our warehouse'), date:String(o.shippedAt).slice(0,10), time:'', location:o.shipMethod||''});
+    /* PICKED-1 - 픽업 건은 「발송」이 아니라 「손님이 가져감」 */
+    if(o.shippedAt) s.push({status:(o.status==='picked_up'
+          ? ('Picked up at '+(o.wh||'our warehouse'))
+          : ('Shipped from '+(o.wh||'our warehouse'))),
+        date:String(o.shippedAt).slice(0,10), time:'', location:o.shipMethod||''});
     if(o.acceptedAt) s.push({status:'Accepted — picking and packing', date:String(o.acceptedAt).slice(0,10), time:'', location:''});
     if(o.date) s.push({status:'Order placed', date:o.date, time:'', location:(o.pay==='paid'?'Paid':'')});
     return s;

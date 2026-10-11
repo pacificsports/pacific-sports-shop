@@ -146,6 +146,8 @@
   .o-pill{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 9px;border-radius:999px;white-space:nowrap}
   .p-paid{background:var(--accent-soft);color:var(--accent)}
   .p-due{background:#f6ecd8;color:#8a6a2a}
+  /* REFPILL-1 - 환불은 「받을 돈」이 아니다. 조용한 회색으로 따로 낸다 */
+  .p-refund{background:#eceae5;color:#6b675f}
   .o-track{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px;color:var(--soft-ink);margin-top:7px}
   /* 운송사 배지 — 회사 색을 살짝 빌려서 한눈에 구분되게 */
   .o-track .tk-car{display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:10.5px;letter-spacing:.07em;
@@ -910,6 +912,9 @@
 
   function payPill(o){
     if(o.pay==='paid') return '<span class="o-pill p-paid">Paid</span>';
+    /* REFPILL-1 (2026-10-11) psflowx 에서 전액 환불하면 여기로 온다.
+       ⚠ 아래 기본 가지에 맡기면 호박색 「받을 돈」 알약에 소문자 `refunded` 가 찍힌다. */
+    if(o.pay==='refunded') return '<span class="o-pill p-refund">Refunded</span>';
     if(!o.pay) return '';
     return '<span class="o-pill p-due">'+esc(String(o.pay).replace(/_/g,' '))+'</span>';
   }

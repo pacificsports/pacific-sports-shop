@@ -974,7 +974,12 @@
     if(!_C.CHECKOUT_WORKER) return TRACK_CACHE;
     var key=want.join(',');
     if(!TRACK_PENDING[key]){
-      TRACK_PENDING[key]=fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+      /* AUTHSEND-1 (2026-10-12) 추적 조회도 로그인 토큰을 같이 보낸다.
+         지금 워커는 안 보지만 무시한다 - 다음 단계에서 요구하게 된다. */
+      const _ts=_sess();
+      TRACK_PENDING[key]=fetch(url,{method:'POST',
+        headers: Object.assign({'Content-Type':'application/json'},
+                               (_ts&&_ts.token)?{Authorization:'Bearer '+_ts.token}:{}),
         body:JSON.stringify({numbers:want})})
         .then(function(r){ return r.ok?r.json():{results:{}}; })
         .then(function(d){

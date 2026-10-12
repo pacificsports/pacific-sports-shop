@@ -259,6 +259,16 @@
   }
 
   function session(){ try{return JSON.parse(localStorage.getItem('pacific_user')||'null');}catch(e){return null;} }
+  /* AUTHSEND-1 (2026-10-12) 워커를 부를 때 쓰는 공용 헤더.
+     ⭐⭐ 토큰을 붙이는 곳을 **한 군데로** 모았다 - 호출마다 적으면 반드시 하나를 빠뜨린다.
+     ⚠ 로그인이 없으면 Authorization 을 안 붙인다 (지금 워커는 /rates 에 토큰을 요구하지
+        않으므로 그대로 돌아간다). 워커가 요구하게 된 뒤에는 로그인한 손님만 요금을 본다. */
+  function wkHead(){
+    const h = { 'Content-Type':'application/json' };
+    const s = session();
+    if(s && s.token) h.Authorization = 'Bearer ' + s.token;
+    return h;
+  }
   function customer(){ try{return JSON.parse(localStorage.getItem('pacific_customer')||'null');}catch(e){return null;} }
   const esc=t=>String(t==null?'':t).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
   const money=n=>'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -353,7 +363,7 @@
     if(!WORKER){ alert('Checkout worker is not configured yet (pacific-config.js → CHECKOUT_WORKER).'); return; }
     const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting UPS rates…';
     try{
-      const r=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},
+      const r=await fetch(WORKER+'/rates',{method:'POST',headers:wkHead(),
         body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10,
                              items:rateItems()})});
       const d=await r.json();
@@ -448,7 +458,7 @@
           const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0, items:_it}
                                   : {shipTo:st, scLbs:0, caLbs:totLbs, items:_it};
           try{
-            const rr=await fetch(WORKER+'/rates',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+            const rr=await fetch(WORKER+'/rates',{method:'POST',headers:wkHead(),body:JSON.stringify(body)});
             const j=await rr.json();
             if(rr.ok && !j.error && Array.isArray(j.services)) quotes[w]=j.services;
           }catch(e){}

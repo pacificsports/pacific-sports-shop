@@ -103,29 +103,9 @@
     <!-- 카드 -->
     <div class="panel" id="payPanel">
       <h2>Payment</h2>
-      <!-- HOSTEDUI-1 - 옛 카드칸. 지우지 않고 감춰 둔다 (pmPaint / pmApply 가 아직 건드린다).
-           5단계에서 Accept.js 와 함께 걷어낸다. -->
-      <div id="oldPay" style="display:none">
-      <!-- 💳 저장된 카드 (My Account → Payment methods). 없으면 이 블록은 안 보인다. -->
-      <div id="pmWrap" style="display:none;margin-bottom:6px">
-        <label>Pay with</label>
-        <div id="pmList"></div>
-      </div>
-      <div id="newCardFields">
-        <label>Card number *</label><input type="text" id="cardNum" inputmode="numeric" autocomplete="cc-number" placeholder="•••• •••• •••• ••••">
-        <div class="grid3">
-          <div><label>Exp. month (MM) *</label><input type="text" id="cardMo" inputmode="numeric" autocomplete="cc-exp-month" placeholder="MM" maxlength="2"></div>
-          <div><label>Exp. year (YYYY) *</label><input type="text" id="cardYr" inputmode="numeric" autocomplete="cc-exp-year" placeholder="YYYY" maxlength="4"></div>
-          <div><label>CVV *</label><input type="text" id="cardCvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4"></div>
-        </div>
-      </div>
-      <!-- 🔐 저장된 카드도 CVV 는 매번 받는다 — 우리도 Authorize.net 도 CVV 를 저장하지 않는다 -->
-      <div id="savedCvvWrap" style="display:none">
-        <label>Security code (CVV) *</label>
-        <input type="text" id="savedCvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" style="max-width:130px">
-        <div style="font-size:12.5px;color:var(--faint);margin-top:5px">3 or 4 digits on your card. We ask for it every time — it is never stored.</div>
-      </div>
-      </div><!-- /oldPay -->
+      <!-- STEP5-1 (2026-10-12) 옛 카드칸을 걷어냈다.
+           카드번호 / 만기 / CVV 칸도, 저장카드 고르는 줄도 여기 없다.
+           전부 아래 hostedWrap 안의 Authorize.net 칸이 맡는다. -->
       <div id="billingBlock">
       <h3 class="subhead">Billing address</h3>
       <label class="chk"><input type="checkbox" id="bSame" checked style="width:auto;margin-right:7px">Same as shipping address</label>
@@ -148,8 +128,6 @@
       <!-- HOSTEDAUTO-1 - PO 번호와 메모 칸은 여기서 뺐다. 이미 **카트 화면**에 있고
            거기서 적은 것이 localStorage 로 넘어온다 (notesPayload 가 거기서 읽는다).
            두 군데 두면 손님이 어디에 적었는지 헷갈리고, 결제칸 바로 위에 끼어서 흐름을 끊는다. -->
-      <!-- HOSTEDUI-1 - 옛 Pay 버튼. summary() 가 글자와 잠금을 아직 건드리므로 남겨 두고 감춘다 -->
-      <div id="oldPayBtn" style="display:none;margin-top:18px"><button class="btn" id="payBtn" disabled>Pay — $0.00</button></div>
 
       <div id="hostedWrap" style="margin-top:18px">
         <div id="hostedNote" style="font-size:12.5px;color:var(--soft-ink);background:var(--accent-soft);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin-bottom:12px">
@@ -298,52 +276,10 @@
     return {firstName:nm[0]||'',lastName:nm.slice(1).join(' ')||'-',company:'',addr1:document.getElementById('bAddr1').value.trim(),city:document.getElementById('bCity').value.trim(),state:document.getElementById('bState').value,zip:document.getElementById('bZip').value.trim()};
   }
 
-  /* ── 💳 저장된 카드 ──────────────────────────────────────────────
-     pmSel = '' 이면 새 카드, 아니면 Authorize.net 의 paymentProfileId.
-     ⚠ 이 id 는 화면이 보내는 값이지만 워커가 「내 프로필 안에 있는 카드인지」를
-        다시 확인한다 (whoAmI → description 대조 → 카드 목록 대조). 여기서 바꿔도 못 뚫린다. */
-  let pmCards=[], pmSel='';
-  const pmBrand=b=>({visa:'Visa',mastercard:'Mastercard',amex:'Amex',americanexpress:'Amex',discover:'Discover'}[String(b||'').toLowerCase().replace(/[^a-z]/g,'')]||b||'Card');
-  function pmExp(e){ const m=String(e||'').match(/^(\d{4})-(\d{2})$/); return m?(m[2]+'/'+m[1].slice(2)):''; }
-  function pmPaint(){
-    const wrap=document.getElementById('pmWrap'), list=document.getElementById('pmList');
-    if(!wrap||!list) return;
-    if(!pmCards.length){ wrap.style.display='none'; pmApply(); return; }
-    wrap.style.display='';
-    const row=(id,label,sub)=>`<label class="chk" style="display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid var(--line);border-radius:8px;margin-bottom:7px;cursor:pointer">`
-      +`<input type="radio" name="pmPick" value="${esc(id)}" style="width:auto;margin:0" ${pmSel===id?'checked':''}>`
-      +`<span style="flex:1"><b>${esc(label)}</b>${sub?`<span style="color:var(--faint);font-weight:400"> · ${esc(sub)}</span>`:''}</span></label>`;
-    list.innerHTML = pmCards.map(c=>row(c.id, pmBrand(c.brand)+' ···· '+esc(c.last4), pmExp(c.exp)?('exp '+pmExp(c.exp)):''))
-                             .join('') + row('', 'Use a new card', '');
-    list.querySelectorAll('input[name="pmPick"]').forEach(r=>r.addEventListener('change',()=>{ pmSel=r.value; pmApply(); }));
-    pmApply();
-  }
-  /* 고른 것에 맞춰 칸을 보이거나 감춘다 */
-  function pmApply(){
-    const saved=!!pmSel;
-    const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display=on?'':'none'; };
-    show('newCardFields', !saved);
-    show('savedCvvWrap', saved);
-    /* HOSTEDUI-1 - 청구주소는 **항상** 보여준다.
-       전에는 저장 카드를 고르면 감췄다 (그 카드의 프로필에 붙은 청구지로 승인되니까).
-       이제는 결제칸 안에서 손님이 저장 카드든 새 카드든 고르고, 우리는 **고르기 전에**
-       토큰을 받으면서 이 청구주소를 같이 넘긴다 (AVS 가 그걸로 돈다). 감추면 새 카드로
-       낼 손님이 청구지를 고칠 자리가 없어진다. */
-    show('billingBlock', true);
-    if(saved){ const e=document.getElementById('savedCvv'); if(e) e.value=''; }
-  }
-  async function pmLoad(){
-    try{
-      const s=session(); if(!s||!s.token||!WORKER) return;
-      const r=await fetch(WORKER+'/pm/list',{method:'POST',
-        headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},body:'{}'});
-      if(!r.ok) return;                       /* 옛 워커·오류 → 지금 화면 그대로 (폴백) */
-      const d=await r.json();
-      pmCards=Array.isArray(d&&d.cards)?d.cards:[];
-      pmSel = pmCards.length ? String(pmCards[0].id) : '';
-      pmPaint();
-    }catch(e){}
-  }
+  /* STEP5-1 (2026-10-12) 저장카드를 **여기서** 고르던 코드(pmPaint / pmApply / pmLoad)를
+     걷어냈다. 이제 고르기도 새 카드 넣기도 Authorize.net 칸 안에서 일어난다.
+     ⚠ 청구주소(billingBlock)는 markup 에서 기본으로 보이므로 따로 켤 필요가 없다 -
+        예전에는 pmApply() 가 show('billingBlock', true) 로 켜 주고 있었다. */
 
   let goods=0, pcs=0, scLbs=0, caLbs=0, shipCost=null, shipMethod=null, allPriced=true;
 
@@ -370,9 +306,8 @@
     document.getElementById('sumShipName').textContent= shipMethod?(' · '+shipMethod.name):'';
     const total=goods+(shipCost||0);
     document.getElementById('sumTotal').textContent=money(total);
-    const pb=document.getElementById('payBtn');
-    pb.textContent='Pay — '+money(total);
-    pb.disabled=!(pcs>0&&shipCost!=null&&allPriced);
+    /* STEP5-1 - 옛 Pay 버튼이 없어졌다. 여기서 그 버튼을 만지면 **이 줄에서 멈춰**
+       아래 _hostKick() 이 안 불리고 결제칸이 영영 안 열린다. 되살리지 말 것. */
     /* HOSTEDAUTO-1 - 결제칸 판단은 **_hostKick 한 곳**에서만 한다.
        열기·다시 열기·닫기를 여기저기 적으면 반드시 어긋난다
        (금액이 바뀐 낡은 칸이 열린 채 남는 식으로). */
@@ -573,34 +508,8 @@
     m.style.background=bad?'#f8ecea':'var(--accent-soft)'; m.style.color=bad?'var(--err)':'var(--accent)';
     m.style.border='1px solid '+(bad?'#ecd6d3':'var(--line)'); m.textContent=t; }
 
-  document.getElementById('payBtn').addEventListener('click',()=>{
-    /* 💳 저장된 카드로 결제 — 카드번호가 없으니 Accept.js 가 필요 없다.
-       CVV 만 받아서 워커로 넘기고, 워커는 Authorize.net 프로필로 긁는다. */
-    if(pmSel){
-      const cv=(document.getElementById('savedCvv').value||'').replace(/[^0-9]/g,'');
-      if(cv.length<3||cv.length>4){ showMsg('Please enter the 3 or 4 digit security code (CVV) on your card.',true);
-        const e=document.getElementById('savedCvv'); if(e) e.focus(); return; }
-      const b2=document.getElementById('payBtn'); b2.disabled=true; b2.textContent='Processing…';
-      charge(null, b2, { id: pmSel, cvv: cv });
-      return;
-    }
-    if(!window.Accept){ showMsg('결제 모듈(Accept.js)을 불러오지 못했습니다. 새로고침 해주세요.',true); return; }
-    if(!_C.ANET_API_LOGIN_ID||!_C.ANET_CLIENT_KEY){ showMsg('결제 키가 아직 설정되지 않았습니다 (pacific-config.js).',true); return; }
-    const num=document.getElementById('cardNum').value.replace(/\s/g,'');
-    const mo=document.getElementById('cardMo').value.trim(), yr=document.getElementById('cardYr').value.trim(), cvv=document.getElementById('cardCvv').value.trim();
-    if(num.length<13||!mo||yr.length<4||!cvv){ showMsg('카드 정보를 확인해 주세요.',true); return; }
-    const btn=document.getElementById('payBtn'); btn.disabled=true; btn.textContent='Processing…';
-    Accept.dispatchData({
-      authData:{ clientKey:_C.ANET_CLIENT_KEY, apiLoginID:_C.ANET_API_LOGIN_ID },
-      cardData:{ cardNumber:num, month:mo, year:yr, cardCode:cvv }
-    }, async resp=>{
-      if(resp.messages.resultCode==='Error'){
-        showMsg(resp.messages.message.map(m=>m.text).join(' / '),true);
-        btn.disabled=false; summary(); return;
-      }
-      await charge(resp.opaqueData, btn);
-    });
-  });
+  /* STEP5-1 - 옛 Pay 버튼 처리를 걷어냈다. 카드번호 칸을 읽던 **유일한** 코드였다.
+     지금은 손님이 Authorize.net 칸 안에서 내고, 그 결과가 _hostKick 쪽으로 들어온다. */
 
   /* saved 가 있으면 저장 카드({id,cvv}), 없으면 새 카드(opaqueData).
      ⚠ 둘을 같이 보내면 워커가 400 으로 막는다 — 어느 카드로 긁혔는지 모르게 되니까. */
@@ -865,7 +774,9 @@
         const b=document.getElementById('hostedBtn');
         if(b){ b.style.display=''; b.disabled=true; b.textContent='Saving your order...'; }
         showMsg('Payment approved - saving your order...',false);
-        charge(null, b || document.getElementById('payBtn'), null, tid);
+        /* STEP5-1 - 옛 Pay 버튼으로 돌아가던 fallback 을 뺐다. 그 버튼은 이제 없고,
+           hostedBtn 은 markup 에 늘 있으므로 b 가 비는 일이 없다. */
+        charge(null, b, null, tid);
       }
     }
   };
@@ -1010,8 +921,6 @@
     setIf('fPhone', cust.phone);
     // 2) 저장된 배송지 주소록 드롭다운 (거래처 공유, IMS 없이도 동작)
     await loadSavedAddresses();
-    // 2-b) 저장된 카드 — 있으면 첫 카드가 골라진 상태로 보인다
-    pmLoad();
     // 3) (보너스) IMS 거래처가 연결돼 있으면 그 주소도 시도 — 없어도 무방
     try{
       if(cust.customer_id){
@@ -1029,16 +938,6 @@
     }catch(e){}
   }
   init();
-</script>
-<script>
-  // Accept.js 로드 (sandbox/production은 pacific-config.js의 ANET_ENV 따라)
-  (function(){
-    const env=(window.PACIFIC_CONFIG||{}).ANET_ENV||'sandbox';
-    const s=document.createElement('script');
-    s.src= env==='production' ? 'https://js.authorize.net/v1/Accept.js' : 'https://jstest.authorize.net/v1/Accept.js';
-    s.charset='utf-8';
-    document.head.appendChild(s);
-  })();
 </script>
 <script src="pacific-nav.js"></script>
 </body>

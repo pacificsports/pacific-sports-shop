@@ -1009,8 +1009,9 @@
   }
   /* 가격을 받은 뒤 사이즈 칸만 다시 칠한다 (표 전체를 다시 그리지 않는다) */
   /* 💲 가격칸 (B-1, 2026-09-22) ─────────────────────────────────────
-     Standard price     = 계약가를 빼고 style_prices 만으로 계산한 값
-     Your account price = 실제 적용가 (계약가가 있으면 그것)
+     ONEPRICE-1 (2026-10-22) 이후로는 **한 줄만** 그린다:
+       Your account price = 실제 적용가 (계약가가 있으면 그것, 없으면 style_prices 값)
+     예전의 Standard price 줄(계약가를 빼고 계산한 값)은 없앴다 - 아래 주석 참고
      ⭐ pacific-data.js 는 손대지 않는다 — cust 를 null 로 준 사본을 하나 더 계산할 뿐이다.
         그래서 확장사이즈 할증 사다리(2XL +0.60 · 3XL +1.20 · 4XL +2.00 · 5XL +3.20)도
         두 값에 똑같이 적용된다. */
@@ -1091,9 +1092,9 @@
     if(!canOrder) return;
     if(!(PRICING && window.PacificData && PacificData.priceOf)) return;
     const bz=_pbBaseSize(); if(!bz) return;
-    const STD={ base:PRICING.base, cust:null, sales:PRICING.sales, cat:PRICING.cat };
+    /* ONEPRICE-1 - 계약가를 뺀 사본(STD)으로 정가를 또 계산하던 줄을 지웠다.
+       보여주지 않는 값을 계산하고 있을 이유가 없다. */
     const mine=PacificData.priceOf(PRICING, null, bz);
-    const std =PacificData.priceOf(STD,     null, bz);
     let html='';
     if(mine.price==null){
       /* style_prices 줄이 없는 스타일 (2026-09-21 실측 14개: 1240 1248 1292 1315R 1332
@@ -1101,14 +1102,18 @@
       html='<div class="prow"><span class="pcall">Call for pricing &mdash; '
          + '<a href="mailto:sales@peacepacificsports.com" style="color:var(--accent);font-weight:600">sales@peacepacificsports.com</a>'
          + '</span></div>';
-    }else if(std.price!=null && Math.abs(std.price-mine.price)>=0.005){
-      html='<div class="prow pstd">Standard Price : '+_pbMoney(std)+'</div>'
-         + '<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }else{
-      /* 계약가가 없으면 이 줄이 손님이 실제로 내는 가격이다 -> Your Account Price 와 같은
-         초록 굵게로 눈에 띄게 한다 (2026-09-22).
-         ⚠ 흐린 회색(pstd)은 "계약가가 더 싸다" 를 보여줄 때만 쓴다. */
-      html='<div class="prow pmine">Standard Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
+      /* ONEPRICE-1 (2026-10-22) - 가격은 **한 줄**이다. 비교가격(Standard Price)을 안 보여준다.
+         예전에는 계약가가 있으면 위에 흐린 회색으로 정가를 같이 깔아서 할인 폭을 보여줬다.
+         뺀 이유 둘:
+          1) 거래처끼리 할인율을 비교할 거리를 안 준다. 실측상 폭이 16%~43%로 넓다.
+          2) 비교가격을 광고하면 미국 규정(16 CFR 233.1 - 진짜로 내놨던 값이어야 한다,
+             CA B&P 17501 - 최근 3개월 안이거나 날짜를 밝혀야 한다)을 지켜야 한다.
+             아예 안 보여주면 그 규정이 걸릴 자리가 없다.
+         ⭐ 계약가가 없는 거래처도 이 줄을 본다. style_prices 값이 **그 거래처의 가격**이 맞다
+            (실측 2026-10-22: 거래처 44곳 중 25곳이 계약가 없이 정가를 낸다).
+         ⚠ 세일 줄 긋기(pwas)는 그대로 둔다 - 그건 자기 정가 대비라 진짜 former price 다. */
+      html='<div class="prow pmine">Your Account Price : '+_pbMoney(mine)+_pbSaleNote(mine)+'</div>';
     }
     /* ⓘ 예전엔 여기에 "Extended Sizes : 2XL $4.35 · 3XL $4.95 …" 줄이 있었다.
        뺀 이유: 주문표 머리칸이 사이즈별 가격을 이미 전부 보여준다 (같은 말 두 번),

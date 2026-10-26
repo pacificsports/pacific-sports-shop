@@ -173,12 +173,14 @@
   .ab-head h1{font-family:var(--display);font-weight:400;font-size:clamp(38px,5.4vw,66px);line-height:1.02;letter-spacing:-.02em;margin:18px 0 0;max-width:19ch}
   .ab-head h1 em{font-style:italic;color:var(--accent)}
   .ab-lead{margin-top:20px;max-width:56ch;font-size:17.5px;font-weight:350;line-height:1.64;color:var(--soft-ink)}
-  .ab-rail{max-width:1240px;margin:46px auto 0;padding:0 30px}
-  .ab-rail-in{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
-  .ab-rail-in div{padding:20px 0;border-left:1px solid var(--line);padding-left:22px}
-  .ab-rail-in div:first-child{border-left:none;padding-left:0}
-  .ab-rail b{display:block;font-family:var(--display);font-weight:400;font-size:34px;line-height:1;letter-spacing:-.015em}
-  .ab-rail span{display:block;margin-top:7px;font-size:12px;color:var(--faint);letter-spacing:.055em;text-transform:uppercase}
+  /* ABOUTLOOK-2 - [stated] 하윤: "about us위에 저렇케 박스 식은 별로인듯"
+     -> 네모 칸(격자 + 세로줄)을 버리고 **한 줄 글**로. 테두리 없음, 가운뎃점으로만 나눈다 */
+  .ab-rail{max-width:1240px;margin:26px auto 0;padding:0 30px}
+  .ab-rail-in{font-size:12.5px;letter-spacing:.075em;text-transform:uppercase;color:var(--faint);font-weight:500}
+  /* ⚠ inline-flex 를 쓰면 글과 <b> 사이의 공백이 먹힌다 ("SINCE1992" 로 붙었다) - 그냥 inline */
+  .ab-rail-in span{display:inline}
+  .ab-rail-in span+span::before{content:'\00B7';margin:0 15px;color:var(--line-2)}
+  .ab-rail-in b{font-weight:600;color:var(--soft-ink)}
   .ab-kick{font-size:11.5px;font-weight:600;letter-spacing:.15em;color:var(--faint);text-transform:uppercase;margin-bottom:9px}
   .ab-quote{max-width:1240px;margin:58px auto 0;padding:0 30px}
   .ab-quote p{font-family:var(--display);font-weight:400;font-style:italic;font-size:clamp(23px,3.1vw,33px);line-height:1.3;letter-spacing:-.015em;color:var(--ink);max-width:24ch;border-left:2px solid var(--accent);padding-left:26px}
@@ -194,7 +196,7 @@
   .ab-end .prose p{color:var(--soft-ink)}
   .ab-end .cta{margin-top:24px}
   @media(max-width:700px){
-    .ab-rail-in div{border-left:none;padding-left:0}
+    .ab-rail-in span+span::before{margin:0 10px}
     .ab-quote p{padding-left:18px}
     .ab-end{padding:26px 22px 24px;border-radius:14px}
   }
@@ -263,9 +265,9 @@
 </div>
 <div class="ab-rail">
   <div class="ab-rail-in">
-    <div><b>1992</b><span>Family owned since</span></div>
-    <div><b>2</b><span>Distribution centers</span></div>
-    <div><b>Wholesale</b><span>Resale accounts only</span></div>
+    <span>Family owned since <b>1992</b></span>
+    <span><b>Two</b> distribution centers</span>
+    <span>Wholesale &mdash; <b>resale accounts only</b></span>
   </div>
 </div>
 <main class="page">

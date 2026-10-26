@@ -23,6 +23,8 @@
   input:focus,select:focus{outline:none;border-color:var(--accent)}
   .rateopt{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line-2);border-radius:11px;padding:13px 15px;margin-bottom:9px;cursor:pointer;font-size:14.5px}
   .rateopt.sel{border-color:var(--accent);background:var(--accent-soft)}
+  .rgrp{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--faint);margin:14px 0 7px;text-transform:uppercase}
+  .rgrp:first-child{margin-top:0}
   .rateopt{flex-wrap:wrap}
   .rateopt .rname{font-weight:600;flex:1}
   /* 창고별 내역 — 줄 안에서 이름 밑으로 내려간다 (2026-09-18) */
@@ -357,17 +359,58 @@
     });
     var r=document.getElementById('fResidential'); if(r) r.addEventListener('change', _maybeAuto);
   })();
+  /* FXWEB-3 - 택배사별로 묶어서 보여준다.
+     [stated] 하윤: "fedex 쫘악 나오고 ups 쫙악나오고" -> 값으로 섞지 않는다. FedEx 한 덩어리, UPS 한 덩어리.
+     ⭐ 줄마다 carrier 를 박아 둔다. 결제할 때 **그 줄의 택배사**로 서버가 금액을 다시 확인한다.
+     ⚠ LTL_CUST . PICKUP_CA 처럼 양쪽이 똑같이 주는 줄은 code 가 겹친다 -> 싼 쪽 하나만 남기고 맨 아래 묶음으로.
+     ⚠ 줄 차례가 곧 data-i 다 (pick 이 번호로 찾는다) -> 여기서 정한 차례대로 그려야 한다 */
+  function mergeRates(ups, fx){
+    const bill = x => Number((x && x.bill != null) ? x.bill : ((x && x.total) || 0));
+    const all = [], at = {};
+    const add = (list, car) => (list || []).forEach(sv => {
+      const k = String(sv.code);
+      const row = Object.assign({}, sv, { carrier: car });
+      if(at[k] !== undefined){ if(bill(row) < bill(all[at[k]])) all[at[k]] = row; return; }
+      at[k] = all.length; all.push(row);
+    });
+    add(fx, 'FEDEX'); add(ups, 'UPS');
+    const byPrice = (a,b) => bill(a) - bill(b);
+    const own = car => all.filter(r => r.carrier === car && bill(r) > 0).sort(byPrice);
+    const shared = all.filter(r => bill(r) <= 0).sort(byPrice);
+    const out = own('FEDEX').concat(own('UPS')).concat(shared);
+    /* 묶음의 첫 줄에 머리글을 붙일 수 있게 표시해 둔다 */
+    let last = null;
+    out.forEach(r => { const g = (bill(r) <= 0) ? 'OTHER' : r.carrier;
+      r._grp = (g !== last) ? g : null; last = g; });
+    return out;
+  }
   document.getElementById('rateBtn').addEventListener('click',async()=>{
     const st=shipToObj();
     if(!st.name||!st.addr1||!st.city||!st.state||!st.zip||!st.phone){ alert('이름/주소/도시/주/우편번호/전화를 입력해 주세요.'); return; }
     if(!WORKER){ alert('Checkout worker is not configured yet (pacific-config.js → CHECKOUT_WORKER).'); return; }
-    const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting UPS rates…';
+    const btn=document.getElementById('rateBtn'); btn.disabled=true; btn.textContent='Getting shipping rates…';
     try{
-      const r=await fetch(WORKER+'/rates',{method:'POST',headers:wkHead(),
-        body:JSON.stringify({shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10,
-                             items:rateItems()})});
-      const d=await r.json();
-      if(!r.ok||d.error) throw new Error(d.error||r.status);
+      /* FXWEB-2 - UPS 와 FedEx 를 같이 보여준다. 두 군데에 동시에 물어본다.
+         [stated] 하윤: "그냥 UPS도 쫙악 나오고 Fedex도 쫘악 나오게" */
+      const _base = {shipTo:st, scLbs:Math.round(scLbs*SHIP_BUFFER*10)/10, caLbs:Math.round(caLbs*SHIP_BUFFER*10)/10,
+                     items:rateItems()};
+      const _ask = async (car) => {
+        try{
+          const rr=await fetch(WORKER+'/rates',{method:'POST',headers:wkHead(),
+            body:JSON.stringify(Object.assign({carrier:car}, _base))});
+          const jj=await rr.json();
+          if(!rr.ok||jj.error) return { error: jj.error || ('HTTP '+rr.status) };
+          return jj;
+        }catch(e){ return { error: e.message }; }
+      };
+      const [_dU,_dF] = await Promise.all([_ask('UPS'), _ask('FEDEX')]);
+      /* ⚠ 한쪽이 죽어도 다른 쪽은 보여준다. 둘 다 죽어야 에러 */
+      if(_dU.error && _dF.error) throw new Error(_dU.error);
+      const d = { services: mergeRates(_dU.services, _dF.services),
+                  splitShipment: !!(_dU.splitShipment || _dF.splitShipment),
+                  addrClass: _dU.addrClass || _dF.addrClass || null,
+                  residential: (_dU.residential !== undefined) ? _dU.residential : _dF.residential };
+      if(!d.services.length) throw new Error(_dU.error || _dF.error || 'no rates');
       const list=document.getElementById('rateList');
       /* 🚚 손님이 내는 운임은 `bill` 이다 — UPS 정가 기준 (2026-09-18).
          전에는 `s.total` 을 썼는데 그건 **우리가 UPS 에 내는 협상요율**이라 마진이 0 이었다.
@@ -384,8 +427,11 @@
         if(has('CA')) part.push('Eastvale, CA ' + (L.CA===0 ? 'you pick up' : money(L.CA)));
         return part.length>1 ? ('<div class="rlegs">'+part.join('  ·  ')+'</div>') : '';
       };
+      /* FXWEB-3 - 묶음 머리글. 이름에 이미 FedEx/UPS 가 들어 있으니 줄마다 꼬리표는 안 붙인다 */
+      const GRPNAME = { FEDEX:'FedEx', UPS:'UPS', OTHER:'Pick up / LTL' };
+      const grpHead = s => s._grp ? `<div class="rgrp">${GRPNAME[s._grp]||s._grp}</div>` : '';
       list.innerHTML=d.services.map((s,i)=>
-        `<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(rateBill(s))}</span>${legsHtml(s)}</div>`).join('');
+        `${grpHead(s)}<div class="rateopt" data-i="${i}"><input type="radio" name="rate" ${i===0?'checked':''}><span class="rname">${esc(s.name)}</span><span class="rprice">${money(rateBill(s))}</span>${legsHtml(s)}</div>`).join('');
       document.getElementById('ratePanel').style.display='';
       document.getElementById('splitNote').style.display=d.splitShipment?'':'none';
       document.getElementById('payPanel').style.display='';
@@ -446,6 +492,7 @@
     const sig=JSON.stringify(cart.map(i=>[i.style,i.color,i.size,i.wh,i.qty]))+'|'+st.zip+'|'+st.state;
     _combineBusy=true;
     try{
+      sig = sig + '|' + ((svc && svc.carrier) || 'UPS');   /* FXWEB-2 */
       if(!_combineCache || _combineCache.sig!==sig){
         /* ① 한 창고가 장바구니 전체를 커버하나 — 재고를 합쳐서 본다 */
         const can = (window.PacificData && PacificData.canCombine) ? await PacificData.canCombine(cart) : {SC:false,CA:false};
@@ -455,8 +502,10 @@
         const totLbs = Math.round((scLbs+caLbs)*SHIP_BUFFER*10)/10;
         for(const w of cands){
           const _it = rateItems(w);
-          const body = (w==='SC') ? {shipTo:st, scLbs:totLbs, caLbs:0, items:_it}
-                                  : {shipTo:st, scLbs:0, caLbs:totLbs, items:_it};
+          /* FXWEB-2 - 고른 줄이 FedEx 면 합쳐보기도 FedEx 로 물어봐야 비교가 맞는다 */
+          const _car = (svc && svc.carrier) || 'UPS';
+          const body = (w==='SC') ? {carrier:_car, shipTo:st, scLbs:totLbs, caLbs:0, items:_it}
+                                  : {carrier:_car, shipTo:st, scLbs:0, caLbs:totLbs, items:_it};
           try{
             const rr=await fetch(WORKER+'/rates',{method:'POST',headers:wkHead(),body:JSON.stringify(body)});
             const j=await rr.json();
@@ -547,7 +596,9 @@
                     : (saved ? { savedCardId: saved.id, cardCode: saved.cvv } : { opaqueData }),
           { amount:total, invoice:ono, email:(document.getElementById('fEmail').value.trim()||s.email),
           billTo: (saved || hostedTid) ? undefined : billToObj(),
-          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null, clientTotal:total,
+          items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null,
+          carrier:(shipMethod&&shipMethod.carrier)||'UPS',   /* FXWEB-2 - 고른 줄의 택배사로 서버가 금액을 재확인한다 */
+          clientTotal:total,
           /* 🔒 주문을 **워커가** 쓰게 넘긴다 (2026-09-18). 지금은 브라우저가 쓰는데,
              그러면 손님이 자기 이름으로 total_amount·payment_status 를 아무렇게나
              적을 수 있다. 새 워커는 자기가 계산한 금액으로 주문을 쓰고
@@ -651,7 +702,7 @@
   function _hostSigNow(){
     try{
       return JSON.stringify([ Math.round((goods+(shipCost||0))*100),
-        (shipMethod&&shipMethod.code)||'', billToObj(),
+        (shipMethod&&shipMethod.code)||'', (shipMethod&&shipMethod.carrier)||'', billToObj(),
         (document.getElementById('fEmail')||{}).value||'' ]);
     }catch(e){ return ''; }
   }
@@ -731,6 +782,7 @@
       const r=await fetch(WORKER+'/hostedtoken',{method:'POST',
         headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},
         body:JSON.stringify({ items:payItems, shipTo:st, shipCode:(shipMethod&&shipMethod.code)||null,
+          carrier:(shipMethod&&shipMethod.carrier)||'UPS',   /* FXWEB-2 */
           email:(document.getElementById('fEmail').value.trim()||s.email),
           billTo: billToObj(), invoice: _hostInv() })});
       const d=await r.json().catch(()=>null);

@@ -228,7 +228,7 @@
     // 카테고리를 그대로 쓴다. 'Hoodie' 로만 줄였더니 후드 티인지 후드 집업인지
     // 헷갈린다고 해서, 'Hoodie L/S' 처럼 소매까지 붙인다.
     var c = String(cat || '').trim();
-    if (/Performance/i.test(c)) c = c.replace(/Performance/i, 'Outdoor');
+    if (/Performance/i.test(c)) c = c.replace(/Performance/i, 'Cool Flex');
     // Adult 는 기본이라 뗀다. Youth·Kids·Juvy·Toddler 는 남겨야 구분이 된다.
     return c.replace(/^Adult\s+/i, '').trim();
   }

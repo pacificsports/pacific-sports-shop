@@ -199,9 +199,18 @@
     document.getElementById('tabLogin').classList.toggle('active',which==='login');
     document.getElementById('tabReg').classList.toggle('active',which==='reg');
   }
-  function lmsg(t,kind){
+  function lmsg(t,kind,hint){
     const m=document.getElementById('loginMsg');
     m.textContent=t;
+    /* MOVEDHINT-1 - 둘째 줄 안내. **글자로만** 넣는다 (innerHTML 안 쓴다).
+       매번 textContent 를 다시 넣으므로 옛 줄은 저절로 지워진다 - 쌓이지 않는다. */
+    if(hint){
+      const h=document.createElement('div');
+      h.style.cssText='margin-top:7px;padding-top:7px;border-top:1px solid rgba(0,0,0,.08);'
+        +'font-size:13px;line-height:1.5;';
+      h.textContent=hint;
+      m.appendChild(h);
+    }
     m.style.display='block';
     m.style.background = kind==='ok' ? '#eef1ec' : '#f8ecea';
     m.style.color = kind==='ok' ? '#3d5a40' : '#a8463f';
@@ -225,6 +234,15 @@
     if(/user not found/i.test(m))
       return 'That email and password do not match. Check them and try again, or use Forgot password below.';
     return 'Could not log in. Please try again.' + (m ? ' (' + m + ')' : '');
+  }
+
+  /* MOVEDHINT-1 - 이메일/비번이 **안 맞을 때만** 옛 사이트 안내를 띄운다.
+     ⚠ 「너무 여러 번」·「인터넷 끊김」에는 안 띄운다 - 그때는 상관없는 말이라 잔소리가 된다.
+     ⚠ 판정을 niceAuthErr 과 **같은 글자**로 한다 - 두 군데가 어긋나지 않게. */
+  const MOVED_HINT = 'Moved from our old site? Your account is already here \u2014 '
+    + 'there is no need to sign up again.';
+  function authHint(text){
+    return /do not match/.test(String(text || '')) ? MOVED_HINT : '';
   }
 
   // 실제 로그인 (Supabase Auth)
@@ -263,7 +281,8 @@
       const next = new URLSearchParams(location.search).get('next');
       setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, pendingNote?2200:1000);
     }catch(e){
-      lmsg(niceAuthErr(e && e.message), 'err');   /* LOGINMSG-1 */
+      const _t = niceAuthErr(e && e.message);          /* LOGINMSG-1 */
+      lmsg(_t, 'err', authHint(_t));                   /* MOVEDHINT-1 */
       btn.disabled=false; btn.textContent='Log in →';
     }
   }

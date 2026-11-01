@@ -412,6 +412,8 @@
        Dashboard 를 거쳐야 했는데, 그 Dashboard 를 안 쓰기로 해서 Photos 를 여기로 꺼냈다. -->
   <button onclick="location.href='epacific-category.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Manage styles</button>
   <button onclick="location.href='admin-photos.html'" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Photos</button>
+  <!-- BNREDIT-1 - 배너는 이 페이지에서 바로 고친다 (사진·상품설명과 같은 자리). -->
+  <button id="homeStaffBnr" onclick="bnrOpen()" style="border:1px solid #4a5d4b;background:transparent;color:#e8e6df;padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px">Banner</button>
   <!-- 👥 Staff: owner 에게만 보인다 (아래 initStaffBar 에서 켜준다).
        admin-dashboard.html 파일 자체는 지우지 않았다 — 링크만 다 끊었으니 주소로는 열린다.
        나중에 뭐가 빠진 게 나오면 그때 다시 꺼내면 된다. -->
@@ -697,6 +699,27 @@
     await Promise.all(jobs);
     paint();
   }
+  /* BNREDIT-1 - 편집기가 쓸 손잡이. **손님 화면은 이걸 안 쓴다** (직원 편집기만 부른다).
+     ⚠ 슬라이드를 바꿔 끼울 때 사진 모음을 비워야 한다 - 스타일 번호가 바뀌었을 수 있다. */
+  window.hsAdmin = {
+    get: function(){ try{ return JSON.parse(JSON.stringify(slides)); }catch(e){ return []; } },
+    fallback: function(){ return JSON.parse(JSON.stringify(HS_FALLBACK)); },
+    apply: async function(list){
+      slides = (list && list.length) ? list : HS_FALLBACK;
+      imgsByStyle = null;
+      var jobs = [loadImgs()];
+      if(slides.some(function(s){ return s && Number(s.mosaic) > 0; })) jobs.push(loadHex());
+      try{ await Promise.all(jobs); }catch(e){}
+      paint();
+    },
+    hold: function(p){
+      paused = !!p;
+      if(p){ if(timer){ clearTimeout(timer); timer = null; }
+             var b = document.getElementById('hsBar'); if(b) b.classList.remove('run'); }
+      else tick();
+    },
+    at: function(i){ go(i, true); }
+  };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
@@ -1029,6 +1052,325 @@ function pacLogout(){
   try{ localStorage.removeItem("pacific_user"); localStorage.removeItem("pacific_customer"); }catch(e){}
   location.href="epacific-timeless.html";
 }
+</script>
+
+<!-- ══════════ BNREDIT-1 - 배너 편집기 (직원에게만) ══════════
+     [stated] 하윤: "메인페이지 배너 우리 직원이 쉽게 바꿀수있게 만들어줘"
+     위에 진짜 배너가 돌아가는 채로 아래에서 고친다 - 한 글자 치면 바로 위에 비친다. -->
+<style>
+  #bnrPanel{display:none;background:#fbfbf9;border-top:3px solid #243425;
+    font:400 14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;color:#1c1c1a}
+  #bnrPanel .bw{max-width:1100px;margin:0 auto;padding:18px 24px 34px}
+  #bnrPanel h3{font:800 17px/1.3 system-ui;margin:0 0 2px}
+  #bnrPanel .sub{font-size:12.5px;color:#6b6a63;margin-bottom:16px}
+  #bnrPanel .sl{border-top:1px solid #e3e1d9;padding:16px 0 4px}
+  #bnrPanel .sl:first-of-type{border-top:1px solid #243425}
+  #bnrPanel .hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  #bnrPanel .no{font:800 13px/1 system-ui;color:#243425;background:#e8ebe4;border-radius:20px;padding:5px 11px}
+  #bnrPanel .sp{flex:1}
+  #bnrPanel button{font:600 13px/1 system-ui;border:1px solid #c9c7bf;background:#fff;color:#1c1c1a;
+    border-radius:7px;padding:7px 12px;cursor:pointer}
+  #bnrPanel button:hover{border-color:#243425}
+  #bnrPanel button[disabled]{opacity:.35;cursor:default}
+  #bnrPanel button.danger{color:#9b1c1c;border-color:#e4c4c4}
+  #bnrPanel button.go{background:#243425;color:#fff;border-color:#243425;font-weight:800;padding:10px 22px}
+  #bnrPanel button.off{background:#f1efe8;color:#8a887f}
+  #bnrPanel .gr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px}
+  #bnrPanel label{display:block;font:700 10.5px/1.4 system-ui;letter-spacing:.07em;
+    text-transform:uppercase;color:#8a887f;margin-bottom:3px}
+  #bnrPanel input[type=text],#bnrPanel textarea,#bnrPanel select{width:100%;box-sizing:border-box;
+    font:400 13.5px/1.45 system-ui;color:#1c1c1a;background:#fff;border:1px solid #d8d6ce;
+    border-radius:7px;padding:8px 10px}
+  #bnrPanel textarea{resize:vertical;min-height:54px}
+  #bnrPanel input:focus,#bnrPanel textarea:focus,#bnrPanel select:focus{outline:2px solid #243425;outline-offset:-1px}
+  #bnrPanel .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  #bnrPanel .col{display:flex;align-items:center;gap:8px}
+  #bnrPanel input[type=color]{width:42px;height:32px;padding:0;border:1px solid #d8d6ce;
+    border-radius:6px;background:#fff;cursor:pointer}
+  #bnrPanel .wide{grid-column:1/-1}
+  #bnrPanel .foot{display:flex;align-items:center;gap:12px;margin-top:22px;
+    padding-top:18px;border-top:1px solid #243425;flex-wrap:wrap}
+  #bnrPanel .msg{font-size:13px;font-weight:700}
+  #bnrPanel .hint{font-size:11.5px;color:#8a887f;margin-top:4px}
+  #bnrPanel .warn{font-size:11.5px;color:#9b1c1c;font-weight:700;margin-top:6px;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #bnrPanel .warn button{font-size:11.5px;padding:4px 9px;color:#9b1c1c;border-color:#e4c4c4}
+  #bnrPanel .dim{opacity:.45}
+  @media(max-width:760px){ #bnrPanel .gr{grid-template-columns:1fr} }
+</style>
+<div id="bnrPanel"><div class="bw">
+  <h3>Home banner</h3>
+  <div class="sub">Edit the slides below &mdash; the banner above updates as you type. Nothing is public until you press <b>Save</b>.</div>
+  <div id="bnrList"></div>
+  <div class="foot">
+    <button onclick="bnrAdd()">+ Add slide</button>
+    <button onclick="bnrReset()">Start over from the built-in slides</button>
+    <span class="sp" style="flex:1"></span>
+    <span id="bnrMsg" class="msg"></span>
+    <button onclick="bnrCancel()">Cancel</button>
+    <button class="go" onclick="bnrSave()">Save</button>
+  </div>
+</div></div>
+<script>
+/* BNREDIT-1 - 배너 편집기. 직원 바의 Banner 단추가 연다.
+   ⚠ 슬라이드 모양은 **슬라이더가 이미 읽는 그 모양 그대로**다 (새 형식을 만들지 않는다):
+      { eyebrow, title, sub, btn, href, btn2, href2, bg, fg, mosaic | style, on }
+   ⚠ 손님 화면은 `on !== false` 인 것만 그린다 - 그 규칙은 원래 있던 것이고 안 건드렸다. */
+(function(){
+  var KEY = 'web_banners';
+  var work = null;          /* 고치는 중인 사본 */
+  var saved = null;         /* 열었을 때의 모습 - Cancel 로 돌아갈 자리 */
+  var busy = false;
+
+  function cfg(){ return window.PACIFIC_CONFIG || {}; }
+  function esc(v){ return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function msg(t, bad){
+    var el = document.getElementById('bnrMsg'); if(!el) return;
+    el.textContent = t || ''; el.style.color = bad ? '#9b1c1c' : '#2f5d3a';
+  }
+  function clone(v){ return JSON.parse(JSON.stringify(v)); }
+
+  /* 위 배너에 지금 고치는 내용을 비춘다. 꺼둔 장도 **편집 중에는 보여준다** -
+     안 보이면 뭘 고치고 있는지 알 수가 없다. */
+  var paintT = null;
+  function reflect(now){
+    if(paintT){ clearTimeout(paintT); paintT = null; }
+    var run = function(){
+      var list = work.filter(function(s){ return s.title || s.eyebrow; });
+      if(window.hsAdmin) window.hsAdmin.apply(clone(list));
+    };
+    if(now) run(); else paintT = setTimeout(run, 260);
+  }
+
+  /* BNRCONTRAST-1 - 읽히는지 재는 도구 (WCAG 와 같은 식).
+     ⚠ 눈대중으로 「어두우면 흰 글자」 로 가르면 중간 색(회색·올리브)에서 틀린다 - 비율로 잰다. */
+  var FG_ON_DARK = '#f3f2ec', FG_ON_LIGHT = '#1c1c1a';
+  function hex3(h){
+    h = String(h || '').trim();
+    if(/^#[0-9a-fA-F]{3}$/.test(h)) h = '#' + h[1]+h[1] + h[2]+h[2] + h[3]+h[3];
+    return /^#[0-9a-fA-F]{6}$/.test(h) ? h.toLowerCase() : null;
+  }
+  function lum(h){
+    h = hex3(h); if(!h) return null;
+    var c = [1,3,5].map(function(i){
+      var v = parseInt(h.substr(i,2),16)/255;
+      return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+    });
+    return 0.2126*c[0] + 0.7152*c[1] + 0.0722*c[2];
+  }
+  function ratio(a, b){
+    var x = lum(a), y = lum(b);
+    if(x == null || y == null) return null;
+    return (Math.max(x,y) + 0.05) / (Math.min(x,y) + 0.05);
+  }
+  function bestFg(bg){ var l = lum(bg); return (l != null && l < 0.42) ? FG_ON_DARK : FG_ON_LIGHT; }
+  function isDefaultFg(fg){
+    var h = hex3(fg);
+    return !h || h === FG_ON_DARK || h === FG_ON_LIGHT || h === '#000000' || h === '#ffffff';
+  }
+
+  function pic(s){
+    if(Number(s.mosaic) > 0) return 'colors';
+    if(String(s.style||'').trim()) return 'style';
+    return 'none';
+  }
+
+  /* BNRCONTRAST-1 - 읽기 힘든 조합이면 한 줄 말해 주고, 한 번 눌러 고치게 한다. */
+  function warnHtml(s, i){
+    var r = ratio(s.bg || '#fbfbf9', s.fg || '#1c1c1a');
+    if(r == null || r >= 4.5) return '';
+    return '<div class="warn">Hard to read on this background. '
+      + '<button type="button" onclick="bnrFix(' + i + ')">Fix the text colour</button></div>';
+  }
+
+  function slHtml(s, i, n){
+    var p = pic(s), off = (s.on === false);
+    return '<div class="sl' + (off ? ' dim' : '') + '">'
+      + '<div class="hd">'
+        + '<span class="no">Slide ' + (i+1) + ' of ' + n + '</span>'
+        + '<button onclick="bnrMove(' + i + ',-1)"' + (i === 0 ? ' disabled' : '') + ' title="Move up">Up</button>'
+        + '<button onclick="bnrMove(' + i + ',1)"' + (i === n-1 ? ' disabled' : '') + ' title="Move down">Down</button>'
+        + '<button class="' + (off ? 'off' : '') + '" onclick="bnrToggle(' + i + ')">'
+        + (off ? 'Hidden &mdash; click to show' : 'Showing') + '</button>'
+        + '<span class="sp"></span>'
+        + '<button onclick="bnrShow(' + i + ')">Preview this one</button>'
+        + '<button class="danger" onclick="bnrDel(' + i + ')">Delete</button>'
+      + '</div>'
+      + '<div class="gr">'
+        + '<div class="wide"><label>Small line above the headline</label>'
+          + '<input type="text" value="' + esc(s.eyebrow) + '" oninput="bnrSet(' + i + ',\'eyebrow\',this.value)"></div>'
+        + '<div class="wide"><label>Headline</label>'
+          + '<input type="text" value="' + esc(s.title) + '" oninput="bnrSet(' + i + ',\'title\',this.value)">'
+          + '<div class="hint">Put &lt;i&gt; &lt;/i&gt; around words you want in italic.</div></div>'
+        + '<div class="wide"><label>Sentence under the headline</label>'
+          + '<textarea oninput="bnrSet(' + i + ',\'sub\',this.value)">' + esc(s.sub) + '</textarea></div>'
+        + '<div><label>Button 1 &mdash; text</label>'
+          + '<input type="text" value="' + esc(s.btn) + '" oninput="bnrSet(' + i + ',\'btn\',this.value)"></div>'
+        + '<div><label>Button 1 &mdash; goes to</label>'
+          + '<input type="text" value="' + esc(s.href) + '" oninput="bnrSet(' + i + ',\'href\',this.value)">'
+          + '<div class="hint">A page on this site (epacific-category.html), a full https:// link, or mailto:</div></div>'
+        + '<div><label>Button 2 &mdash; text</label>'
+          + '<input type="text" value="' + esc(s.btn2) + '" oninput="bnrSet(' + i + ',\'btn2\',this.value)"></div>'
+        + '<div><label>Button 2 &mdash; goes to</label>'
+          + '<input type="text" value="' + esc(s.href2) + '" oninput="bnrSet(' + i + ',\'href2\',this.value)"></div>'
+        + '<div><label>Background colour</label><div class="col">'
+          + '<input type="color" value="' + esc(s.bg || '#fbfbf9') + '" oninput="bnrBg(' + i + ',this.value)">'
+          + '<input type="text" value="' + esc(s.bg || '#fbfbf9') + '" oninput="bnrSet(' + i + ',\'bg\',this.value)"></div>'
+          + warnHtml(s, i) + '</div>'
+        + '<div><label>Text colour</label><div class="col">'
+          + '<input type="color" value="' + esc(s.fg || '#1c1c1a') + '" oninput="bnrSet(' + i + ',\'fg\',this.value)">'
+          + '<input type="text" value="' + esc(s.fg || '#1c1c1a') + '" oninput="bnrSet(' + i + ',\'fg\',this.value)"></div></div>'
+        + '<div><label>Picture on the right</label>'
+          + '<select onchange="bnrPic(' + i + ',this.value)">'
+            + '<option value="none"' + (p === 'none' ? ' selected' : '') + '>Nothing (wide text)</option>'
+            + '<option value="colors"' + (p === 'colors' ? ' selected' : '') + '>Colour squares</option>'
+            + '<option value="style"' + (p === 'style' ? ' selected' : '') + '>Photos of one style</option>'
+          + '</select></div>'
+        + '<div>' + (p === 'style'
+            ? ('<label>Style number</label><input type="text" value="' + esc(s.style)
+               + '" oninput="bnrSet(' + i + ',\'style\',this.value)">'
+               + '<div class="hint">Three photos of that style, if it has photos.</div>')
+            : (p === 'colors'
+               ? ('<label>How many squares</label><input type="text" value="' + esc(s.mosaic || 60)
+                  + '" oninput="bnrSet(' + i + ',\'mosaic\',this.value)">'
+                  + '<div class="hint">60 fills the block neatly.</div>')
+               : '<label>&nbsp;</label><div class="hint">The headline gets the full width.</div>'))
+        + '</div>'
+      + '</div></div>';
+  }
+
+  function draw(){
+    var host = document.getElementById('bnrList'); if(!host) return;
+    host.innerHTML = work.length
+      ? work.map(function(s, i){ return slHtml(s, i, work.length); }).join('')
+      : '<div class="sl" style="color:#8a887f">No slides yet &mdash; press <b>+ Add slide</b>.</div>';
+  }
+
+  window.bnrSet = function(i, k, v){
+    if(!work[i]) return;
+    if(k === 'mosaic'){ var n = parseInt(String(v).replace(/\D/g,''), 10); work[i].mosaic = n > 0 ? n : 0; }
+    else work[i][k] = v;
+    reflect();
+  };
+  /* BNRCONTRAST-1 - 색동그라미로 배경을 바꿀 때만 글자색을 따라 바꾼다.
+     ⚠ 글자로 치는 칸은 `bnrSet` 그대로다 - 치는 중에 다시 그리면 자리를 잃는다. */
+  window.bnrBg = function(i, v){
+    if(!work[i]) return;
+    work[i].bg = v;
+    if(isDefaultFg(work[i].fg)) work[i].fg = bestFg(v);
+    draw(); reflect(true);
+  };
+  window.bnrFix = function(i){
+    if(!work[i]) return;
+    work[i].fg = bestFg(work[i].bg);
+    draw(); reflect(true);
+  };
+  window.bnrPic = function(i, mode){
+    if(!work[i]) return;
+    if(mode === 'colors'){ work[i].mosaic = Number(work[i].mosaic) > 0 ? Number(work[i].mosaic) : 60; work[i].style = ''; }
+    else if(mode === 'style'){ work[i].mosaic = 0; work[i].style = work[i].style || ''; }
+    else { work[i].mosaic = 0; work[i].style = ''; }
+    draw(); reflect(true);
+  };
+  window.bnrMove = function(i, d){
+    var j = i + d; if(j < 0 || j >= work.length) return;
+    var t = work[i]; work[i] = work[j]; work[j] = t;
+    draw(); reflect(true);
+  };
+  window.bnrDel = function(i){
+    if(!confirm('Delete slide ' + (i+1) + '?')) return;
+    work.splice(i, 1); draw(); reflect(true);
+  };
+  window.bnrToggle = function(i){
+    work[i].on = (work[i].on === false);
+    draw(); reflect(true);
+  };
+  window.bnrShow = function(i){
+    var vis = work.filter(function(s){ return s.title || s.eyebrow; });
+    var at = vis.indexOf(work[i]);
+    if(at >= 0 && window.hsAdmin) window.hsAdmin.at(at);
+    var hs = document.getElementById('hs'); if(hs) hs.scrollIntoView({ block:'center', behavior:'smooth' });
+  };
+  window.bnrAdd = function(){
+    work.push({ eyebrow:'', title:'New slide', sub:'', btn:'', href:'', btn2:'', href2:'',
+                bg:'#fbfbf9', fg:'#1c1c1a', mosaic:0, style:'', on:true });
+    draw(); reflect(true);
+    var host = document.getElementById('bnrList');
+    if(host && host.lastElementChild) host.lastElementChild.scrollIntoView({ block:'center', behavior:'smooth' });
+  };
+  window.bnrReset = function(){
+    if(!confirm('Replace what is on screen with the three built-in slides?\n\nNothing is saved until you press Save.')) return;
+    work = window.hsAdmin ? window.hsAdmin.fallback() : [];
+    work.forEach(function(s){ if(s.on === undefined) s.on = true; });
+    draw(); reflect(true); msg('');
+  };
+
+  window.bnrCancel = function(){
+    var p = document.getElementById('bnrPanel'); if(p) p.style.display = 'none';
+    work = clone(saved || []);
+    if(window.hsAdmin){ window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && (s.title || s.eyebrow); }))); window.hsAdmin.hold(false); }
+    msg('');
+  };
+
+  window.bnrSave = async function(){
+    if(busy) return;
+    var bad = work.filter(function(s){ return !(s.title || s.eyebrow); }).length;
+    if(bad && !confirm(bad + ' slide(s) have no headline and no small line, so they will not show. Save anyway?')) return;
+    var st = null;
+    try{ st = await PacificAuth.currentStaff(); }catch(e){}
+    if(!st){ msg('Please log in again.', true); return; }
+    busy = true; msg('Saving...');
+    try{
+      var C = cfg();
+      var r = await fetch(C.SUPABASE_URL + '/rest/v1/pr_config', {
+        method:'POST',
+        headers:{ apikey:C.SUPABASE_ANON_KEY, Authorization:'Bearer ' + st.token,
+                  'Content-Type':'application/json',
+                  Prefer:'return=representation,resolution=merge-duplicates' },
+        body: JSON.stringify([{ k:KEY, v:work }])
+      });
+      /* ⚠ 204 를 성공으로 읽으면 안 된다 - 줄이 0개여도 204 가 온다. 돌려받아서 센다. */
+      if(!r.ok){ msg('Could not save (' + r.status + '). Nothing was changed.', true); busy = false; return; }
+      var back = await r.json();
+      if(!Array.isArray(back) || !back.length){ msg('Could not save - the server saved nothing.', true); busy = false; return; }
+      saved = clone(work);
+      msg('Saved. The website shows it now.');
+      if(window.hsAdmin) window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && (s.title || s.eyebrow); })));
+    }catch(e){ msg('Could not save (' + String(e && e.message || e) + ').', true); }
+    busy = false;
+  };
+
+  window.bnrOpen = async function(){
+    var p = document.getElementById('bnrPanel'); if(!p) return;
+    if(p.style.display === 'block'){ bnrCancel(); return; }
+    var live = [];
+    try{
+      var C = cfg();
+      var r = await fetch(C.SUPABASE_URL + '/rest/v1/pr_config?select=v&k=eq.' + KEY,
+        { headers:{ apikey:C.SUPABASE_ANON_KEY, Authorization:'Bearer ' + C.SUPABASE_ANON_KEY } });
+      if(r.ok){
+        var j = await r.json(); var raw = (j[0]||{}).v;
+        if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ raw = null; } }
+        if(Array.isArray(raw)) live = raw;
+      }
+    }catch(e){}
+    /* 저장된 게 하나도 없으면 **지금 화면에 도는 기본 3장**을 들고 시작한다 -
+       빈 화면에서 처음부터 쓰게 하면 아무도 안 쓴다. 저장을 눌러야 공개된다. */
+    if(!live.length) live = window.hsAdmin ? window.hsAdmin.fallback() : [];
+    live.forEach(function(s){ if(s.on === undefined) s.on = true;
+                              if(s.mosaic === undefined) s.mosaic = 0;
+                              if(s.style === undefined) s.style = ''; });
+    saved = clone(live);
+    work = clone(live);
+    draw();
+    p.style.display = 'block';
+    if(window.hsAdmin) window.hsAdmin.hold(true);   /* 고치는 동안 저절로 안 넘어가게 */
+    reflect(true);
+    msg('');
+    p.scrollIntoView({ block:'start', behavior:'smooth' });
+  };
+})();
 </script>
 </body>
 </html>

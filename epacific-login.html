@@ -208,6 +208,25 @@
     m.style.border = '1px solid ' + (kind==='ok' ? '#dce4da' : '#ecd6d3');
   }
 
+  /* LOGINMSG-1 - 서버가 뱉은 영어를 손님이 읽을 말로 바꾼다.
+     ⭐⭐⭐ 비밀번호가 틀렸는지 / 그런 계정이 없는지를 **구분해서 말하지 않는다.**
+        구분해 주면 남이 이메일을 넣어보며 우리 거래처 명단을 알아낼 수 있다.
+     ⚠ 아는 경우만 바꾸고, 모르는 오류는 원문을 괄호로 남긴다 (조용히 삼키면 못 고친다). */
+  function niceAuthErr(raw){
+    const m = String(raw || '');
+    if(/invalid login credentials|invalid.*grant/i.test(m))
+      return 'That email and password do not match. Check them and try again, or use Forgot password below.';
+    if(/email not confirmed/i.test(m))
+      return 'This account has not been confirmed yet. Please check your email for the confirmation link.';
+    if(/too many requests|rate limit|over_email_send_rate/i.test(m))
+      return 'Too many tries. Please wait a minute and try again.';
+    if(/failed to fetch|networkerror|network request failed/i.test(m))
+      return 'Could not reach the server. Please check your internet connection and try again.';
+    if(/user not found/i.test(m))
+      return 'That email and password do not match. Check them and try again, or use Forgot password below.';
+    return 'Could not log in. Please try again.' + (m ? ' (' + m + ')' : '');
+  }
+
   // 실제 로그인 (Supabase Auth)
   async function doLogin(){
     const email=document.getElementById('loginEmail').value.trim();
@@ -244,7 +263,7 @@
       const next = new URLSearchParams(location.search).get('next');
       setTimeout(()=>{ location.href = next || 'epacific-timeless.html'; }, pendingNote?2200:1000);
     }catch(e){
-      lmsg('Login failed: '+e.message,'err');
+      lmsg(niceAuthErr(e && e.message), 'err');   /* LOGINMSG-1 */
       btn.disabled=false; btn.textContent='Log in →';
     }
   }
@@ -261,7 +280,14 @@
       });
       if(!r.ok){ const d=await r.json().catch(()=>({})); throw new Error(d.msg||('Error '+r.status)); }
       lmsg('✓ Reset email sent. Check your inbox and click the link to set a new password.','ok');
-    }catch(e){ lmsg('Could not send email: '+e.message,'err'); }
+    }catch(e){
+      /* LOGINMSG-1 - 메일 쪽도 같은 함수를 쓴다. 다만 「보내기」 라는 걸 분명히 한다. */
+      const t = niceAuthErr(e && e.message);
+      lmsg(/Could not log in/.test(t)
+             ? ('Could not send the reset email. Please try again.'
+                + ((e && e.message) ? (' (' + e.message + ')') : ''))
+             : t, 'err');
+    }
   }
 
   function fakeRegister(){

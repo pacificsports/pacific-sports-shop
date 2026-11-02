@@ -121,6 +121,19 @@
   .hs-slide{grid-area:1/1;opacity:0;visibility:hidden;transition:opacity .5s ease;
     background:var(--sbg,var(--bg));color:var(--sfg,var(--ink))}
   .hs-slide.on{opacity:1;visibility:visible;z-index:2}
+  /* PICBNR-1 - 사진 한 장이 배너 전체가 되는 장. 높이는 글자 장과 **같은 clamp** 를 쓴다
+     (grid 한 칸에 포개지므로 높이가 다르면 다른 장이 잘린다). */
+  .hs-slide.pic,.hs-slide.pic>a,.hs-slide.pic picture{display:block}
+  .hs-slide.pic img{display:block;width:100%;height:clamp(390px,44vw,530px);object-fit:cover}
+  /* 핸드폰: 세로로 만든 사진이 **안 잘리게** 제 비율로 보여준다.
+     가로 사진만 올렸으면 min-height 가 받쳐 주고 양옆이 조금 잘린다 (그게 그 선택의 값이다). */
+  @media(max-width:760px){
+    .hs-slide.pic img{height:auto;min-height:clamp(260px,62vw,380px);max-height:80vh}
+    .hs-slide.pic .ph{height:clamp(260px,62vw,380px)}
+  }
+  .hs-slide.pic .ph{display:flex;align-items:center;justify-content:center;
+    height:clamp(390px,44vw,530px);background:#f1efe8;color:#8a887f;
+    font:600 14px/1.5 system-ui;text-align:center;padding:0 24px}
   .hs-in{max-width:1240px;margin:0 auto;padding:74px 30px 82px;display:grid;
     grid-template-columns:1.02fr .98fr;gap:34px;align-items:center;min-height:clamp(390px,44vw,530px)}
   .hs-txt .eyebrow{color:inherit;opacity:.72;margin-bottom:22px}
@@ -584,6 +597,11 @@
     return out.slice(0,3);
   }
 
+  /* PICBNR-1 - 손님 화면에 나갈 만한 장인가. **이 판정은 여기 하나뿐이다.**
+     편집기도 `hsAdmin.has` 로 이 함수를 부른다 (두 군데 적으면 반드시 어긋난다). */
+  function hsHasContent(s){
+    return !!(s && (s.pic || s.title || s.eyebrow));
+  }
   function artHtml(sl){
     var im = pickImgs(sl);
     if(!im.length) return '';
@@ -595,6 +613,22 @@
   }
 
   function slideHtml(sl, i){
+    /* PICBNR-1 - 사진이 올려져 있으면 그 사진 한 장이 배너 전체다 (글자칸은 아예 안 그린다).
+       ⚠ 핸드폰 사진이 있으면 그걸 쓰고, 없으면 가로 사진이 양옆만 조금 잘린다. */
+    if(sl && sl.pic){
+      var w = esc(IMGBASE + sl.pic);
+      var m = sl.picM ? esc(IMGBASE + sl.picM) : '';
+      var inner = '<picture>'
+        + (m ? '<source media="(max-width:760px)" srcset="' + m + '">' : '')
+        + '<img src="' + w + '" alt="' + esc(sl.title || '') + '">'
+        + '</picture>';
+      var ph = safeHref(sl.href);
+      return '<div class="hs-slide pic" role="group" aria-roledescription="slide" aria-label="'
+        + (i+1) + ' / ' + slides.length + '" style="--sbg:' + (safeColor(sl.bg) || '#fbfbf9')
+        + ';--sfg:' + (safeColor(sl.fg) || '#1c1c1a') + ';">'
+        + (ph ? ('<a href="' + esc(ph) + '">' + inner + '</a>') : inner)
+        + '</div>';
+    }
     var right = mosaicHtml(sl) || artHtml(sl);
     var h1 = safeHref(sl.href), h2 = safeHref(sl.href2);
     var cta = ((h1 && sl.btn) || (h2 && sl.btn2))
@@ -690,7 +724,7 @@
         var j = await r.json(); var raw = (j[0]||{}).v;
         if(typeof raw === 'string'){ try{ raw = JSON.parse(raw); }catch(e){ raw = null; } }
         if(Array.isArray(raw)) got = raw.filter(function(s){
-          return s && s.on !== false && (s.title || s.eyebrow); });
+          return s && s.on !== false && hsHasContent(s); });   /* PICBNR-1 */
       }
     }catch(e){}
     slides = (got && got.length) ? got : HS_FALLBACK;
@@ -703,6 +737,8 @@
      ⚠ 슬라이드를 바꿔 끼울 때 사진 모음을 비워야 한다 - 스타일 번호가 바뀌었을 수 있다. */
   window.hsAdmin = {
     get: function(){ try{ return JSON.parse(JSON.stringify(slides)); }catch(e){ return []; } },
+    has: hsHasContent,                 /* PICBNR-1 - 편집기가 같은 판정을 쓰게 */
+    imgBase: function(){ return IMGBASE; },
     fallback: function(){ return JSON.parse(JSON.stringify(HS_FALLBACK)); },
     apply: async function(list){
       slides = (list && list.length) ? list : HS_FALLBACK;
@@ -1096,6 +1132,15 @@ function pacLogout(){
     display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   #bnrPanel .warn button{font-size:11.5px;padding:4px 9px;color:#9b1c1c;border-color:#e4c4c4}
   #bnrPanel .dim{opacity:.45}
+  /* PICBNR-1 */
+  #bnrPanel .kind{display:flex;gap:8px;margin:0 0 12px}
+  /* ⚠ 모드 단추는 `.go` 를 쓰지 않는다 - Save 단추가 `.go` 라서 둘이 섞인다 */
+  #bnrPanel .kind button.kon{background:#243425;color:#fff;border-color:#243425;font-weight:800}
+  #bnrPanel .shot{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  #bnrPanel .shot img{width:132px;height:50px;object-fit:cover;border:1px solid #d8d6ce;border-radius:4px;background:#fff}
+  #bnrPanel input[type=file]{font:600 12px/1.4 system-ui;width:100%;box-sizing:border-box;
+    border:1px dashed #c9c7bf;border-radius:5px;padding:9px;background:#fff;cursor:pointer}
+  #bnrPanel input[type=file]:hover{border-color:#243425}
   @media(max-width:760px){ #bnrPanel .gr{grid-template-columns:1fr} }
 </style>
 <div id="bnrPanel"><div class="bw">
@@ -1130,6 +1175,24 @@ function pacLogout(){
     el.textContent = t || ''; el.style.color = bad ? '#9b1c1c' : '#2f5d3a';
   }
   function clone(v){ return JSON.parse(JSON.stringify(v)); }
+  /* PICBNR-1 - 「손님에게 보이나」 는 슬라이더의 함수를 그대로 쓴다. 없으면 같은 뜻으로 물러난다. */
+  function hsOk(s){
+    if(window.hsAdmin && window.hsAdmin.has) return !!window.hsAdmin.has(s);
+    return !!(s && (s.pic || s.title || s.eyebrow));
+  }
+  function imgBase(){
+    if(window.hsAdmin && window.hsAdmin.imgBase) return window.hsAdmin.imgBase();
+    var C = cfg();
+    return (C.SUPABASE_URL||'') + '/storage/v1/object/public/' + (C.IMAGE_BUCKET||'product-images') + '/';
+  }
+  /* ⚠ kind 가 적혀 있으면 **그것이 이긴다**. `|| s.pic` 로만 보면 사진이 남아 있는 한
+     Text 로 못 바꾼다 (시험에서 잡혔다). kind 가 없는 옛 줄만 사진 유무로 가른다. */
+  function isPic(s){
+    if(!s) return false;
+    if(s.kind === 'pic') return true;
+    if(s.kind === 'text') return false;
+    return !!s.pic;
+  }
 
   /* 위 배너에 지금 고치는 내용을 비춘다. 꺼둔 장도 **편집 중에는 보여준다** -
      안 보이면 뭘 고치고 있는지 알 수가 없다. */
@@ -1137,7 +1200,7 @@ function pacLogout(){
   function reflect(now){
     if(paintT){ clearTimeout(paintT); paintT = null; }
     var run = function(){
-      var list = work.filter(function(s){ return s.title || s.eyebrow; });
+      var list = work.filter(function(s){ return hsOk(s); });
       if(window.hsAdmin) window.hsAdmin.apply(clone(list));
     };
     if(now) run(); else paintT = setTimeout(run, 260);
@@ -1184,6 +1247,29 @@ function pacLogout(){
       + '<button type="button" onclick="bnrFix(' + i + ')">Fix the text colour</button></div>';
   }
 
+  /* PICBNR-1 - 사진 장의 칸은 셋뿐이다: 가로 사진 · 핸드폰 사진 · 누르면 갈 곳 */
+  function shot(s, i, which){
+    var key = (which === 'm') ? 'picM' : 'pic';
+    var v = s[key] || '';
+    var lab = (which === 'm') ? 'Picture for phones' : 'Picture (wide)';
+    var tip = (which === 'm')
+      ? 'Optional. About 1200 x 1400. Leave it empty and the wide one is used, cropped a little on the sides.'
+      : 'About 2480 x 940 (JPG or PNG, under 6 MB).';
+    return '<div><label>' + lab + '</label>'
+      + (v ? ('<div class="shot"><img src="' + esc(imgBase() + v) + '" alt="">'
+              + '<button class="danger" onclick="bnrClear(' + i + ',\'' + key + '\')">Remove</button></div>') : '')
+      + '<input type="file" accept="image/*" onchange="bnrUp(' + i + ',\'' + which + '\',this)">'
+      + '<div class="hint">' + tip + '</div></div>';
+  }
+  function picHtml(s, i){
+    return '<div class="gr">'
+      + shot(s, i, 'w')
+      + shot(s, i, 'm')
+      + '<div class="wide"><label>Clicking the picture goes to</label>'
+        + '<input type="text" value="' + esc(s.href) + '" oninput="bnrSet(' + i + ',\'href\',this.value)">'
+        + '<div class="hint">A page on this site (epacific-category.html), a full https:// link, or leave it empty for no link.</div></div>'
+    + '</div>';
+  }
   function slHtml(s, i, n){
     var p = pic(s), off = (s.on === false);
     return '<div class="sl' + (off ? ' dim' : '') + '">'
@@ -1197,7 +1283,13 @@ function pacLogout(){
         + '<button onclick="bnrShow(' + i + ')">Preview this one</button>'
         + '<button class="danger" onclick="bnrDel(' + i + ')">Delete</button>'
       + '</div>'
-      + '<div class="gr">'
+      /* PICBNR-1 - 무엇으로 만들 장인지 고른다. 기본은 **사진**이다. */
+      + '<div class="kind">'
+        + '<button class="' + (isPic(s) ? 'kon' : '') + '" onclick="bnrKind(' + i + ',\'pic\')">\u{1F4F7} Picture</button>'
+        + '<button class="' + (isPic(s) ? '' : 'kon') + '" onclick="bnrKind(' + i + ',\'text\')">\u270D Text</button>'
+      + '</div>'
+      + (isPic(s) ? picHtml(s, i) : '')
+      + '<div class="gr"' + (isPic(s) ? ' style="display:none"' : '') + '>'
         + '<div class="wide"><label>Small line above the headline</label>'
           + '<input type="text" value="' + esc(s.eyebrow) + '" oninput="bnrSet(' + i + ',\'eyebrow\',this.value)"></div>'
         + '<div class="wide"><label>Headline</label>'
@@ -1273,6 +1365,49 @@ function pacLogout(){
     else { work[i].mosaic = 0; work[i].style = ''; }
     draw(); reflect(true);
   };
+  /* PICBNR-1 - 사진 올리기. 직원 사진 올리기와 **같은 길**(product-images 버킷).
+     ⚠ 200 을 성공으로 믿지 않는다 - 공개 주소로 **되읽어서** 확인한다. */
+  window.bnrUp = async function(i, which, inp){
+    var f = inp && inp.files && inp.files[0];
+    if(!f){ return; }
+    inp.value = '';
+    if(!work[i]) return;
+    if(!/^image\//.test(f.type)){ msg('Pick an image file (JPG or PNG).', true); return; }
+    if(f.size > 6*1024*1024){ msg('That picture is too big \u2014 keep it under 6 MB.', true); return; }
+    var st = null;
+    try{ st = window.PacificAuth ? await PacificAuth.currentStaff() : null; }catch(e){}
+    if(!st || !st.token){ msg('Please log in again.', true); return; }
+    var C = cfg();
+    var bucket = C.IMAGE_BUCKET || 'product-images';
+    var ext = (String(f.name).split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g,'') || 'jpg';
+    var path = 'banner/' + Date.now() + '-' + (which === 'm' ? 'phone' : 'wide') + '.' + ext;
+    msg('Uploading the picture\u2026');
+    try{
+      var up = await fetch(C.SUPABASE_URL + '/storage/v1/object/' + bucket + '/' + encodeURI(path), {
+        method:'POST',
+        headers:{ apikey:C.SUPABASE_ANON_KEY, Authorization:'Bearer ' + st.token,
+                  'Content-Type': f.type || 'image/jpeg', 'x-upsert':'true' },
+        body: f });
+      if(!up.ok) throw new Error('upload ' + up.status + ' ' + (await up.text()).slice(0,110));
+      var back = await fetch(imgBase() + encodeURI(path) + '?t=' + Date.now(), { cache:'no-store' });
+      if(!back.ok) throw new Error('the picture did not land (' + back.status + ')');
+      work[i][which === 'm' ? 'picM' : 'pic'] = path;
+      work[i].kind = 'pic';
+      msg('Picture added \u2014 press Save to put it on the website.');
+      draw(); reflect(true);
+    }catch(e){ msg('Could not upload: ' + String(e && e.message || e), true); }
+  };
+  window.bnrClear = function(i, key){
+    if(!work[i]) return;
+    work[i][key] = '';
+    draw(); reflect(true); msg('');
+  };
+  /* 사진 <-> 글자. ⚠ 어느 쪽도 상대방의 값을 지우지 않는다 - 다시 눌러 돌아올 수 있다. */
+  window.bnrKind = function(i, k){
+    if(!work[i]) return;
+    work[i].kind = (k === 'pic') ? 'pic' : 'text';
+    draw(); reflect(true); msg('');
+  };
   window.bnrMove = function(i, d){
     var j = i + d; if(j < 0 || j >= work.length) return;
     var t = work[i]; work[i] = work[j]; work[j] = t;
@@ -1287,13 +1422,15 @@ function pacLogout(){
     draw(); reflect(true);
   };
   window.bnrShow = function(i){
-    var vis = work.filter(function(s){ return s.title || s.eyebrow; });
+    var vis = work.filter(function(s){ return hsOk(s); });
     var at = vis.indexOf(work[i]);
     if(at >= 0 && window.hsAdmin) window.hsAdmin.at(at);
     var hs = document.getElementById('hs'); if(hs) hs.scrollIntoView({ block:'center', behavior:'smooth' });
   };
   window.bnrAdd = function(){
-    work.push({ eyebrow:'', title:'New slide', sub:'', btn:'', href:'', btn2:'', href2:'',
+    /* PICBNR-1 - 새 장은 **사진 장**으로 시작한다. 글자는 \u270D Text 로 바꾸면 된다 */
+    work.push({ kind:'pic', pic:'', picM:'', href:'',
+                eyebrow:'', title:'', sub:'', btn:'', btn2:'', href2:'',
                 bg:'#fbfbf9', fg:'#1c1c1a', mosaic:0, style:'', on:true });
     draw(); reflect(true);
     var host = document.getElementById('bnrList');
@@ -1309,14 +1446,14 @@ function pacLogout(){
   window.bnrCancel = function(){
     var p = document.getElementById('bnrPanel'); if(p) p.style.display = 'none';
     work = clone(saved || []);
-    if(window.hsAdmin){ window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && (s.title || s.eyebrow); }))); window.hsAdmin.hold(false); }
+    if(window.hsAdmin){ window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && hsOk(s); }))); window.hsAdmin.hold(false); }
     msg('');
   };
 
   window.bnrSave = async function(){
     if(busy) return;
-    var bad = work.filter(function(s){ return !(s.title || s.eyebrow); }).length;
-    if(bad && !confirm(bad + ' slide(s) have no headline and no small line, so they will not show. Save anyway?')) return;
+    var bad = work.filter(function(s){ return !hsOk(s); }).length;   /* PICBNR-1 */
+    if(bad && !confirm(bad + ' slide(s) are empty (no picture, no headline), so they will not show. Save anyway?')) return;
     var st = null;
     try{ st = await PacificAuth.currentStaff(); }catch(e){}
     if(!st){ msg('Please log in again.', true); return; }
@@ -1336,7 +1473,7 @@ function pacLogout(){
       if(!Array.isArray(back) || !back.length){ msg('Could not save - the server saved nothing.', true); busy = false; return; }
       saved = clone(work);
       msg('Saved. The website shows it now.');
-      if(window.hsAdmin) window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && (s.title || s.eyebrow); })));
+      if(window.hsAdmin) window.hsAdmin.apply(clone(work.filter(function(s){ return s.on !== false && hsOk(s); })));
     }catch(e){ msg('Could not save (' + String(e && e.message || e) + ').', true); }
     busy = false;
   };
@@ -1360,7 +1497,10 @@ function pacLogout(){
     if(!live.length) live = window.hsAdmin ? window.hsAdmin.fallback() : [];
     live.forEach(function(s){ if(s.on === undefined) s.on = true;
                               if(s.mosaic === undefined) s.mosaic = 0;
-                              if(s.style === undefined) s.style = ''; });
+                              if(s.style === undefined) s.style = '';
+                              if(s.pic === undefined) s.pic = '';      /* PICBNR-1 */
+                              if(s.picM === undefined) s.picM = '';
+                              if(!s.kind) s.kind = s.pic ? 'pic' : 'text'; });
     saved = clone(live);
     work = clone(live);
     draw();

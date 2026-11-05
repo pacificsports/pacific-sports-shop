@@ -61,7 +61,7 @@ window.PacificData = (function () {
     '1534': 'Triblend Tank',
     '1543': 'Raglan Tee',
     '1580': 'Poly Linen Tee',
-    '1595': 'Poly Rayon Tee',
+    '1595': 'Studio Tee',
     '1600': 'Heavyweight Tee (Short Body)',
     '1615': 'Heavyweight Tee',
     '1650': 'Siro Tee',

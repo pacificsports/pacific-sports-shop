@@ -60,7 +60,7 @@ window.PacificData = (function () {
     '1532': 'Triblend Long Sleeve',
     '1534': 'Triblend Tank',
     '1543': 'Raglan Tee',
-    '1580': 'Poly Linen Tee',
+    '1580': 'Breeze Tee',
     '1595': 'Motion Tee',
     '1600': 'Heavyweight Tee (Short Body)',
     '1615': 'Heavyweight Tee',

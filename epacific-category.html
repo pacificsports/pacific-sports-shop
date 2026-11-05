@@ -529,8 +529,8 @@
           ${editBadge}
         </div>
         <div class="style-no">${no}</div>
-        <div class="pname">${cardName(p.desc)}</div>
-        <div class="pmeta">${[catLabel(p.cat), srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
+        <div class="pname">${styleNameOf(p)}</div>
+        <div class="pmeta">${[specOf(p), srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
         ${dotsHtml(no)}
         ${dragHint}
       `;
@@ -582,6 +582,17 @@
   /* 카드 이름에서 **맨 앞 대상 단어 하나**만 뗀다 — 바로 아래 줄이 'Adult S/S' 라고 이미 말한다.
      [stated] 하윤: "이부분이 보면 repetitive하잖아" (2026-09-22)
      ⚠ 중간에 들어간 Adult 는 건드리지 않는다. 뗀 뒤 남는 게 없으면 원래 이름을 쓴다. */
+  /* NAME-1 - 카드 제목은 **짧은 이름**, 그 밑줄은 **원단 스펙**.
+     \u26a0 카테고리(Adult S/S)는 뺐다 - 이름이 이미 Tee/Long Sleeve/Tank 와 Youth/Kids 를 말한다.
+     \u26a0 두 함수 다 PacificData 한 군데에서 가져온다 (여기서 또 만들면 상품페이지와 어긋난다). */
+  function styleNameOf(p){
+    try{ if(window.PacificData && PacificData.styleName) return PacificData.styleName(p.no, p.desc); }catch(e){}
+    return cardName(p.desc);
+  }
+  function specOf(p){
+    try{ if(window.PacificData && PacificData.styleSpec) return PacificData.styleSpec(p.desc); }catch(e){}
+    return cardName(p.desc);
+  }
   function cardName(d){
     const s=String(d||'').trim();
     const cut=s.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i,'').trim();
@@ -760,7 +771,7 @@
       res.innerHTML = list.slice(0,30).map(s=>
         `<a href="epacific-product.html?style=${encodeURIComponent(s.no)}" style="display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:8px;text-decoration:none;color:var(--ink)" onmouseover="this.style.background='var(--accent-soft)'" onmouseout="this.style.background='none'">`+
         `<b style="min-width:50px;font-size:13.5px">#${s.no}</b>`+
-        `<span style="font-size:13px;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.desc||''}</span></a>`
+        `<span style="font-size:13px;color:var(--soft-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${styleNameOf(s)}</span></a>`
       ).join('');
     }
     btn.addEventListener('click',openSearch);

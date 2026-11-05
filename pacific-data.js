@@ -13,6 +13,104 @@
 
 window.PacificData = (function () {
 
+  /* ===== NAME-1 (2026-11-05) - 화면에 보여줄 **짧은 이름** =====
+     [stated] 하윤: "저렇케 길게 적어논거 좀 너무 긴것들이 있어서 보기 별론거 같에.
+        다른 업체들은 약간 이름을 만들어서 하는거 같던데"
+     \u26a0\u26a0\u26a0 `desc`(원래 긴 이름)는 **한 글자도 안 바꾼다.** 원단 필터·원사 필터·
+        검색이 전부 그 글자를 보고 거른다 (예: /100\s*Cotton/, /\b30\/1\b/).
+        이름으로 갈아치우면 그 세 가지가 조용히 죽는다. 이름은 **덧붙이는 것**이다.
+     \u26a0 여기 없는 번호는 예전처럼 desc 에서 앞 단어만 떼어 쓴다 (빈 줄이 되지 않게). */
+  var STYLE_NAME = {
+    '1180': 'Pacific Luxe Tee',
+    '1210': 'Pacific Classic Tee',
+    '1212': 'Pacific Classic Long Sleeve',
+    '1214': 'Pacific Classic Tank',
+    '1230': 'Pacific Tri Color Tee',
+    '1232': 'Pacific Tri Color Long Sleeve',
+    '1234': 'Pacific Tri Color Tank',
+    '1240': 'Pacific Slub Tee',
+    '1248': 'Pacific Slub Hoodie',
+    '1260': 'Pacific Classic Heather Tee',
+    '1262': 'Pacific Classic Heather Long Sleeve',
+    '1264': 'Pacific Classic Heather Tank',
+    '1280': 'Pacific Smooth Tee',
+    '1290': 'Pacific Midweight PFD Tee',
+    '1292': 'Pacific Midweight PFD Long Sleeve',
+    '1311': 'Pacific Staple V-Neck',
+    '1314': 'Pacific Staple Tank',
+    '1315': 'Pacific Staple Tee',
+    '1315R': 'Pacific Staple Ringer Tee',
+    '1322': 'Pacific Staple Long Sleeve',
+    '1330': 'Pacific Omni Tee',
+    '1332': 'Pacific Omni Long Sleeve',
+    '1348': 'Pacific Soft Hoodie',
+    '1350': 'Pacific Snow Heather Tee',
+    '1351': 'Pacific Snow Heather V-Neck',
+    '1352': 'Pacific Snow Heather Long Sleeve',
+    '1354': 'Pacific Snow Heather Tank',
+    '1360': 'Pacific Staple Heather Tee',
+    '1362': 'Pacific Soft Long Sleeve',
+    '1364': 'Pacific Soft Tank',
+    '1368': 'Pacific Soft Tee (Tubular)',
+    '1388': 'Pacific Soft Tee',
+    '1390': 'Pacific Staple PFD Tee',
+    '1392': 'Pacific Staple PFD Long Sleeve',
+    '1394': 'Pacific Staple PFD Tank',
+    '1530': 'Pacific Triblend Tee',
+    '1532': 'Pacific Triblend Long Sleeve',
+    '1534': 'Pacific Triblend Tank',
+    '1543': 'Pacific Raglan Tee',
+    '1580': 'Pacific Poly Linen Tee',
+    '1595': 'Pacific Poly Rayon Tee',
+    '1600': 'Pacific Heavy Tee',
+    '1615': 'Pacific Heavy Tee',
+    '1650': 'Pacific Siro Tee',
+    '1652': 'Pacific Siro Long Sleeve',
+    '1690': 'Pacific Heavy PFD Tee',
+    '2210': 'Pacific Youth Classic Tee',
+    '2212': 'Pacific Youth Classic Long Sleeve',
+    '2310': 'Pacific Youth Staple Tee',
+    '2316': 'Pacific Kids Staple Tee',
+    '2350': 'Pacific Youth Snow Heather Tee',
+    '2382': 'Pacific Kids Soft Long Sleeve',
+    '2388': 'Pacific Kids Soft Tee',
+    '3210': 'Pacific Juvy Classic Tee',
+    '3212': 'Pacific Juvy Classic Long Sleeve',
+    '3310': 'Pacific Juvy Staple Tee',
+    '3350': 'Pacific Juvy Snow Heather Tee',
+    '5210': 'Pacific Toddler Classic Tee',
+    '5212': 'Pacific Toddler Classic Long Sleeve',
+    '5310': 'Pacific Toddler Staple Tee',
+    '5350': 'Pacific Toddler Snow Heather Tee',
+    '6535': 'Pacific Galaxy Tee',
+    '8110': 'Pacific Cool Flex Tee',
+    '8150': 'Pacific Cool Flex Cationic Tee',
+    '8155': 'Pacific Cool Flex Spacedye Tee',
+    '8180': 'Pacific Cool Flex Mesh Tee',
+    '8255': 'Pacific Youth Cool Flex Tee',
+    '8368': 'Pacific Soft Tee',
+    '9307': 'Pacific Infinite Tee',
+  };
+  function _nameKey(no){ return String(no == null ? '' : no).trim().toUpperCase(); }
+  /* 스펙 줄 - 긴 이름에서 **대상(Adult/Youth...)과 옷 종류**를 떼면 남는 것이 원단이다.
+     예) 'Adult 30/1 CVC Short Sleeve Tee' -> '30/1 CVC'
+         'Adult 24/1 Slub Hoodie Long Sleeve Tee' -> '24/1 Slub'
+     \u26a0 떼고 남는 게 없으면 원래 글자를 그대로 쓴다. */
+  function _styleSpec(desc){
+    var t = String(desc == null ? '' : desc).trim();
+    var c = t.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i, '');
+    c = c.replace(/\s*(Hoodie\s+)?(V-Neck\s+)?(Short\s+Sleeve|Long\s+Sleeve)?\s*(Ringer\s+)?(Tee|Tank\s+Top|Tank)\s*$/i, '');
+    c = c.trim();
+    return c || t;
+  }
+  function _styleName(no, desc){
+    var n = STYLE_NAME[_nameKey(no)];
+    if(n) return n;
+    var t = String(desc == null ? '' : desc).trim();
+    var c = t.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i, '').trim();
+    return c || t || String(no == null ? '' : no);
+  }
+
   /* ===== ① 데이터 소스 ================================================
      pacific-config.js 가 있고 URL/키가 채워져 있으면 자동으로 'supabase',
      없으면 'mock'. (config 파일만 빼면 즉시 예시 모드로 안전하게 동작)
@@ -666,6 +764,10 @@ window.PacificData = (function () {
     /* WEBSAFE-1 - 마지막 인증 읽기가 실패했나. 화면이 「로그인 만료」 를 띄울 때 쓴다.
        null = 실패 없음 · {code:401|403} = 토큰 문제 · {code:0} = 네트워크 · {code:-1} = 응답 깨짐 */
     lastAuthError: function () { return _authErr; },
+
+    /* NAME-1 - 화면에 쓸 짧은 이름과 원단 스펙. 출처(DB/내장목록)가 어디든 같은 답을 준다 */
+    styleName: function (no, desc) { return _styleName(no, desc); },
+    styleSpec: function (desc) { return _styleSpec(desc); },
 
     // 전체 스타일 목록 (제품 목록/카테고리 화면용)
     getStyles: async function () {

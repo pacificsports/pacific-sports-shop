@@ -2750,8 +2750,14 @@
       /* 이름만 적는다 — 'Style #8368' 은 빵부스러기와 큰 글자가 이미 말한다 (H1안, 2026-09-22).
          ⚠ 이름이 없는 스타일은 번호라도 보여준다 (빈 줄로 두지 않는다). */
       const sn=document.getElementById('pStyleNo');
-      if(sn) sn.innerHTML = _desc ? '<span style="color:var(--soft-ink)">'+_escS(_desc)+'</span>'
-                                  : ('Style #'+_escS(STYLE));
+      /* NAME-1 - 짧은 이름을 굵게, 원단 스펙을 그 뒤에 흐리게. 둘 다 PacificData 가 정한다 */
+      var _nm = '', _sp = '';
+      try{ if(window.PacificData && PacificData.styleName){ _nm = PacificData.styleName(STYLE, _desc); _sp = PacificData.styleSpec(_desc); } }catch(e){}
+      if(sn) sn.innerHTML = _nm
+        ? ('<span style="color:var(--ink);font-weight:600">' + _escS(_nm) + '</span>'
+           + (_sp ? ' <span style="color:var(--soft-ink)">' + _escS(_sp) + '</span>' : ''))
+        : (_desc ? '<span style="color:var(--soft-ink)">' + _escS(_desc) + '</span>'
+                 : ('Style #' + _escS(STYLE)));
       const cr=document.getElementById('pCrumb'); if(cr) cr.textContent='Style #'+STYLE;
       // 빵부스러기 중간 단계도 카테고리에 맞게 (Men's/Kids, Short Sleeve/Long Sleeve/Tank Top 등)
       (function(){
@@ -3210,7 +3216,11 @@
     const relName=(d)=>{ const t=String(d||'').trim();
       const c=t.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i,'').trim(); return c||t; };
     const cards=others.filter(n=>byNo[n]).map(n=>{
-      const s=byNo[n]; const desc=relName(s?(s.desc||''):''); const cat=s?(s.cat||''):'';
+      /* NAME-1 - 관련 카드도 짧은 이름으로 */
+      const s=byNo[n];
+      let desc=relName(s?(s.desc||''):'');
+      try{ if(s && window.PacificData && PacificData.styleName) desc = PacificData.styleName(s.no, s.desc); }catch(e){}
+      const cat=s?(s.cat||''):'';
       return '<a class="rel-card" href="epacific-product.html?style='+encodeURIComponent(n)+'">'+
              '<span class="rel-no">#'+n+'</span>'+
              (desc?'<span class="rel-nm">'+desc+'</span>':'')+

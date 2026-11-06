@@ -146,6 +146,11 @@
   .style-no{font-size:13px;color:var(--soft-ink);font-weight:700;letter-spacing:.02em;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
   .pmeta{font-size:13px;color:var(--soft-ink);font-weight:350}
+  /* NAME-2 - 카드 글자를 세 층으로: 이름 / 원단 스펙 / 사이즈-색수.
+     [stated] 하윤: "우리가 만든 이름 아래 16/1 100% heavyweight 나오게 하고
+        그 다음줄에 사이즈랑 칼라수 나오게 할까?" */
+  .pspec{font-size:13px;color:var(--soft-ink);font-weight:350;margin-bottom:1px}
+  .psize{font-size:12px;color:var(--faint);font-weight:350;letter-spacing:.01em}
   .pcolors{font-size:12px;color:var(--faint);margin-top:7px}
 
   footer{background:var(--ink);color:#9c9c92;padding:70px 30px 32px;margin-top:0}
@@ -530,7 +535,8 @@
         </div>
         <div class="style-no">${no}</div>
         <div class="pname">${styleNameOf(p)}</div>
-        <div class="pmeta">${[specOf(p), srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
+        <div class="pspec">${specOf(p)}</div>
+        <div class="psize">${[srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
         ${dotsHtml(no)}
         ${dragHint}
       `;

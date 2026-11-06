@@ -48,7 +48,7 @@ window.PacificData = (function () {
     '1351': 'Snow V-Neck',
     '1352': 'Snow Long Sleeve',
     '1354': 'Snow Tank',
-    '1360': 'Classic Heather Tee',
+    '1360': 'Soft Heather Tee',
     '1362': 'Everyday Long Sleeve',
     '1364': 'Everyday Tank',
     '1368': 'Everyday Tee (Tubular)',

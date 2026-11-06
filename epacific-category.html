@@ -191,7 +191,7 @@
         </div>
       </div>
       <div class="nav-item"><a>Kids &amp; Youth</a>
-        <div class="mega"><div><h4>Categories</h4><a href="epacific-category.html?cat=Kids%20S%2FS">Kids</a><a href="epacific-category.html?cat=Youth%20S%2FS">Youth</a><a href="epacific-category.html?cat=Juvy%20S%2FS">Juvy</a><a href="epacific-category.html?cat=Toddler%20S%2FS">Toddler</a></div><div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a><a href="epacific-category.html">Best Sellers</a></div></div>
+        <div class="mega"><div><h4>Categories</h4><a href="epacific-category.html?cat=Kids%20S%2FS">Kids</a><a href="epacific-category.html?cat=Youth%20S%2FS">Youth</a><a href="epacific-category.html?cat=Juvy%20S%2FS">Juvy</a><a href="epacific-category.html?cat=Toddler%20S%2FS">Toddler</a><a href="epacific-category.html?group=kidsls">Long Sleeve</a></div><div><h4>Featured</h4><a href="epacific-category.html">New Arrivals</a><a href="epacific-category.html">Best Sellers</a></div></div>
       </div>
       <div class="nav-item"><a>Collections</a>
         <div class="mega"><div><h4>Fabric</h4><a href="epacific-category.html?fabric=cotton">100% Cotton</a><a href="epacific-category.html?fabric=cvc">60/40 CVC Blend</a><a href="epacific-category.html?fabric=tri">Tri-Blend</a><a href="epacific-category.html?fabric=htr">Heather</a><a href="epacific-category.html?fabric=pfd">PFD</a><a href="epacific-category.html?fabric=perf">Athletic</a></div><div><h4>Featured</h4><a href="epacific-category.html">All Styles</a><a href="epacific-shopbycolor.html">Shop by Color</a></div></div>
@@ -297,6 +297,18 @@
     pfd:{label:'PFD', re:/\bPFD\b/i},
     perf:{label:'Athletic', re:/Performance/i}
   };
+  /* KIDSLS-1 (2026-11-06) - 여러 카테고리를 한 칸에 모아 보여주는 「묶음」.
+     [stated] 하윤: "kids / youth / juvy / toddler 그리고 맨아려 Long Sleeve 하나를 만들고
+        모든 애들 long sleeve를 거기"
+     까닭: 아이 긴팔은 칸마다 스타일이 **하나뿐**이라 따로 두면 한 장짜리 페이지가 넷 생긴다.
+     ⚠ 저장된 카테고리 값은 그대로다 - 보여주는 묶음만 더한 것이다
+        (카테고리 글자는 아동 가격칸과 체크아웃 무게표에 물려 있다). */
+  const GROUPS={
+    kidsls:{ label:'Kids & Youth Long Sleeve',
+             cats:['Kids L/S','Youth L/S','Juvy L/S','Toddler L/S'],
+             sub:'Long sleeve in every kids and youth size.' }
+  };
+  let groupKey='';
   let hiddenStyles=new Set();   // 숨긴 스타일 번호
   let editOn=false, isStaff=false;
   const _SBcfg=window.PACIFIC_CONFIG||{};
@@ -498,7 +510,11 @@
 
   function renderGrid(){
     let list;
-    if(fabricKey && FABRIC_MATCH[fabricKey]){ const re=FABRIC_MATCH[fabricKey].re;
+    if(groupKey && GROUPS[groupKey]){
+      /* KIDSLS-1 - 묶음이 켜져 있으면 그 카테고리들만 */
+      const _cs=GROUPS[groupKey].cats;
+      list = allStyles.filter(s=>_cs.indexOf(String(s.cat||''))>=0); }
+    else if(fabricKey && FABRIC_MATCH[fabricKey]){ const re=FABRIC_MATCH[fabricKey].re;
       /* 설명 + 카테고리를 같이 본다. 화면에서 'Performance' 를 빼면서 설명만 보던 이 필터가
          빈 목록이 돼버렸다 — 카테고리(Adult Performance)에는 남아 있으므로 거기서 잡는다. */
       list = allStyles.filter(s=>re.test(String(s.desc||'')+' '+String(s.cat||''))); }
@@ -629,7 +645,7 @@
              + FABRIC_MATCH[k].label + '<span class="count">'+n+'</span></label>';
       })).join('');
     box.querySelectorAll('input[name=fab]').forEach(r=>r.addEventListener('change',()=>{
-      fabricKey=r.value;
+      fabricKey=r.value; groupKey='';
       if(fabricKey){ activeCat='All'; buildCategoryFilter(); }   // 둘을 겹쳐 걸면 빈 목록이 나오기 쉽다
       renderGrid();
     }));
@@ -671,7 +687,7 @@
       `<label class="fopt"><input type="radio" name="cat" value="${c}" ${c===activeCat?'checked':''}> ${catLabel(c)}</label>`
     ).join('');
     box.querySelectorAll('input[name=cat]').forEach(r=>r.addEventListener('change',()=>{
-      activeCat=r.value; fabricKey=''; buildFabricFilter(); renderGrid();
+      activeCat=r.value; fabricKey=''; groupKey=''; buildFabricFilter(); renderGrid();
     }));
   }
 
@@ -694,6 +710,11 @@
       setupStaffBar();
       const params=new URLSearchParams(location.search);
       const q=params.get('cat'); if(q) activeCat=q;
+      const gp=params.get('group'); if(gp && GROUPS[gp]){ groupKey=gp; activeCat='All';
+        const h1=document.querySelector('h1.rise'); if(h1) h1.textContent=GROUPS[gp].label;
+        const cr=document.querySelector('.crumb'); if(cr) cr.innerHTML='<a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html">Shop All</a><span>/</span>'+GROUPS[gp].label;
+        const sub=document.querySelector('h1.rise + p.rise'); if(sub) sub.textContent=GROUPS[gp].sub;
+      }
       const fb=params.get('fabric'); if(fb && FABRIC_MATCH[fb]){ fabricKey=fb;
         const h1=document.querySelector('h1.rise'); if(h1) h1.textContent=FABRIC_MATCH[fb].label;
         const cr=document.querySelector('.crumb'); if(cr) cr.innerHTML='<a href="epacific-timeless.html">Home</a><span>/</span><a href="epacific-category.html">Shop All</a><span>/</span>'+FABRIC_MATCH[fb].label;

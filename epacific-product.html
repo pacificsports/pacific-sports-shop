@@ -408,6 +408,13 @@
   .editmode .cn-check::after{content:'✓';color:#fff;font-size:12px;font-weight:700}
   .editmode tr.color-hidden .cn-check{background:#fff;border-color:var(--line-2)}
   .editmode tr.color-hidden .cn-check::after{content:''}
+  /* COLALL-1 (2026-11-06) - 색 머리줄의 한 번에 끄기/켜기 체크.
+     [stated] 하윤: "color 아래 check 마크 할수있게 해서 한번클릭하면 모든 칼라 unclick 되고
+        다시 다 click할수있게"
+     ⚠ 줄마다 있는 체크와 **같은 모양**을 쓴다 (.cn-check) - Edit 모드에서만 보인다. */
+  .editmode .cn-check-all{margin-left:8px;vertical-align:middle}
+  .editmode .cn-check-all.off{background:#fff;border-color:var(--line-2)}
+  .editmode .cn-check-all.off::after{content:''}
   .editmode .cn{cursor:text;border-bottom:1px dashed transparent}
   .editmode .cn:hover{border-bottom-color:var(--faint)}
   /* Edit 모드: ★ = 메인 사진 색 지정 */
@@ -654,7 +661,7 @@
         <table class="otable">
           <thead>
             <tr>
-              <th class="colcol" id="thColor">Color</th>
+              <th class="colcol" id="thColor">Color<span class="cn-check cn-check-all" id="colAllChk" title="Turn every color off / on"></span></th>
               <th class="whcol">WH</th>
               <!-- 사이즈 헤더는 JS가 채움 -->
               <th>Pieces</th>
@@ -1688,6 +1695,38 @@
     const ok=await saveSettings(currentStyle,{hidden_colors:hiddenColors});
     if(!ok) alert('Could not save. Please try again.');
   }
+  /* COLALL-1 - 모든 색을 한 번에 끄고 켠다.
+     ⚠⚠ 끄는 쪽은 **손님 화면에서 이 스타일의 색이 하나도 안 남는다** - 그래서 끄기 전에만 한 번 묻는다.
+        켜는 쪽은 안 묻는다 (되돌리는 길은 막지 않는다).
+     ⚠ 저장이 실패하면 **화면도 되돌린다** - 저장 안 된 값을 바뀐 것처럼 들고 있으면 안 된다. */
+  async function toggleAllColors(){
+    const raws = allColors.map(c=>String(c._raw||c.raw||c.name));
+    if(!raws.length) return;
+    const anyShown = raws.some(r=>!hiddenColors.includes(r));
+    const prev = hiddenColors.slice();
+    if(anyShown){
+      if(!confirm('Turn off all '+raws.length+' colors?\n\nCustomers will see no colors on this style until you turn them back on.')) return;
+      hiddenColors = raws.slice();
+    } else {
+      hiddenColors = [];
+    }
+    colors = allColors.filter(c=>!hiddenColors.includes(c._raw));
+    rebuildColorViews();
+    const ok = await saveSettings(currentStyle,{hidden_colors:hiddenColors});
+    if(!ok){
+      hiddenColors = prev;
+      colors = allColors.filter(c=>!hiddenColors.includes(c._raw));
+      rebuildColorViews();
+      alert('Could not save. Nothing was changed.');
+    }
+  }
+  /* 머리줄 체크의 모양: 한 색이라도 켜져 있으면 체크, 전부 꺼져 있으면 빈 칸 */
+  function paintColorAllChk(){
+    const b=document.getElementById('colAllChk'); if(!b) return;
+    const off = !allColors.some(c=>!hiddenColors.includes(String(c._raw||c.raw||c.name)));
+    b.classList.toggle('off', off);
+  }
+
   // 색 이름 저장 (실제 저장 로직)
   async function applyColorName(raw, name){
     name=(name||'').trim(); if(!name) return;
@@ -1726,6 +1765,7 @@
     if(_renderSwatchesFn) _renderSwatchesFn();
     buildAllRows();
     recalc();
+    try{ paintColorAllChk(); }catch(e){}   /* COLALL-1 */
   }
 
   /* ===== 스펙 칩 (스타일별 켜고 끄기) ===== */
@@ -2860,6 +2900,9 @@
   refreshStaff();
 
 
+  /* COLALL-1 - 머리줄 체크는 Edit 모드에서만 듣는다 (CSS 로도 숨어 있지만 두 겹으로 막는다) */
+  if(el('colAllChk')) el('colAllChk').addEventListener('click',()=>{ if(editOn) toggleAllColors(); });
+
   // 수정 모드 토글 (행 재생성 없음 → 즉시 반응)
   if(el('editToggle')) el('editToggle').addEventListener('click',()=>{
     editOn=!editOn;
@@ -2870,6 +2913,7 @@
     if(editOn) loadCover();      // 표지 사진은 Edit 을 켤 때만 읽는다 (손님에겐 요청 0)
     // Edit on/off 시 색칩(전체↔보이는것)과 주문그리드, 스펙칩 다시 그림
     if(_renderSwatchesFn) _renderSwatchesFn();
+    try{ paintColorAllChk(); }catch(e){}   /* COLALL-1 */
     renderSpecChips();
     applyDescription();
     renderSizeGuide();

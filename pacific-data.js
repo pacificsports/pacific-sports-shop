@@ -132,6 +132,20 @@ window.PacificData = (function () {
   const CASE_PER = { '2T':48,'3T':48,'4T':48,'5T':48,
                      XS:72, S:72, M:72, L:72, XL:72, '2XL':72, '3XL':48, '4XL':48, '5XL':48 };
 
+  /* CASEPACK-1 (2026-11-10) - 스타일마다 케이스 장수가 다르다.
+     위 CASE_PER 은 **기본값**이고, 여기 적힌 스타일은 그 숫자가 이긴다.
+     값 하나를 적으면 그 스타일의 **모든 사이즈**가 그 장수다.
+     [stated] 하윤 (공장 확인): 2382 는 전 사이즈 60 pcs per case.
+     ⚠ 확인된 것만 적는다 - 짐작으로 줄을 늘리지 말 것. */
+  const CASE_STYLE = { '2382': 60 };
+  function casePerFor(styleNo){
+    const n = CASE_STYLE[String(styleNo == null ? '' : styleNo).trim().toUpperCase()];
+    if(!(n > 0)) return CASE_PER;
+    const out = {};
+    Object.keys(CASE_PER).forEach(function(k){ out[k] = n; });
+    return out;
+  }
+
   // 창고 표시: SC = SC + SC-PCR, CA = CA + CA-PCR (PCR=낱장룸 합산)
   const WAREHOUSES = ['SC', 'CA'];
   const WH_MERGE = { 'SC':'SC', 'SC-PCR':'SC', 'CA':'CA', 'CA-PCR':'CA' };
@@ -303,7 +317,7 @@ window.PacificData = (function () {
       styleNo: sNo, name, category: meta ? meta.cat : 'Adult / Short Sleeve',
       sizes: sz,
       colors: MOCK_COLORS.map(c => ({ name:prettyColor(c), raw:c, hex:colorHex(c), img:'', sizes: sz.slice() })),
-      casePer: CASE_PER
+      casePer: casePerFor(sNo)
     };
   }
   function _mockInventory(styleNo, product) {
@@ -449,7 +463,7 @@ window.PacificData = (function () {
       /* 표지(모델) 사진 — 목록 카드와 상품 페이지 **큰 사진**에만 쓴다.
          색이 아니므로 `colors` 에는 들어가지 않는다 (2026-09-15). */
       coverImg: imgMap.__cover || '',
-      sizes, colors, casePer: CASE_PER
+      sizes, colors, casePer: casePerFor(styleNo)
     };
   }
 
@@ -742,6 +756,7 @@ window.PacificData = (function () {
     /* 가격: getPricing() 으로 한 번 받아서 priceOf() 로 칸마다 계산한다 */
     getPricing: function(styleNo, category){ return _pricing(styleNo, category); },
     priceOf: function(P, color, size){ return _priceOf(P, color, size); },
+    casePerFor: function(styleNo){ return casePerFor(styleNo); },
     listPrice: function(P, size){ return _listPrice(P, size); },
     config: {
       sizeOrder: SIZE_ORDER, casePer: CASE_PER,

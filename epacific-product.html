@@ -403,7 +403,11 @@
   .colcell:hover{background:var(--accent-soft)}
   /* flex-basis 를 0 으로 둬야 사진이 "제 원래 크기" 로 칸을 밀지 않는다.
      auto 로 두면 사진 크기 → 줄 높이 → 사진 크기 로 서로 밀어서 줄이 부푼다 */
-  .colcell .cimg{flex:1 1 0;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  /* COLPAD-1 - 전에는 padding 이 0 이라 사진 요소(230x210)가 칸(200x183)보다 커서
+     overflow:hidden 이 셔츠 위아래를 13px 씩 잘라냈다. max-* 로 칸 안에 묶고 여백을 준다.
+     [stated] 하윤: "저 옆에 사진들이 너무 꽉찬느낌나지 않아?" */
+  .colcell .cimg{flex:1 1 0;width:100%;min-height:0;border-radius:0;background:#ffffff;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:12px 16px;box-sizing:border-box}
+  .colcell .cimg img{max-width:100%;max-height:100%}
   .colcell .cimg svg{display:block;width:100%;height:100%}
   .colcell .cn{font-size:14px;font-weight:600;white-space:normal;line-height:1.2}
   .cn-wrap{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;padding:0 8px}

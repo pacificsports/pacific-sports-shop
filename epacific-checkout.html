@@ -213,6 +213,22 @@
     }catch(e){ console.error('box weights failed - falling back to estimates', e); }
   }
   /* 그 스타일+사이즈의 **장당** 무게. 0 이면 아직 안 잰 것이다. */
+  /* WEBWT-2 - 그 스타일+사이즈의 케이스 장수. 0 이면 모른다.
+     ⚠ window.PacificData 로만 쓴다 - 맨 이름과 섞으면 창이 곧 전역이 아닌 곳에서 터진다. */
+  function measCasePer(style,size){
+    const PD=window.PacificData;
+    if(!(PD&&PD.casePerFor)) return 0;
+    const sz=String(size==null?'':size).trim().toUpperCase();
+    let per=0;
+    try{ per=Number(PD.casePerFor(style)[sz]); }catch(e){ return 0; }
+    return (per>0)?per:0;
+  }
+  /* 그 줄이 박스 몇 개가 되나. 낱장이 남으면 그것도 박스 하나로 센다. */
+  function measBoxes(style,size,qty){
+    const per=measCasePer(style,size), q=Number(qty)||0;
+    if(!(per>0)||q<=0) return 0;
+    return Math.ceil(q/per);
+  }
   function measPcWeight(style,size){
     /* ⚠ 사이즈를 한 번만 다듬어서 두 군데(무게표·케이스 장수)에 **같은 글자**로 쓴다.
        한 쪽만 trim 했다가 ' M ' 에서 어긋났다. */
@@ -221,17 +237,16 @@
     if(!m) return 0;
     const lb=Number(m[sz]);
     if(!(lb>0)) return 0;
-    /* ⚠ window.PacificData 로만 쓴다 - 맨 이름(PacificData)과 섞으면 창(window)이 곧
-       전역이 아닌 곳에서 터진다. 시험에서 실제로 걸렸다. */
-    const PD=window.PacificData;
-    const per=(PD&&PD.casePerFor)?Number(PD.casePerFor(style)[sz]):0;
+    const per=measCasePer(style,size);
     if(!(per>0)) return 0;
     return lb/per;
   }
   /* 창고 하나가 실제로 보낼 무게. 잰 쪽과 안 잰 쪽을 **따로** 계산해서 더한다.
      ⚠ 여기 한 군데에서만 버퍼를 곱한다 - 부르는 쪽에서 또 곱하면 두 번 곱해진다. */
-  function shipLbs(meas,est){
-    const a=(meas>0)?(meas+BOX_ADD)*MEAS_BUFFER:0;
+  function shipLbs(meas,est,boxes){
+    /* WEBWT-2 - 박스 1 lb 를 **박스마다** 더한다 ([stated] 하윤). 전에는 짐에 한 번이었다. */
+    const bx=Number(boxes)||0;
+    const a=(meas>0)?(meas+bx*BOX_ADD)*MEAS_BUFFER:0;
     const b=(est>0)?est*SHIP_BUFFER:0;
     return Math.round((a+b)*10)/10;
   }
@@ -338,14 +353,16 @@
     const cart=cartGet();
     goods=0; pcs=0; scLbs=0; caLbs=0; allPriced=true;
     let _scM=0,_scE=0,_caM=0,_caE=0;   /* WEBWT-1 - 잰 것 / 안 잰 것 */
+    let _scBx=0,_caBx=0;               /* WEBWT-2 - 잰 쪽의 박스 수 */
     const lines={};
     cart.forEach(i=>{
       pcs+=i.qty||0;
       /* WEBWT-1 - 잰 무게가 있으면 그것, 없으면 옛 추정치. 두 갈래를 섞지 않고 따로 쌓는다. */
       const mw=measPcWeight(i.style,i.size);
       const w=(i.qty||0)*(mw>0?mw:pieceWeight(i.style,i.size));
-      if(i.wh==='CA'){ if(mw>0) _caM+=w; else _caE+=w; }
-      else           { if(mw>0) _scM+=w; else _scE+=w; }
+      const bx=(mw>0)?measBoxes(i.style,i.size,i.qty||0):0;
+      if(i.wh==='CA'){ if(mw>0){ _caM+=w; _caBx+=bx; } else _caE+=w; }
+      else           { if(mw>0){ _scM+=w; _scBx+=bx; } else _scE+=w; }
       if(i.unit_price!=null) goods+=(i.qty||0)*Number(i.unit_price); else allPriced=false;
       const k=i.style+'|'+i.color+'|'+i.wh;
       if(!lines[k]) lines[k]={style:i.style,color:i.color,wh:i.wh,qty:0,amt:0};
@@ -353,8 +370,8 @@
       if(i.unit_price!=null) lines[k].amt+=(i.qty||0)*Number(i.unit_price);
     });
     /* WEBWT-1 - scLbs/caLbs 는 이제 **그대로 보내는 최종 무게**다 (버퍼가 이미 들어 있다) */
-    scLbs=shipLbs(_scM,_scE);
-    caLbs=shipLbs(_caM,_caE);
+    scLbs=shipLbs(_scM,_scE,_scBx);
+    caLbs=shipLbs(_caM,_caE,_caBx);
     document.getElementById('itemList').innerHTML=Object.values(lines).map(l=>
       `<div class="itline"><span><b>${esc(l.style)}</b> ${esc(l.color)} <span style="color:var(--faint)">(${esc(l.wh)})</span></span><span>${l.qty} pcs · ${money(l.amt)}</span></div>`).join('')
       ||'<div style="color:var(--faint);font-size:13.5px">Cart is empty.</div>';

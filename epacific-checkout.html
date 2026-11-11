@@ -197,13 +197,13 @@
   const SHIP_BUFFER=1.10;      // 박스·포장·오차 안전 마진 (언더차지 방지). 너무 비싸면 낮추기
   const STYLE_CAT={};          // {스타일번호: 카테고리} — init()에서 채움
   /* WEBWT-1 - 실제로 저울에 단 박스 무게. {스타일: {사이즈: lb}} · 박스 무게 포함.
-     출처는 pr_config.box_weights 한 줄뿐이다 (psflowx Full Box 화면도 같은 줄을 본다). */
+     출처는 pr_config.web_box_weights 한 줄뿐이다 (psflowx Full Box 화면도 같은 줄을 본다). */
   const BOX_ADD=1.0;           // 낱장을 다시 담는 배송 박스 한 개
   const MEAS_BUFFER=1.05;      // 로트별 원단 무게 차이만 덮는다 (박스는 이미 잰 값에 들어 있다)
   const BOX_LBS={};
   async function loadBoxWeights(){
     try{
-      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/pr_config?select=v&k=eq.box_weights',
+      const r=await fetch(_C.SUPABASE_URL+'/rest/v1/pr_config?select=v&k=eq.web_box_weights',
         {cache:'no-store',headers:{apikey:_C.SUPABASE_ANON_KEY,Authorization:'Bearer '+_C.SUPABASE_ANON_KEY}});
       /* 🔴 400 을 「0건」으로 읽지 말 것 - 실패와 0 은 다르다 */
       if(!r.ok) throw new Error('HTTP '+r.status);

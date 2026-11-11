@@ -198,7 +198,9 @@
   const STYLE_CAT={};          // {스타일번호: 카테고리} — init()에서 채움
   /* WEBWT-1 - 실제로 저울에 단 박스 무게. {스타일: {사이즈: lb}} · 박스 무게 포함.
      출처는 pr_config.web_box_weights 한 줄뿐이다 (psflowx Full Box 화면도 같은 줄을 본다). */
-  const BOX_ADD=1.0;           // 낱장을 다시 담는 배송 박스 한 개
+  /* WEBWT-3 - [stated] 하윤이 실제로 잰 빈 박스. 제일 무거운 박스라 전 박스에 써도 안전하다.
+     ⚠ 이 무게는 이미 잰 케이스 무게 안에 있다 - 꽉 찬 박스에는 더하지 않는다. */
+  const CARTON_LBS=2.6;
   const MEAS_BUFFER=1.05;      // 로트별 원단 무게 차이만 덮는다 (박스는 이미 잰 값에 들어 있다)
   const BOX_LBS={};
   async function loadBoxWeights(){
@@ -223,11 +225,28 @@
     try{ per=Number(PD.casePerFor(style)[sz]); }catch(e){ return 0; }
     return (per>0)?per:0;
   }
-  /* 그 줄이 박스 몇 개가 되나. 낱장이 남으면 그것도 박스 하나로 센다. */
-  function measBoxes(style,size,qty){
-    const per=measCasePer(style,size), q=Number(qty)||0;
-    if(!(per>0)||q<=0) return 0;
-    return Math.ceil(q/per);
+  /* 그 스타일+사이즈의 케이스 무게 (박스 포함, 저울값 그대로). 0 이면 안 잰 것. */
+  function measCaseLbs(style,size){
+    const m=BOX_LBS[String(style==null?'':style).trim().toUpperCase()];
+    if(!m) return 0;
+    const lb=Number(m[String(size==null?'':size).trim().toUpperCase()]);
+    return (lb>0)?lb:0;
+  }
+  /* 셔츠만 장당 무게 - 박스 몫을 뺀 것. 원가/소비량이 쓸 숫자다. */
+  function measShirtPc(style,size){
+    const lb=measCaseLbs(style,size), per=measCasePer(style,size);
+    if(!(lb>0)||!(per>0)) return 0;
+    return (lb>CARTON_LBS) ? ((lb-CARTON_LBS)/per) : (lb/per);
+  }
+  /* 그 줄이 실제로 나가는 무게.
+     꽉 찬 박스는 잰 값 그대로(박스가 이미 들어 있다) · 남은 낱장은 셔츠 + 새 박스 한 개. */
+  function measLineLbs(style,size,qty){
+    const q=Number(qty)||0;
+    if(q<=0) return 0;
+    const lb=measCaseLbs(style,size), per=measCasePer(style,size);
+    if(!(lb>0)||!(per>0)) return 0;
+    const full=Math.floor(q/per), loose=q%per;
+    return full*lb + (loose>0 ? (loose*measShirtPc(style,size) + CARTON_LBS) : 0);
   }
   function measPcWeight(style,size){
     /* ⚠ 사이즈를 한 번만 다듬어서 두 군데(무게표·케이스 장수)에 **같은 글자**로 쓴다.
@@ -243,10 +262,10 @@
   }
   /* 창고 하나가 실제로 보낼 무게. 잰 쪽과 안 잰 쪽을 **따로** 계산해서 더한다.
      ⚠ 여기 한 군데에서만 버퍼를 곱한다 - 부르는 쪽에서 또 곱하면 두 번 곱해진다. */
-  function shipLbs(meas,est,boxes){
-    /* WEBWT-2 - 박스 1 lb 를 **박스마다** 더한다 ([stated] 하윤). 전에는 짐에 한 번이었다. */
-    const bx=Number(boxes)||0;
-    const a=(meas>0)?(meas+bx*BOX_ADD)*MEAS_BUFFER:0;
+  function shipLbs(meas,est){
+    /* WEBWT-3 - 박스는 `measLineLbs` 가 이미 셌다. 여기서는 5% 만 붙인다.
+       그 5% 는 로트마다 원단 무게가 다른 것(보통 3~5%)을 덮는다. */
+    const a=(meas>0)?meas*MEAS_BUFFER:0;
     const b=(est>0)?est*SHIP_BUFFER:0;
     return Math.round((a+b)*10)/10;
   }
@@ -353,16 +372,15 @@
     const cart=cartGet();
     goods=0; pcs=0; scLbs=0; caLbs=0; allPriced=true;
     let _scM=0,_scE=0,_caM=0,_caE=0;   /* WEBWT-1 - 잰 것 / 안 잰 것 */
-    let _scBx=0,_caBx=0;               /* WEBWT-2 - 잰 쪽의 박스 수 */
     const lines={};
     cart.forEach(i=>{
       pcs+=i.qty||0;
       /* WEBWT-1 - 잰 무게가 있으면 그것, 없으면 옛 추정치. 두 갈래를 섞지 않고 따로 쌓는다. */
-      const mw=measPcWeight(i.style,i.size);
-      const w=(i.qty||0)*(mw>0?mw:pieceWeight(i.style,i.size));
-      const bx=(mw>0)?measBoxes(i.style,i.size,i.qty||0):0;
-      if(i.wh==='CA'){ if(mw>0){ _caM+=w; _caBx+=bx; } else _caE+=w; }
-      else           { if(mw>0){ _scM+=w; _scBx+=bx; } else _scE+=w; }
+      /* WEBWT-3 - 잰 스타일은 줄째로 센다 (꽉 찬 박스 + 낱장 박스). 0 이면 안 잰 것. */
+      const ml=measLineLbs(i.style,i.size,i.qty||0);
+      if(ml>0){ if(i.wh==='CA') _caM+=ml; else _scM+=ml; }
+      else { const w=(i.qty||0)*pieceWeight(i.style,i.size);
+             if(i.wh==='CA') _caE+=w; else _scE+=w; }
       if(i.unit_price!=null) goods+=(i.qty||0)*Number(i.unit_price); else allPriced=false;
       const k=i.style+'|'+i.color+'|'+i.wh;
       if(!lines[k]) lines[k]={style:i.style,color:i.color,wh:i.wh,qty:0,amt:0};
@@ -370,8 +388,8 @@
       if(i.unit_price!=null) lines[k].amt+=(i.qty||0)*Number(i.unit_price);
     });
     /* WEBWT-1 - scLbs/caLbs 는 이제 **그대로 보내는 최종 무게**다 (버퍼가 이미 들어 있다) */
-    scLbs=shipLbs(_scM,_scE,_scBx);
-    caLbs=shipLbs(_caM,_caE,_caBx);
+    scLbs=shipLbs(_scM,_scE);
+    caLbs=shipLbs(_caM,_caE);
     document.getElementById('itemList').innerHTML=Object.values(lines).map(l=>
       `<div class="itline"><span><b>${esc(l.style)}</b> ${esc(l.color)} <span style="color:var(--faint)">(${esc(l.wh)})</span></span><span>${l.qty} pcs · ${money(l.amt)}</span></div>`).join('')
       ||'<div style="color:var(--faint);font-size:13.5px">Cart is empty.</div>';

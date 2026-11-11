@@ -137,7 +137,12 @@ window.PacificData = (function () {
      값 하나를 적으면 그 스타일의 **모든 사이즈**가 그 장수다.
      [stated] 하윤 (공장 확인): 2382 는 전 사이즈 60 pcs per case.
      ⚠ 확인된 것만 적는다 - 짐작으로 줄을 늘리지 말 것. */
-  const CASE_STYLE = { '2382': 60 };
+  /* CASEPACK-2 (2026-11-11) - [stated] 하윤이 무게를 재면서 같이 적어준 장수
+       "5350 (144 pcs per box)" · "3350 (144 pcs per box)"
+     웹 표는 5350 을 48, 3350 을 72 로 알고 있었다 (CASE PACK CHECK 목록에 있던 줄).
+     🔴 이걸 안 고치면 운임 계산이 틀린다 - 장당 무게 = 케이스무게 / 장수 라서
+        5350 2T 가 0.130 lb 대신 0.39 lb (세 배)로 잡힌다. */
+  const CASE_STYLE = { '2382': 60, '5350': 144, '3350': 144 };
   function casePerFor(styleNo){
     const n = CASE_STYLE[String(styleNo == null ? '' : styleNo).trim().toUpperCase()];
     if(!(n > 0)) return CASE_PER;

@@ -200,8 +200,15 @@
      출처는 pr_config.web_box_weights 한 줄뿐이다 (psflowx Full Box 화면도 같은 줄을 본다). */
   /* WEBWT-3 - [stated] 하윤이 실제로 잰 빈 박스. 제일 무거운 박스라 전 박스에 써도 안전하다.
      ⚠ 이 무게는 이미 잰 케이스 무게 안에 있다 - 꽉 찬 박스에는 더하지 않는다. */
-  const CARTON_LBS=2.5;
-  const MEAS_BUFFER=1.05;      // 로트별 원단 무게 차이만 덮는다 (박스는 이미 잰 값에 들어 있다)
+  /* BIGBOX-1 (2026-11-13) - [stated] 하윤이 잰 빈 박스 중 **제일 무거운 것**(BOX #2-1).
+     낱장을 새 박스에 담을 때만 더한다. 꽉 찬 박스에는 이미 들어 있다. */
+  const CARTON_LBS=3.0;
+  /* BIGBOX-1 - [stated] 하윤: "5%는 빼고 대신 2.5에서 3lbs로 올리자"
+     까닭: 웹샵은 손님에게 **정가(list)** 를 그대로 받는다. 우리가 내는 돈과 손님이 내는 돈
+     사이에 이미 박스당 $12~15 가 남는다 (라이브 실측 2026-11-13: 35 lb SC->Lawrence KS,
+     UPS Ground 우리 37.45 / 손님 52.23). 거기에 5% 를 또 붙이면 비싸기만 하다.
+     ⚠ 1 로 두고 이름은 남긴다 - 되돌릴 때 이 한 줄만 고치면 된다. */
+  const MEAS_BUFFER=1.00;
   const BOX_LBS={};
   async function loadBoxWeights(){
     try{

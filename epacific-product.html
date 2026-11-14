@@ -386,6 +386,19 @@
      붙어 있는 헤더가 계속 보인다. 구조는 그대로라 점프·꼬리여백 계산도 손댈 게 없다.
      (210px = 상단바 + 합계바 + 여유) */
   .otable-scroll{max-height:calc(100vh - 210px);min-height:420px;overflow-y:auto}
+  /* ══ BIGGRID-1 (2026-11-14) - 표를 안쪽 상자에서 꺼내 페이지로 흐르게 한다 ══
+     [stated] 하윤: "우리는 스크롤이 옆에있고 또 큰 스크롤이 있어서" / "상자만 걷어 내보자"
+     ⚠ 되돌리려면 맨 아래 ORDER_PAGE_SCROLL 을 false 로 (body 의 pgscroll 이 안 붙는다).
+     ⚠ max-height/min-height 의 !important 는 꼭 있어야 한다 - fitTable() 이 인라인으로 써넣는다.
+     ⚠ .order-block 은 overflow:clip 이다. hidden 으로 쓰면 그 상자가 스크롤 컨테이너가 돼서
+       표 머리(sticky)가 화면이 아니라 그 안을 기준으로 붙는다 - 머리줄이 안 붙는다. */
+  body.pgscroll .otable-scroll{max-height:none!important;min-height:0!important;overflow:visible}
+  body.pgscroll .order-block{position:static;overflow:clip}
+  body.pgscroll .order-tail{display:none}
+  /* ⚠⚠ 원래 fitHead() 가 스크롤마다 th 의 top 을 인라인으로 써넣는다. 상자가 없으면 그 값이
+     엉뚱해진다 (실측 top:2657px -> 머리줄이 사라졌다 나왔다 했다). !important 가 인라인을 이긴다.
+     --ohead 는 아래 스크립트가 실측해서 넣는다 (상단바 + 색칩 + 합계바). */
+  body.pgscroll .otable thead th{top:var(--ohead,327px)!important;z-index:5}
   .otable{width:100%;border-collapse:collapse}
   /* HDRCREAM-v1 (2026-09-23) — 머리줄 배경을 크림으로. 이 머리는 sticky 라서 줄이
      아래로 지나간다. 흰 머리 + 흰 줄이면 1px 실선 하나가 유일한 경계여서, 반쯤 잘린
@@ -3378,6 +3391,66 @@ function pacLogout(){
   }
   if(document.readyState==='complete') boot();
   else window.addEventListener('load', boot);
+})();
+</script>
+<script>
+/* ══════════ BIGGRID-1 (2026-11-14) ══════════
+   주문표를 안쪽 스크롤 상자에서 꺼내 페이지로 흐르게 한다.
+   ⭐⭐⭐ 되돌리려면 이 한 줄만 false 로 바꾸면 전부 원래대로 돌아간다. */
+const ORDER_PAGE_SCROLL = true;
+(function(){
+  if(!ORDER_PAGE_SCROLL) return;
+  document.body.classList.add('pgscroll');
+
+  /* 머리줄이 붙을 자리 = 상단바 + 색칩줄 + 합계바. 숫자를 박지 않고 매번 잰다
+     (합계바는 오더를 넣으면 86 -> 132px 로 늘고, 색칩줄 높이는 색 개수마다 다르다). */
+  function headNeed(){
+    var hd = document.querySelector('header'),
+        cb = document.getElementById('chipBar'),
+        sm = document.querySelector('.summary');
+    var h  = hd ? hd.getBoundingClientRect().height : 64;
+    var c  = (cb && cb.offsetParent !== null) ? cb.getBoundingClientRect().height : 0;
+    var s  = sm ? sm.getBoundingClientRect().height : 0;
+    return Math.round(h + c + s);
+  }
+  function setHead(){
+    try{ document.documentElement.style.setProperty('--ohead', headNeed() + 'px'); }catch(e){}
+  }
+  setHead();
+  window.addEventListener('resize', setHead);
+  window.addEventListener('load', setHead);
+  setTimeout(setHead, 900);                     /* 사진·폰트가 늦게 뜨는 경우 */
+  try{
+    if(window.ResizeObserver){
+      var ro = new ResizeObserver(setHead);
+      ['header', '.chipbar', '.summary'].forEach(function(s){
+        var e = document.querySelector(s); if(e) ro.observe(e);
+      });
+    }
+  }catch(e){}
+
+  /* ⚠⚠ 색칩 점프를 갈아끼운다. 원래 jumpTo 는 **상자를 굴린다**(scroller.scrollTo) -
+     상자를 걷어내면 굴릴 데가 없어서 아무 일도 안 일어난다 ([stated] 하윤이 눌러보고 잡았다).
+     jumpTo 는 맨 바깥에 선언된 함수라 window.jumpTo 를 바꾸면 색칩·검색 둘 다 이걸 쓴다. */
+  var _oldJump = window.jumpTo;
+  window.jumpTo = function(name){
+    try{
+      var id  = (typeof colorId === 'function') ? colorId(name) : ('color-' + name);
+      var row = document.getElementById(id);
+      if(!row){ if(_oldJump) _oldJump(name); return; }
+      var th  = document.querySelector('.otable thead');
+      var hh  = th ? th.offsetHeight : 44;
+      var top = window.scrollY + row.getBoundingClientRect().top - headNeed() - hh - 6;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      /* 첫 칸에 커서 - preventScroll 없이 부르면 브라우저가 스크롤을 다시 잡아 자리가 흐트러진다 */
+      var i = row.querySelector('input:not([disabled])');
+      if(i) setTimeout(function(){ try{ i.focus({ preventScroll: true }); }catch(e){} }, 700);
+      try{
+        var sg = document.getElementById('searchSug'); if(sg) sg.classList.remove('show');
+        var si = document.getElementById('colorSearch'); if(si) si.value = name;
+      }catch(e){}
+    }catch(e){ if(_oldJump) _oldJump(name); }
+  };
 })();
 </script>
 </body>

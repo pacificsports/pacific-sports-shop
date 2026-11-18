@@ -142,6 +142,11 @@
   body.editmode .card.drag-over-top{box-shadow:0 -4px 0 -1px var(--accent,#6b7b5e)}
   body.editmode .card.drag-over-bottom{box-shadow:0 4px 0 -1px var(--accent,#6b7b5e)}
   .drag-hint{font-size:11px;color:var(--faint);margin-top:6px;font-style:italic}
+  /* ROWBRK-1 (2026-11-18) - 이 카드부터 새 줄에서 시작한다.
+     빈 칸을 끼우지 않고 '칸 1번으로 보낸다'로 처리해서 3칸/2칸/1칸 어느 폭에서도 맞는다. */
+  .card.rowstart{grid-column-start:1}
+  .brk-toggle{font-size:11px;margin-top:4px;cursor:pointer;color:var(--faint);user-select:none}
+  .brk-toggle.on{color:var(--accent,#6b7b5e);font-weight:600}
   /* 번호는 이제 'Style #' 없이 번호만 — 카드에서 번호를 말하는 건 이 줄뿐이다 */
   .style-no{font-size:13px;color:var(--soft-ink);font-weight:700;letter-spacing:.02em;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
@@ -312,7 +317,9 @@
   let hiddenStyles=new Set();   // 숨긴 스타일 번호
   let editOn=false, isStaff=false;
   const _SBcfg=window.PACIFIC_CONFIG||{};
-  const RANK_KEY='__RANK__';             // color_names 안 예약 키에 진열 순서(rank) 저장 (별도 컬럼 불필요)
+  const RANK_KEY='__RANK__';
+  const BRK_KEY='__ROWBRK__';            // 이 스타일부터 새 줄에서 시작 (ROWBRK-1)
+  let brkSet=new Set();                  // 새 줄에서 시작하는 스타일 번호             // color_names 안 예약 키에 진열 순서(rank) 저장 (별도 컬럼 불필요)
   let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
@@ -373,7 +380,8 @@
       (d||[]).forEach(x=>{ const no=String(x.style_number); const cn=x.color_names||{}; colorNamesMap[no]=cn;
         if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
         if(Array.isArray(x.hidden_colors)&&x.hidden_colors.length) styleHiddenColors[no]=x.hidden_colors.map(c=>String(c).toUpperCase());
-        const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk; });
+        const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk;
+        if(cn[BRK_KEY]===true) brkSet.add(no); });
     }catch(e){
       /* WEBSAFE-1 - 삼켜서는 안 된다 (위 주석 참고). 밖으로 올려보낸다. */
       console.error('style_settings load failed - catalogue not rendered', e);
@@ -461,6 +469,19 @@
       {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
     return r.ok;
   }
+  /* ROWBRK-1 - 새 줄 표시 저장. rank 와 같은 자리(color_names 예약 키)에 넣는다.
+     ⚠ 여럿이 같이 쓰는 jsonb 한 줄이라 통째로 덮어쓰지 않고 내가 바꾼 칸만 얹는다. */
+  async function saveRowBreak(styleNo, on){
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
+    if(on) cn[BRK_KEY]=true; else delete cn[BRK_KEY];
+    colorNamesMap[no]=cn;
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
   // 스타일 숨김 저장
   async function saveStyleHidden(styleNo, hidden){
     const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
@@ -533,7 +554,7 @@
       const hidden=hiddenStyles.has(no);
       const favOn = _favSet.has(no);
       const card=document.createElement('div');
-      card.className='card'+(hidden?' style-hidden':'')+(editing?' editable':'');
+      card.className='card'+(hidden?' style-hidden':'')+(editing?' editable':'')+(brkSet.has(no)?' rowstart':'');
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
       card.dataset.no=no;
       if(editing) card.setAttribute('draggable','true');
@@ -541,6 +562,10 @@
         ? `<div class="hide-toggle" data-no="${no}">${hidden?'Hidden — click to show':'Showing — click to hide'}</div>`
         : '';
       const dragHint = editing ? '<div class="drag-hint">↕ 드래그로 순서 변경</div>' : '';
+      const brkOn = brkSet.has(no);
+      const brkBtn = editing
+        ? `<div class="brk-toggle${brkOn?' on':''}" data-brk="${no}" title="${brkOn?'지금 이 스타일부터 새 줄에서 시작합니다 — 누르면 풀립니다':'누르면 이 스타일부터 새 줄에서 시작합니다'}">${brkOn?'↵ 새 줄에서 시작 — 누르면 해제':'↵ 여기서 새 줄'}</div>`
+        : '';
       card.innerHTML=`
         <div class="thumb">
           ${thumbs[no] ? `<img src="${thumbs[no]}" alt="Style ${no}" style="width:100%;height:100%;object-fit:contain;display:block">` : `<div class="ph">${no}</div>`}
@@ -555,6 +580,7 @@
         <div class="psize">${[srOf(p), colorLine].filter(Boolean).join(' \u00b7 ')}</div>
         ${dotsHtml(no)}
         ${dragHint}
+        ${brkBtn}
       `;
       const _st=card.querySelector('.fav-star');
       if(_st){
@@ -572,6 +598,15 @@
         });
       }
       if(editing){
+        const bt=card.querySelector('.brk-toggle');
+        if(bt) bt.addEventListener('click',async(e)=>{
+          e.stopPropagation();
+          const willOn=!brkSet.has(no);
+          if(willOn) brkSet.add(no); else brkSet.delete(no);
+          renderGrid();
+          const ok=await saveRowBreak(no, willOn);
+          if(!ok){ alert('Could not save.'); }
+        });
         const tg=card.querySelector('.hide-toggle');
         if(tg) tg.addEventListener('click',async(e)=>{
           e.stopPropagation();
@@ -590,7 +625,7 @@
         card.addEventListener('dragleave',()=>card.classList.remove('drag-over-top','drag-over-bottom'));
         card.addEventListener('drop',async e=>{ e.preventDefault(); const after=card._after; card.classList.remove('drag-over-top','drag-over-bottom'); if(!dragNo||dragNo===no)return; await handleReorder(dragNo,no,after?'after':'before'); });
       }
-      card.addEventListener('click',(e)=>{ if(editing && e.target.closest('.hide-toggle'))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
+      card.addEventListener('click',(e)=>{ if(editing && (e.target.closest('.hide-toggle')||e.target.closest('.brk-toggle')))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
       grid.appendChild(card);
     });
     const cnt=document.getElementById('resultCount');

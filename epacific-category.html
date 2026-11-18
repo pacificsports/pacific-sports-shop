@@ -145,8 +145,15 @@
   /* ROWBRK-1 (2026-11-18) - 이 카드부터 새 줄에서 시작한다.
      빈 칸을 끼우지 않고 '칸 1번으로 보낸다'로 처리해서 3칸/2칸/1칸 어느 폭에서도 맞는다. */
   .card.rowstart{grid-column-start:1}
+  /* GAPCELL-1 (2026-11-18) - 줄 안에서 한 칸 비워 식구를 가른다.
+     손님에게는 그냥 빈 자리, 편집모드에서만 점선으로 보인다. */
+  .gap-cell{min-height:0}
+  body.editmode .gap-cell{border:1px dashed var(--line);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:11px;color:var(--faint);cursor:pointer;min-height:120px;padding:10px}
+  body.editmode .gap-cell:hover{border-color:var(--accent,#6b7b5e);color:var(--accent,#6b7b5e)}
   .brk-toggle{font-size:11px;margin-top:4px;cursor:pointer;color:var(--faint);user-select:none}
   .brk-toggle.on{color:var(--accent,#6b7b5e);font-weight:600}
+  .gap-toggle{font-size:11px;margin-top:2px;cursor:pointer;color:var(--faint);user-select:none}
+  body.editmode .card .gap-toggle:hover{color:var(--accent,#6b7b5e)}
   /* 번호는 이제 'Style #' 없이 번호만 — 카드에서 번호를 말하는 건 이 줄뿐이다 */
   .style-no{font-size:13px;color:var(--soft-ink);font-weight:700;letter-spacing:.02em;margin-bottom:3px}
   .pname{font-family:var(--display);font-size:20px;line-height:1.12;margin-bottom:5px}
@@ -319,7 +326,10 @@
   const _SBcfg=window.PACIFIC_CONFIG||{};
   const RANK_KEY='__RANK__';
   const BRK_KEY='__ROWBRK__';            // 이 스타일부터 새 줄에서 시작 (ROWBRK-1)
-  let brkSet=new Set();                  // 새 줄에서 시작하는 스타일 번호             // color_names 안 예약 키에 진열 순서(rank) 저장 (별도 컬럼 불필요)
+  let brkSet=new Set();                  // 새 줄에서 시작하는 스타일 번호
+  const GAP_KEY='__GAP__';               // 이 스타일 앞에 둘 빈 칸 수 (GAPCELL-1)
+  const GAP_MAX=2;                       // 3칸짜리 줄이라 2개까지만 - 3개면 그냥 새 줄이다
+  let gapMap={};                         // 스타일 번호 -> 앞에 둘 빈 칸 수             // color_names 안 예약 키에 진열 순서(rank) 저장 (별도 컬럼 불필요)
   let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
@@ -381,7 +391,8 @@
         if(x.default_color) defaultColorMap[no]=String(x.default_color).toUpperCase();
         if(Array.isArray(x.hidden_colors)&&x.hidden_colors.length) styleHiddenColors[no]=x.hidden_colors.map(c=>String(c).toUpperCase());
         const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk;
-        if(cn[BRK_KEY]===true) brkSet.add(no); });
+        if(cn[BRK_KEY]===true) brkSet.add(no);
+        const gp=cn[GAP_KEY]; if(typeof gp==='number' && gp>0) gapMap[no]=Math.min(GAP_MAX, Math.round(gp)); });
     }catch(e){
       /* WEBSAFE-1 - 삼켜서는 안 된다 (위 주석 참고). 밖으로 올려보낸다. */
       console.error('style_settings load failed - catalogue not rendered', e);
@@ -482,6 +493,18 @@
       {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
     return r.ok;
   }
+  /* GAPCELL-1 - 앞에 둘 빈 칸 수 저장. 0 이면 칸 자체를 지운다. */
+  async function saveGap(styleNo, n){
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
+    if(n>0) cn[GAP_KEY]=n; else delete cn[GAP_KEY];
+    colorNamesMap[no]=cn;
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
   // 스타일 숨김 저장
   async function saveStyleHidden(styleNo, hidden){
     const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
@@ -553,6 +576,25 @@
       const colorLine = cc ? (cc+' color'+(cc>1?'s':'')) : '';
       const hidden=hiddenStyles.has(no);
       const favOn = _favSet.has(no);
+      /* GAPCELL-1 - 이 카드 앞에 빈 칸을 먼저 깐다 */
+      const gapN = gapMap[no] || 0;
+      for(let gi=0; gi<gapN; gi++){
+        const gp=document.createElement('div');
+        gp.className='gap-cell';
+        if(editing){
+          gp.dataset.gapFor=no;
+          gp.textContent='✕ 빈 칸 — 누르면 지움';
+          gp.addEventListener('click',async(e)=>{
+            e.stopPropagation();
+            const left=Math.max(0,(gapMap[no]||0)-1);
+            if(left) gapMap[no]=left; else delete gapMap[no];
+            renderGrid();
+            const okg=await saveGap(no,left);
+            if(!okg){ alert('Could not save.'); }
+          });
+        }
+        grid.appendChild(gp);
+      }
       const card=document.createElement('div');
       card.className='card'+(hidden?' style-hidden':'')+(editing?' editable':'')+(brkSet.has(no)?' rowstart':'');
       card.style.animationDelay=(Math.min(idx,12)*0.04)+'s';
@@ -565,6 +607,9 @@
       const brkOn = brkSet.has(no);
       const brkBtn = editing
         ? `<div class="brk-toggle${brkOn?' on':''}" data-brk="${no}" title="${brkOn?'지금 이 스타일부터 새 줄에서 시작합니다 — 누르면 풀립니다':'누르면 이 스타일부터 새 줄에서 시작합니다'}">${brkOn?'↵ 새 줄에서 시작 — 누르면 해제':'↵ 여기서 새 줄'}</div>`
+        : '';
+      const gapBtn = editing
+        ? `<div class="gap-toggle" data-gap="${no}" title="누를 때마다 앞에 빈 칸이 하나씩 늘어난다 (최대 ${GAP_MAX})">${gapN?('▫ 앞에 빈 칸 '+gapN):'▫ 앞에 빈 칸'}</div>`
         : '';
       card.innerHTML=`
         <div class="thumb">
@@ -581,6 +626,7 @@
         ${dotsHtml(no)}
         ${dragHint}
         ${brkBtn}
+        ${gapBtn}
       `;
       const _st=card.querySelector('.fav-star');
       if(_st){
@@ -598,6 +644,15 @@
         });
       }
       if(editing){
+        const gb=card.querySelector('.gap-toggle');
+        if(gb) gb.addEventListener('click',async(e)=>{
+          e.stopPropagation();
+          const next=((gapMap[no]||0)+1) % (GAP_MAX+1);
+          if(next) gapMap[no]=next; else delete gapMap[no];
+          renderGrid();
+          const okg=await saveGap(no,next);
+          if(!okg){ alert('Could not save.'); }
+        });
         const bt=card.querySelector('.brk-toggle');
         if(bt) bt.addEventListener('click',async(e)=>{
           e.stopPropagation();
@@ -625,7 +680,7 @@
         card.addEventListener('dragleave',()=>card.classList.remove('drag-over-top','drag-over-bottom'));
         card.addEventListener('drop',async e=>{ e.preventDefault(); const after=card._after; card.classList.remove('drag-over-top','drag-over-bottom'); if(!dragNo||dragNo===no)return; await handleReorder(dragNo,no,after?'after':'before'); });
       }
-      card.addEventListener('click',(e)=>{ if(editing && (e.target.closest('.hide-toggle')||e.target.closest('.brk-toggle')))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
+      card.addEventListener('click',(e)=>{ if(editing && (e.target.closest('.hide-toggle')||e.target.closest('.brk-toggle')||e.target.closest('.gap-toggle')))return; location.href='epacific-product.html?style='+encodeURIComponent(no); });
       grid.appendChild(card);
     });
     const cnt=document.getElementById('resultCount');

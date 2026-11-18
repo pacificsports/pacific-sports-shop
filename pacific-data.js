@@ -87,6 +87,8 @@ window.PacificData = (function () {
     '8150': 'Cationic Tee',
     '8155': 'Spacedye Tee',
     '8180': 'Mesh Tee',
+    '8210': 'Youth Polyester Tee',
+    '8250': 'Youth Cationic Tee',
     '8255': 'Youth Spacedye Tee',
     '8368': 'Everyday Tee',
     '9307': 'Infinite Tee',
@@ -287,7 +289,9 @@ window.PacificData = (function () {
     {no:'8150',desc:'Adult Cationic Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
     {no:'8155',desc:'Adult Spacedye Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
     {no:'8180',desc:'Adult Mesh Short Sleeve Tee',cat:'Adult Performance',sr:'XS-5XL'},
-    {no:'8255',desc:'Youth Spacedye Performance Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
+    {no:'8210',desc:'Youth Polyester Short Sleeve Tee',cat:'Youth Performance',sr:'XS-XL'},
+    {no:'8250',desc:'Youth Cationic Short Sleeve Tee',cat:'Youth Performance',sr:'XS-XL'},
+    {no:'8255',desc:'Youth Spacedye Performance Short Sleeve Tee',cat:'Youth Performance',sr:'XS-XL'},
     {no:'8368',desc:'Adult 30/1 CVC Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'9307',desc:'Adult Infinite Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'}
   ];

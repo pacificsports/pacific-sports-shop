@@ -153,6 +153,31 @@
   .brk-toggle{font-size:11px;margin-top:4px;cursor:pointer;color:var(--faint);user-select:none}
   .brk-toggle.on{color:var(--accent,#6b7b5e);font-weight:600}
   .gap-toggle{font-size:11px;margin-top:2px;cursor:pointer;color:var(--faint);user-select:none}
+  /* GAPFREE-1 (2026-11-18) - 빈 칸을 「아무거나 올려놓는 자리」로.
+     [stated] 하윤: "우리가 원하는거 그냥 다 넣을수있게 근데 자유 자재로 자리 배정하고
+              font바꾸고 사이즈 수정할수있게"
+     ⚠ 자리는 픽셀이 아니라 **칸 대비 %** 로 담는다 - 3칸/2칸 어디서도 같은 자리에 온다. */
+  .gap-free{position:relative;overflow:hidden}
+  .gap-free .gf-i{position:absolute;margin:0;white-space:pre-wrap;overflow-wrap:break-word}
+  .gap-free .gf-i.f-d{font-family:var(--display)}
+  .gap-free .gf-i.f-b{font-family:var(--body)}
+  body.editmode .gap-free{border:1px dashed var(--line);border-radius:14px}
+  body.editmode .gap-free .gf-i{cursor:move;outline:1px dashed transparent;border-radius:4px}
+  body.editmode .gap-free .gf-i:hover{outline-color:var(--line-2,#d8d6cd)}
+  body.editmode .gap-free .gf-i.sel{outline:1px solid var(--accent,#6b7b5e)}
+  body.editmode .gap-free .gf-h{position:absolute;right:-5px;bottom:-5px;width:11px;height:11px;
+    background:var(--accent,#6b7b5e);border-radius:3px;cursor:ew-resize}
+  .gf-bar{position:absolute;left:6px;right:6px;top:6px;z-index:5;display:flex;flex-wrap:wrap;gap:4px;
+    background:var(--paper,#fff);border:1px solid var(--line);border-radius:9px;padding:5px 6px}
+  .gf-bar button{font:inherit;font-size:11px;font-weight:600;padding:2px 6px;border:1px solid var(--line);
+    border-radius:6px;background:#fff;color:var(--faint);cursor:pointer}
+  .gf-bar button.on{color:var(--accent,#6b7b5e);border-color:var(--accent,#6b7b5e)}
+  .gf-bar button.del{color:#b91c1c;border-color:#fca5a5}
+  .gf-add{position:absolute;left:6px;bottom:6px;z-index:5;font-size:11px;font-weight:600;
+    color:var(--accent,#6b7b5e);background:#fff;border:1px solid var(--line);border-radius:7px;
+    padding:3px 8px;cursor:pointer}
+  .gf-rm{position:absolute;right:6px;bottom:6px;z-index:5;font-size:11px;color:var(--faint);
+    background:#fff;border:1px solid var(--line);border-radius:7px;padding:3px 8px;cursor:pointer}
   /* GAPTEXT-1 (2026-11-18) - 빈 칸에 글자를 넣으면 「묶음 이름」이 된다.
      [stated] 하윤: "저 빈칸이 어색하면 우리가 문구를 적을수있게 할까?? ... 그럼 비워져 보이지도 않고" */
   .gap-note{display:flex;flex-direction:column;justify-content:center;gap:10px;padding:0 4px}
@@ -342,7 +367,32 @@
   const GAP_MAX=2;                       // 3칸짜리 줄이라 2개까지만 - 3개면 그냥 새 줄이다
   let gapMap={};                         // 스타일 번호 -> 앞에 둘 빈 칸 수
   const GAPTXT_KEY='__GAPTXT__';         // 그 빈 칸들에 넣을 글자 (칸 차례대로)
-  let gapTxt={};                         // 스타일 번호 -> ['Kids & Youth', '']
+  let gapTxt={};                         // 스타일 번호 -> ['Kids & Youth', '']  (옛 방식)
+  const GAPBOX_KEY='__GAPBOX__';         // 빈 칸마다 올려놓은 것들 (GAPFREE-1)
+  let gapBox={};                         // 스타일 -> [ [ {k,x,y,w,s,f,b,a,v} ] ]
+  let _gfSel=null;                       // 지금 고른 것 {no,gi,ix}
+  const GF_SZ=[12,14,16,19,23,27,32,40,52];
+  const GF_WT=[300,400,500,600,700];
+  function gfItems(no, gi){
+    const b=(gapBox[no]||[])[gi];
+    if(Array.isArray(b)) return b;
+    /* 옛 글자 한 줄이 있으면 그것을 첫 덩어리로 삼는다 */
+    const t=((gapTxt[no]||[])[gi]||'').trim();
+    return t ? [{k:'t',x:6,y:42,w:86,s:19,f:'d',b:400,a:'l',v:t}] : [];
+  }
+  function gfNorm(it){
+    /* ⚠ 폭은 「오른쪽 끝까지」로 묶는다 - 안 그러면 글자가 칸 밖으로 나가 잘린다 */
+    const _x=Math.max(0,Math.min(96,Number(it.x)||0));
+    return { k:'t',
+      x:_x,
+      y:Math.max(0,Math.min(96,Number(it.y)||0)),
+      w:Math.max(8,Math.min(100-_x,Number(it.w)||80)),
+      s:(GF_SZ.indexOf(Number(it.s))>=0)?Number(it.s):19,
+      f:(it.f==='b')?'b':'d',
+      b:(GF_WT.indexOf(Number(it.b))>=0)?Number(it.b):400,
+      a:({l:1,c:1,r:1}[it.a])?it.a:'l',
+      v:String(it.v==null?'':it.v) };
+  }
   let styleColors={};                    // 스타일번호 → [{color, url}] (★메인색 썸네일 매핑용)
   let colorNamesMap={};                  // 스타일번호 → color_names 객체 (병합 저장용)
   let defaultColorMap={};                // 스타일번호 → ★ 메인 색(raw, 대문자)
@@ -406,7 +456,8 @@
         const rk=cn[RANK_KEY]; if(typeof rk==='number') rankMap[no]=rk;
         if(cn[BRK_KEY]===true) brkSet.add(no);
         const gp=cn[GAP_KEY]; if(typeof gp==='number' && gp>0) gapMap[no]=Math.min(GAP_MAX, Math.round(gp));
-        const gt=cn[GAPTXT_KEY]; if(Array.isArray(gt)) gapTxt[no]=gt.map(x=>String(x==null?'':x)); });
+        const gt=cn[GAPTXT_KEY]; if(Array.isArray(gt)) gapTxt[no]=gt.map(x=>String(x==null?'':x));
+        const gb=cn[GAPBOX_KEY]; if(Array.isArray(gb)) gapBox[no]=gb.map(a=>Array.isArray(a)?a.map(gfNorm):[]); });
     }catch(e){
       /* WEBSAFE-1 - 삼켜서는 안 된다 (위 주석 참고). 밖으로 올려보낸다. */
       console.error('style_settings load failed - catalogue not rendered', e);
@@ -533,6 +584,29 @@
       {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
     return r.ok;
   }
+  /* GAPFREE-1 - 칸에 올려놓은 것들 저장. 빈 칸만 남으면 칸 자체를 지운다. */
+  async function saveGapBox(styleNo, arr){
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
+    const clean=(arr||[]).map(a=>Array.isArray(a)?a.map(gfNorm).filter(it=>it.v.trim()):[]);
+    while(clean.length && !clean[clean.length-1].length) clean.pop();
+    if(clean.length) cn[GAPBOX_KEY]=clean; else delete cn[GAPBOX_KEY];
+    colorNamesMap[no]=cn;
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
+  function gfSet(no, gi, items){
+    if(!gapBox[no]) gapBox[no]=[];
+    while(gapBox[no].length<=gi) gapBox[no].push([]);
+    gapBox[no][gi]=items;
+  }
+  async function gfSave(no){
+    const okb=await saveGapBox(no, gapBox[no]||[]);
+    if(!okb){ alert('Could not save.'); }
+  }
   // 스타일 숨김 저장
   async function saveStyleHidden(styleNo, hidden){
     const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
@@ -604,50 +678,141 @@
       const colorLine = cc ? (cc+' color'+(cc>1?'s':'')) : '';
       const hidden=hiddenStyles.has(no);
       const favOn = _favSet.has(no);
-      /* GAPCELL-1 - 이 카드 앞에 빈 칸을 먼저 깐다 */
+      /* GAPFREE-1 - 빈 칸은 「아무거나 올려놓는 자리」다. 자리는 칸 대비 % 로 담는다. */
       const gapN = gapMap[no] || 0;
       for(let gi=0; gi<gapN; gi++){
         const gp=document.createElement('div');
-        const gtxt=((gapTxt[no]||[])[gi]||'').trim();
-        gp.className='gap-cell'+(gtxt?' gap-note':'');
+        const items=gfItems(no, gi).map(gfNorm);
+        gp.className='gap-cell gap-free';
+        gp.dataset.gapFor=no; gp.dataset.gapIx=String(gi);
+
+        items.forEach((it, ix)=>{
+          const el=document.createElement('div');
+          el.className='gf-i f-'+it.f+((_gfSel && _gfSel.no===no && _gfSel.gi===gi && _gfSel.ix===ix)?' sel':'');
+          el.style.left=it.x+'%'; el.style.top=it.y+'%'; el.style.width=it.w+'%';
+          el.style.fontSize=it.s+'px'; el.style.fontWeight=it.b;
+          el.style.textAlign=({l:'left',c:'center',r:'right'})[it.a];
+          el.style.lineHeight='1.2';
+          el.textContent=it.v;
+          if(editing){
+            el.contentEditable='true'; el.spellcheck=false;
+            el.addEventListener('focus',()=>{ _gfSel={no:no,gi:gi,ix:ix}; });
+            el.addEventListener('blur',async()=>{
+              const now=gfItems(no,gi).map(gfNorm);
+              if(now[ix] && now[ix].v===el.innerText) return;
+              if(now[ix]){ now[ix].v=el.innerText; gfSet(no,gi,now); await gfSave(no); renderGrid(); }
+            });
+            /* 끌어서 옮기기 — 글자 고치는 중(포커스)에는 안 끈다 */
+            el.addEventListener('pointerdown',(ev)=>{
+              if(document.activeElement===el) return;
+              if(ev.target.classList.contains('gf-h')) return;
+              ev.preventDefault(); ev.stopPropagation();
+              _gfSel={no:no,gi:gi,ix:ix}; renderGrid();
+              const cell=document.querySelector('.gap-free[data-gap-for="'+no+'"][data-gap-ix="'+gi+'"]');
+              const node=cell.querySelectorAll('.gf-i')[ix];
+              const r=cell.getBoundingClientRect();
+              const ox=ev.clientX-(r.left+r.width*it.x/100);
+              const oy=ev.clientY-(r.top+r.height*it.y/100);
+              let nx=it.x, ny=it.y;
+              const move=(e2)=>{
+                nx=Math.max(0,Math.min(96,((e2.clientX-ox-r.left)/r.width)*100));
+                ny=Math.max(0,Math.min(96,((e2.clientY-oy-r.top)/r.height)*100));
+                node.style.left=nx+'%'; node.style.top=ny+'%';
+              };
+              const up=async()=>{
+                window.removeEventListener('pointermove',move);
+                window.removeEventListener('pointerup',up);
+                const now=gfItems(no,gi).map(gfNorm);
+                now[ix].x=Math.round(nx*10)/10; now[ix].y=Math.round(ny*10)/10;
+                gfSet(no,gi,now); renderGrid(); await gfSave(no);
+              };
+              window.addEventListener('pointermove',move);
+              window.addEventListener('pointerup',up);
+            });
+            /* 오른쪽 아래 손잡이 — 폭 늘이기 */
+            const h=document.createElement('div'); h.className='gf-h'; h.contentEditable='false';
+            h.addEventListener('pointerdown',(ev)=>{
+              ev.preventDefault(); ev.stopPropagation();
+              const cell=document.querySelector('.gap-free[data-gap-for="'+no+'"][data-gap-ix="'+gi+'"]');
+              const node=cell.querySelectorAll('.gf-i')[ix];
+              const r=cell.getBoundingClientRect();
+              let nw=it.w;
+              const move=(e2)=>{
+                nw=Math.max(8,Math.min(100-it.x,((e2.clientX-(r.left+r.width*it.x/100))/r.width)*100));
+                node.style.width=nw+'%';
+              };
+              const up=async()=>{
+                window.removeEventListener('pointermove',move);
+                window.removeEventListener('pointerup',up);
+                const now=gfItems(no,gi).map(gfNorm);
+                now[ix].w=Math.round(nw*10)/10; gfSet(no,gi,now); renderGrid(); await gfSave(no);
+              };
+              window.addEventListener('pointermove',move);
+              window.addEventListener('pointerup',up);
+            });
+            el.appendChild(h);
+          }
+          gp.appendChild(el);
+        });
+
         if(editing){
-          /* GAPTEXT-1 - 편집모드에서는 칸 안에서 바로 글자를 친다.
-             ⚠ oninput 에 renderGrid 를 걸면 글자 하나 칠 때마다 다시 그려서 커서가 튄다.
-                그래서 치는 동안에는 기억에만 담고, 칸을 벗어날 때(change) 저장한다. */
-          gp.dataset.gapFor=no;
-          const inp=document.createElement('input');
-          inp.type='text'; inp.className='gn-in'; inp.value=gtxt;
-          inp.placeholder='빈 칸 — 글자를 넣으려면 여기에';
-          inp.addEventListener('click',e=>e.stopPropagation());
-          inp.addEventListener('input',()=>{
-            if(!gapTxt[no]) gapTxt[no]=[];
-            gapTxt[no][gi]=inp.value;
+          /* 고른 덩어리의 글꼴·크기·굵기·정렬 */
+          if(_gfSel && _gfSel.no===no && _gfSel.gi===gi && items[_gfSel.ix]){
+            const cur=items[_gfSel.ix], six=_gfSel.ix;
+            const bar=document.createElement('div'); bar.className='gf-bar';
+            const mk=(label,on,fn,cls)=>{ const b=document.createElement('button');
+              b.textContent=label; if(on) b.className='on'; if(cls) b.className=(b.className+' '+cls).trim();
+              b.addEventListener('pointerdown',e=>e.stopPropagation());
+              b.addEventListener('click',async(e)=>{ e.stopPropagation();
+                const now=gfItems(no,gi).map(gfNorm); fn(now[six]); gfSet(no,gi,now); renderGrid(); await gfSave(no); });
+              return b; };
+            bar.appendChild(mk('세리프', cur.f==='d', it2=>{ it2.f='d'; }));
+            bar.appendChild(mk('산세리프', cur.f==='b', it2=>{ it2.f='b'; }));
+            bar.appendChild(mk('A-', false, it2=>{ const i2=GF_SZ.indexOf(it2.s); it2.s=GF_SZ[Math.max(0,i2-1)]; }));
+            bar.appendChild(mk(String(cur.s), false, ()=>{}));
+            bar.appendChild(mk('A+', false, it2=>{ const i2=GF_SZ.indexOf(it2.s); it2.s=GF_SZ[Math.min(GF_SZ.length-1,i2+1)]; }));
+            bar.appendChild(mk('굵게', cur.b>=600, it2=>{ it2.b = (it2.b>=600)?400:700; }));
+            bar.appendChild(mk('좌', cur.a==='l', it2=>{ it2.a='l'; }));
+            bar.appendChild(mk('중', cur.a==='c', it2=>{ it2.a='c'; }));
+            bar.appendChild(mk('우', cur.a==='r', it2=>{ it2.a='r'; }));
+            const delb=document.createElement('button'); delb.className='del'; delb.textContent='✕ 지움';
+            delb.addEventListener('pointerdown',e=>e.stopPropagation());
+            delb.addEventListener('click',async(e)=>{
+              e.stopPropagation();
+              const now=gfItems(no,gi).map(gfNorm); now.splice(six,1);
+              _gfSel=null; gfSet(no,gi,now); renderGrid(); await gfSave(no);
+            });
+            bar.appendChild(delb);
+            gp.appendChild(bar);
+          }
+          const add=document.createElement('div'); add.className='gf-add'; add.textContent='＋ 글자';
+          add.addEventListener('pointerdown',e=>e.stopPropagation());
+          add.addEventListener('click',async(e)=>{
+            e.stopPropagation();
+            const now=gfItems(no,gi).map(gfNorm);
+            now.push(gfNorm({x:6,y:10+now.length*14,w:86,s:19,f:'d',b:400,a:'l',v:'여기에 글자'}));
+            _gfSel={no:no,gi:gi,ix:now.length-1};
+            gfSet(no,gi,now); renderGrid(); await gfSave(no);
           });
-          inp.addEventListener('change',async()=>{
-            if(!gapTxt[no]) gapTxt[no]=[];
-            gapTxt[no][gi]=inp.value;
-            renderGrid();
-            const okt=await saveGapTxt(no, gapTxt[no]);
-            if(!okt){ alert('Could not save.'); }
-          });
-          const del=document.createElement('div');
-          del.className='gn-x';
-          del.textContent='✕ 이 칸 지우기';
-          del.addEventListener('click',async(e)=>{
+          gp.appendChild(add);
+          const rm=document.createElement('div'); rm.className='gf-rm'; rm.textContent='✕ 이 칸 지우기';
+          rm.addEventListener('pointerdown',e=>e.stopPropagation());
+          rm.addEventListener('click',async(e)=>{
             e.stopPropagation();
             const left=Math.max(0,(gapMap[no]||0)-1);
-            if(gapTxt[no]){ gapTxt[no].splice(gi,1); }
+            if(gapBox[no]) gapBox[no].splice(gi,1);
+            if(gapTxt[no]) gapTxt[no].splice(gi,1);
             if(left) gapMap[no]=left; else delete gapMap[no];
-            renderGrid();
+            _gfSel=null; renderGrid();
             const okg=await saveGap(no,left);
             const okt=await saveGapTxt(no, gapTxt[no]||[]);
-            if(!okg || !okt){ alert('Could not save.'); }
+            const okb=await saveGapBox(no, gapBox[no]||[]);
+            if(!okg || !okt || !okb){ alert('Could not save.'); }
           });
-          gp.appendChild(inp); gp.appendChild(del);
-        } else if(gtxt){
-          const sp=document.createElement('div'); sp.className='gn-t'; sp.textContent=gtxt;
-          const rl=document.createElement('div'); rl.className='gn-r';
-          gp.appendChild(sp); gp.appendChild(rl);
+          gp.appendChild(rm);
+          gp.addEventListener('pointerdown',(e)=>{
+            if(e.target===gp && _gfSel){ _gfSel=null; renderGrid(); }
+          });
         }
         grid.appendChild(gp);
       }

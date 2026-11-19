@@ -69,18 +69,23 @@ window.PacificData = (function () {
     '1690': 'Heavyweight PFD Tee',
     '2210': 'Youth Midweight Tee',
     '2212': 'Youth Midweight Long Sleeve',
+    '2260': 'Youth Heather Tee',
     '2310': 'Youth Classic Tee',
     '2312': 'Kids Classic Long Sleeve',
     '2316': 'Kids Classic Tee',
+    '2360': 'Youth Soft Heather Tee',
     '2350': 'Youth Snow Tee',
     '2382': 'Kids Everyday Long Sleeve',
     '2388': 'Kids Everyday Tee',
     '3210': 'Juvy Midweight Tee',
     '3212': 'Juvy Midweight Long Sleeve',
+    '3260': 'Juvy Heather Tee',
     '3310': 'Juvy Classic Tee',
+    '3360': 'Juvy Soft Heather Tee',
     '3350': 'Juvy Snow Tee',
     '5210': 'Toddler Midweight Tee',
     '5212': 'Toddler Midweight Long Sleeve',
+    '5260': 'Toddler Heather Tee',
     '5310': 'Toddler Classic Tee',
     '5350': 'Toddler Snow Tee',
     '6535': 'Galaxy Tee',
@@ -145,7 +150,8 @@ window.PacificData = (function () {
      웹 표는 5350 을 48, 3350 을 72 로 알고 있었다 (CASE PACK CHECK 목록에 있던 줄).
      🔴 이걸 안 고치면 운임 계산이 틀린다 - 장당 무게 = 케이스무게 / 장수 라서
         5350 2T 가 0.130 lb 대신 0.39 lb (세 배)로 잡힌다. */
-  const CASE_STYLE = { '2312': 60, '2382': 60, '5350': 144, '3350': 144 };
+  const CASE_STYLE = { '2312': 60, '2382': 60, '3260': 144, '3360': 144,
+                       '5260': 144, '5350': 144, '3350': 144 };
   function casePerFor(styleNo){
     const n = CASE_STYLE[String(styleNo == null ? '' : styleNo).trim().toUpperCase()];
     if(!(n > 0)) return CASE_PER;
@@ -272,7 +278,9 @@ window.PacificData = (function () {
     {no:'1690',desc:'Adult 16/1 100% Cotton Heavyweight PFD Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'2210',desc:'Youth 22/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2212',desc:'Youth 22/1 100% Cotton Long Sleeve Tee',cat:'Youth L/S',sr:'XS-XL'},
+    {no:'2260',desc:'Youth 22/1 Color Htr Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2310',desc:'Youth 30/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
+    {no:'2360',desc:'Youth 30/1 Color Htr Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2312',desc:'Kids 30/1 100% Cotton Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
     {no:'2382',desc:'Kids 30/1 CVC Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
     {no:'2316',desc:'Kids 30/1 100% Cotton Short Sleeve Tee',cat:'Kids S/S',sr:'2T-XL'},
@@ -280,10 +288,13 @@ window.PacificData = (function () {
     {no:'2388',desc:'Kids 30/1 CVC Short Sleeve Tee',cat:'Kids S/S',sr:'2T-XL'},
     {no:'3210',desc:'Juvy 22/1 100% Cotton Short Sleeve Tee',cat:'Juvy S/S',sr:'S-L'},
     {no:'3212',desc:'Juvy 22/1 100% Cotton Long Sleeve Tee',cat:'Juvy L/S',sr:'S-L'},
+    {no:'3260',desc:'Juvy 22/1 Color Htr Short Sleeve Tee',cat:'Juvy S/S',sr:'S-L'},
     {no:'3310',desc:'Juvy 30/1 100% Cotton Short Sleeve Tee',cat:'Juvy S/S',sr:'S-L'},
+    {no:'3360',desc:'Juvy 30/1 Color Htr Short Sleeve Tee',cat:'Juvy S/S',sr:'S-L'},
     {no:'3350',desc:'Juvy Snow Htr Short Sleeve Tee',cat:'Juvy S/S',sr:'S-L'},
     {no:'5210',desc:'Toddler 22/1 100% Cotton Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-4T'},
     {no:'5212',desc:'Toddler 22/1 100% Cotton Long Sleeve Tee',cat:'Toddler L/S',sr:'2T-4T'},
+    {no:'5260',desc:'Toddler 22/1 Color Htr Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-5T'},
     {no:'5310',desc:'Toddler 30/1 100% Cotton Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-4T'},
     {no:'5350',desc:'Toddler Snow Htr Short Sleeve Tee',cat:'Toddler S/S',sr:'2T-4T'},
     {no:'6535',desc:'Adult Galaxy Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},

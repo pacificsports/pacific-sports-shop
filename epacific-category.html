@@ -145,6 +145,14 @@
   /* ROWBRK-1 (2026-11-18) - 이 카드부터 새 줄에서 시작한다.
      빈 칸을 끼우지 않고 '칸 1번으로 보낸다'로 처리해서 3칸/2칸/1칸 어느 폭에서도 맞는다. */
   .card.rowstart{grid-column-start:1}
+  /* GAPBRK-1 (2026-11-19) - 빈 칸 자체도 줄 머리가 될 수 있다.
+     [stated] 하윤: "저 kids & youth 넣는 칸도 저기부터 새줄로 시작 feature만들어줘" */
+  .gap-cell.rowstart{grid-column-start:1}
+  .gf-brk{position:absolute;left:50%;transform:translateX(-50%);bottom:6px;z-index:5;
+    font-size:11px;font-weight:600;color:var(--faint);background:#fff;
+    border:1px solid var(--line);border-radius:999px;padding:3px 9px;cursor:pointer;white-space:nowrap}
+  .gf-brk:hover{color:var(--accent,#6b7b5e);border-color:var(--accent,#6b7b5e)}
+  .gf-brk.on{color:var(--accent,#6b7b5e);border-color:var(--accent,#6b7b5e)}
   /* GAPCELL-1 (2026-11-18) - 줄 안에서 한 칸 비워 식구를 가른다.
      손님에게는 그냥 빈 자리, 편집모드에서만 점선으로 보인다. */
   .gap-cell{min-height:0}
@@ -370,6 +378,10 @@
   let gapTxt={};                         // 스타일 번호 -> ['Kids & Youth', '']  (옛 방식)
   const GAPBOX_KEY='__GAPBOX__';         // 빈 칸마다 올려놓은 것들 (GAPFREE-1)
   let gapBox={};                         // 스타일 -> [ [ {k,x,y,w,s,f,b,a,v} ] ]
+  const GAPBRK_KEY='__GAPBRK__';         // 새 줄에서 시작하는 빈 칸 번호들 (GAPBRK-1)
+  let gapBrk={};                         // 스타일 -> Set(빈 칸 번호)
+  function gapBrkHas(no, gi){ const t=gapBrk[String(no)]; return !!(t && t.has(gi)); }
+  function gapBrkList(no){ const t=gapBrk[String(no)]; return t?Array.from(t).sort((a,b)=>a-b):[]; }
   let _gfSel=null;                       // 지금 고른 것 {no,gi,ix}
   const GF_SZ=[12,14,16,19,23,27,32,40,52];
   const GF_WT=[300,400,500,600,700];
@@ -457,7 +469,10 @@
         if(cn[BRK_KEY]===true) brkSet.add(no);
         const gp=cn[GAP_KEY]; if(typeof gp==='number' && gp>0) gapMap[no]=Math.min(GAP_MAX, Math.round(gp));
         const gt=cn[GAPTXT_KEY]; if(Array.isArray(gt)) gapTxt[no]=gt.map(x=>String(x==null?'':x));
-        const gb=cn[GAPBOX_KEY]; if(Array.isArray(gb)) gapBox[no]=gb.map(a=>Array.isArray(a)?a.map(gfNorm):[]); });
+        const gb=cn[GAPBOX_KEY]; if(Array.isArray(gb)) gapBox[no]=gb.map(a=>Array.isArray(a)?a.map(gfNorm):[]);
+        const gk=cn[GAPBRK_KEY];
+        if(Array.isArray(gk)){ const t=new Set(gk.map(Number).filter(v=>Number.isFinite(v)&&v>=0));
+          if(t.size) gapBrk[no]=t; } });
     }catch(e){
       /* WEBSAFE-1 - 삼켜서는 안 된다 (위 주석 참고). 밖으로 올려보낸다. */
       console.error('style_settings load failed - catalogue not rendered', e);
@@ -598,6 +613,38 @@
       {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
     return r.ok;
   }
+  /* GAPBRK-1 - 「이 빈 칸부터 새 줄」 저장.
+     ⚠ 빈 칸이 줄 머리가 되면 바로 뒤 카드의 「↵ 여기서 새 줄」 은 같이 켜 둘 수 없다 -
+        그러면 빈 칸만 덩그러니 한 줄에 남고 카드가 또 다음 줄로 밀린다.
+        그래서 한쪽을 켜면 다른 쪽은 끈다. 같은 jsonb 한 줄이라 **저장은 한 번만** 간다. */
+  async function saveGapBrk(styleNo, arr, clearCardBrk){
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
+    const uniq=[];
+    (arr||[]).map(Number).filter(v=>Number.isFinite(v)&&v>=0).sort((a,b)=>a-b)
+      .forEach(v=>{ if(uniq.indexOf(v)<0) uniq.push(v); });
+    if(uniq.length) cn[GAPBRK_KEY]=uniq; else delete cn[GAPBRK_KEY];
+    if(clearCardBrk) delete cn[BRK_KEY];
+    colorNamesMap[no]=cn;
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
+  /* GAPBRK-1 - 카드 새 줄을 켜면서 빈 칸 새 줄을 푸는 경우. 한 줄짜리 jsonb 라 **한 번에** 쓴다. */
+  async function saveGapBrkAndRowBreak(styleNo, on){
+    const tk=(()=>{try{return (JSON.parse(localStorage.getItem('pacific_user')||'null')||{}).token;}catch(e){return null;}})();
+    if(!tk){ alert('Session expired. Please log in again.'); return false; }
+    const no=String(styleNo); const cn=Object.assign({}, colorNamesMap[no]||{});
+    delete cn[GAPBRK_KEY];
+    if(on) cn[BRK_KEY]=true; else delete cn[BRK_KEY];
+    colorNamesMap[no]=cn;
+    const H={apikey:_SBcfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+tk,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'};
+    const r=await fetch(_SBcfg.SUPABASE_URL+'/rest/v1/style_settings',
+      {method:'POST',headers:H,body:JSON.stringify({style_number:no,color_names:cn,updated_at:new Date().toISOString()})});
+    return r.ok;
+  }
   function gfSet(no, gi, items){
     if(!gapBox[no]) gapBox[no]=[];
     while(gapBox[no].length<=gi) gapBox[no].push([]);
@@ -683,7 +730,7 @@
       for(let gi=0; gi<gapN; gi++){
         const gp=document.createElement('div');
         const items=gfItems(no, gi).map(gfNorm);
-        gp.className='gap-cell gap-free';
+        gp.className='gap-cell gap-free'+(gapBrkHas(no,gi)?' rowstart':'');
         gp.dataset.gapFor=no; gp.dataset.gapIx=String(gi);
 
         items.forEach((it, ix)=>{
@@ -827,6 +874,28 @@
             gfSet(no,gi,now); renderGrid(); await gfSave(no);
           });
           gp.appendChild(add);
+          /* GAPBRK-1 - 이 빈 칸부터 새 줄에서 시작 */
+          const bk=document.createElement('div');
+          const bkOn=gapBrkHas(no,gi);
+          bk.className='gf-brk'+(bkOn?' on':'');
+          bk.textContent=bkOn?'↵ 새 줄 ✓':'↵ 여기서 새 줄';
+          bk.title=bkOn?'지금 이 칸부터 새 줄에서 시작합니다 — 누르면 풀립니다'
+                       :'누르면 이 칸부터 새 줄에서 시작합니다';
+          bk.addEventListener('pointerdown',e=>e.stopPropagation());
+          bk.addEventListener('click',async(e)=>{
+            e.stopPropagation();
+            const willOn=!gapBrkHas(no,gi);
+            if(!gapBrk[no]) gapBrk[no]=new Set();
+            if(willOn) gapBrk[no].add(gi); else gapBrk[no].delete(gi);
+            if(!gapBrk[no].size) delete gapBrk[no];
+            /* 빈 칸이 줄 머리를 맡으면 카드 쪽 새 줄은 푼다 (위 주석 참고) */
+            const clearCard = willOn && brkSet.has(no);
+            if(clearCard) brkSet.delete(no);
+            renderGrid();
+            const ok=await saveGapBrk(no, gapBrkList(no), clearCard);
+            if(!ok){ alert('Could not save.'); }
+          });
+          gp.appendChild(bk);
           const rm=document.createElement('div'); rm.className='gf-rm'; rm.textContent='✕ 이 칸 지우기';
           rm.addEventListener('pointerdown',e=>e.stopPropagation());
           rm.addEventListener('click',async(e)=>{
@@ -911,8 +980,12 @@
           e.stopPropagation();
           const willOn=!brkSet.has(no);
           if(willOn) brkSet.add(no); else brkSet.delete(no);
+          /* GAPBRK-1 - 카드가 줄 머리를 맡으면 앞 빈 칸 쪽 새 줄은 푼다 (둘 다면 빈 칸만 남는다) */
+          const hadGapBrk = willOn && !!gapBrk[no];
+          if(hadGapBrk) delete gapBrk[no];
           renderGrid();
-          const ok=await saveRowBreak(no, willOn);
+          const ok = hadGapBrk ? await saveGapBrkAndRowBreak(no, willOn)
+                               : await saveRowBreak(no, willOn);
           if(!ok){ alert('Could not save.'); }
         });
         const tg=card.querySelector('.hide-toggle');

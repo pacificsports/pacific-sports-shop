@@ -70,6 +70,7 @@ window.PacificData = (function () {
     '2210': 'Youth Midweight Tee',
     '2212': 'Youth Midweight Long Sleeve',
     '2310': 'Youth Classic Tee',
+    '2312': 'Kids Classic Long Sleeve',
     '2316': 'Kids Classic Tee',
     '2350': 'Youth Snow Tee',
     '2382': 'Kids Everyday Long Sleeve',
@@ -144,7 +145,7 @@ window.PacificData = (function () {
      웹 표는 5350 을 48, 3350 을 72 로 알고 있었다 (CASE PACK CHECK 목록에 있던 줄).
      🔴 이걸 안 고치면 운임 계산이 틀린다 - 장당 무게 = 케이스무게 / 장수 라서
         5350 2T 가 0.130 lb 대신 0.39 lb (세 배)로 잡힌다. */
-  const CASE_STYLE = { '2382': 60, '5350': 144, '3350': 144 };
+  const CASE_STYLE = { '2312': 60, '2382': 60, '5350': 144, '3350': 144 };
   function casePerFor(styleNo){
     const n = CASE_STYLE[String(styleNo == null ? '' : styleNo).trim().toUpperCase()];
     if(!(n > 0)) return CASE_PER;
@@ -272,6 +273,7 @@ window.PacificData = (function () {
     {no:'2210',desc:'Youth 22/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
     {no:'2212',desc:'Youth 22/1 100% Cotton Long Sleeve Tee',cat:'Youth L/S',sr:'XS-XL'},
     {no:'2310',desc:'Youth 30/1 100% Cotton Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},
+    {no:'2312',desc:'Kids 30/1 100% Cotton Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
     {no:'2382',desc:'Kids 30/1 CVC Long Sleeve Tee',cat:'Kids L/S',sr:'2T-XL'},
     {no:'2316',desc:'Kids 30/1 100% Cotton Short Sleeve Tee',cat:'Kids S/S',sr:'2T-XL'},
     {no:'2350',desc:'Youth Snow Htr Short Sleeve Tee',cat:'Youth S/S',sr:'XS-XL'},

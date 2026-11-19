@@ -793,8 +793,16 @@
               if(cell && node){
                 const ch=cell.getBoundingClientRect().height;
                 const nh=node.getBoundingClientRect().height;
-                const hp=(ch>0)?(nh/ch*100):0;
-                it2.y=Math.max(0,Math.min(96,Math.round(((100-hp)/2)*10)/10));
+                /* CTRPIC-1 (2026-11-18) - 칸 전체가 아니라 **사진 자리**의 한가운데에 맞춘다.
+                   [stated] 하윤: "저게 사진부분 중앙에 가야 보기가 좋은게 아닌가?
+                            아래 description까지 포함해서 중앙이라서 그런지 글씨가 좀 아래쪽으로 보이네"
+                   칸은 사진 + 그 밑의 이름·원단·색점까지라, 칸 기준으로 재면 글자가 사진보다 내려간다.
+                   ⚠ 사진 높이는 화면 폭마다 달라지므로 숫자로 박지 않고 **옆 카드의 사진 칸을 재서** 쓴다. */
+                const thumb=grid.querySelector('.card .thumb');
+                const th=thumb?thumb.getBoundingClientRect().height:0;
+                const mid=(th>0)?(th/2):(ch/2);          /* 맞출 한가운데 (칸 위에서부터 px) */
+                const top=mid-nh/2;
+                it2.y=(ch>0)?Math.max(0,Math.min(96,Math.round((top/ch*100)*10)/10)):0;
               }
               gfSet(no,gi,now); renderGrid(); await gfSave(no);
             });

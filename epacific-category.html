@@ -775,6 +775,30 @@
             bar.appendChild(mk('좌', cur.a==='l', it2=>{ it2.a='l'; }));
             bar.appendChild(mk('중', cur.a==='c', it2=>{ it2.a='c'; }));
             bar.appendChild(mk('우', cur.a==='r', it2=>{ it2.a='r'; }));
+            /* GAPCTR-1 (2026-11-18) - 덩어리 자체를 칸 한가운데로.
+               [stated] 하윤: "저거 Kids & Youth 자체도 center에 맞출수있게 해줘"
+               ⚠ 세로 가운데는 글자 높이를 알아야 하므로 **그릴 때 실제 높이를 재서** % 로 바꾼다
+                  (글자 수·크기에 따라 높이가 달라서 숫자로 박을 수 없다). */
+            const ctr=document.createElement('button'); ctr.textContent='가운데';
+            ctr.title='이 덩어리를 칸 한가운데로';
+            ctr.addEventListener('pointerdown',e=>e.stopPropagation());
+            ctr.addEventListener('click',async(e)=>{
+              e.stopPropagation();
+              const cell=document.querySelector('.gap-free[data-gap-for="'+no+'"][data-gap-ix="'+gi+'"]');
+              const node=cell?cell.querySelectorAll('.gf-i')[six]:null;
+              const now=gfItems(no,gi).map(gfNorm);
+              const it2=now[six];
+              it2.a='c';
+              it2.x=Math.max(0,Math.round(((100-it2.w)/2)*10)/10);
+              if(cell && node){
+                const ch=cell.getBoundingClientRect().height;
+                const nh=node.getBoundingClientRect().height;
+                const hp=(ch>0)?(nh/ch*100):0;
+                it2.y=Math.max(0,Math.min(96,Math.round(((100-hp)/2)*10)/10));
+              }
+              gfSet(no,gi,now); renderGrid(); await gfSave(no);
+            });
+            bar.appendChild(ctr);
             const delb=document.createElement('button'); delb.className='del'; delb.textContent='✕ 지움';
             delb.addEventListener('pointerdown',e=>e.stopPropagation());
             delb.addEventListener('click',async(e)=>{

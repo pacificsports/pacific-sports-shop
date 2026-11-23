@@ -26,6 +26,8 @@
   .acts button{border:none;padding:9px 18px;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:600}
   .approve{background:var(--accent);color:#fff}
   .reject{background:#f1efe9;color:var(--soft-ink)}
+  .inflow{display:inline-block;padding:9px 14px;border-radius:9px;background:#fdf3e2;color:#9a6b1f;
+          font-size:13px;font-weight:600;border:1px solid #f0e2c4;white-space:nowrap}
   #msg{padding:30px;text-align:center;color:var(--faint)}
   .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
   .top a{color:var(--accent);font-size:13.5px;text-decoration:none}
@@ -37,7 +39,8 @@
     <h1>Customers</h1>
     <a href="epacific-timeless.html">← Back to site</a>
   </div>
-  <div class="sub">Review wholesale account applications. Approved customers can log in and see pricing.</div>
+  <div class="sub">Review wholesale account applications. Approved customers can log in and see pricing.<br>
+    <b>Approving is done in psflowx &rarr; Website tab</b> &mdash; that is where the account is linked to a customer and the price tier is set.</div>
   <div class="tabs">
     <button id="tabPending" class="on">Pending</button>
     <button id="tabApproved">Approved</button>
@@ -169,7 +172,7 @@
         <div class="acts">
           ${r.tax_doc_path?`<button class="reject" data-doc="${esc(r.tax_doc_path)}">View certificate</button>`:''}
           ${r.tax_doc_path?`<button class="reject" data-ai="${r.id}">🤖 AI check</button>`:''}
-          ${r.status!=='approved'?`<button class="approve" data-id="${r.id}" data-act="approved">Approve</button>`:''}
+          ${r.status!=='approved'?`<span class="inflow" title="Approving an account is a credit decision, and it also sets the customer's price tier. Both are done in psflowx.">Approve in psflowx &rarr; Website tab</span>`:''}
           ${r.status!=='rejected'?`<button class="reject" data-id="${r.id}" data-act="rejected">Reject</button>`:''}
         </div>
         ${aiWrap(r.ai_check, r.id)}

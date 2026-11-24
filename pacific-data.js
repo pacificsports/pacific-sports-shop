@@ -213,7 +213,7 @@ window.PacificData = (function () {
     return prettyColor(raw);
   }
   const COLOR_HEX = {
-    'ABYSS':'#2c3e4f','ARTICHOKE':'#7d8064','BABY BLUE':'#a9c9e0','BERMUDA':'#5bbcb6',
+    'ABYSS':'#2c3e4f','ANTIQUE WHITE':'#f0efeb','ARTICHOKE':'#7d8064','BABY BLUE':'#a9c9e0','BERMUDA':'#5bbcb6',
     'BLACK':'#232323','BLACK PEARL':'#33353a','BROWN':'#6b4a36','BUTTER':'#f3e3a0',
     'CANARY':'#f5d935','CANTALOUPE':'#f0a875','CARDINAL':'#8e2535','CHAMBRAY':'#6d8aa8',
     'CHARCOAL HTR':'#4a4a4d','CHARCOAL (HT)':'#4a4a4d','CHARCOAL (DS)':'#3f3f42','CHARCOAL':'#4a4a4d','CINNAMON':'#b05c33','CLOVER':'#3f7d4f','FROST BLUE':'#bcd6dc',

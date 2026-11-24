@@ -111,7 +111,10 @@ window.PacificData = (function () {
   function _styleSpec(desc){
     var t = String(desc == null ? '' : desc).trim();
     var c = t.replace(/^(Adult|Youth|Kids|Juvy|Toddler|Mens|Men's)\s+/i, '');
-    c = c.replace(/\s*(Hoodie\s+)?(V-Neck\s+)?(Short\s+Sleeve|Long\s+Sleeve)?\s*(Ringer\s+)?(Tee|Tank\s+Top|Tank)\s*$/i, '');
+    /* ⚠ Ringer 는 앞에 올 수도 뒤에 올 수도 있다.
+       'Short Sleeve Ringer Tee'(예전 차례)와 'Ringer Short Sleeve Tee'(새 차례) 둘 다 떼어야
+       원단 줄이 '30/1 100% Cotton' 로 나온다. 둘 중 하나만 두면 'Cotton Ringer' 가 된다. */
+    c = c.replace(/\s*(Hoodie\s+)?(V-Neck\s+)?(Ringer\s+)?(Short\s+Sleeve|Long\s+Sleeve)?\s*(Ringer\s+)?(Tee|Tank\s+Top|Tank)\s*$/i, '');
     c = c.trim();
     return c || t;
   }
@@ -253,7 +256,7 @@ window.PacificData = (function () {
     {no:'1311',desc:'Adult 30/1 100% Cotton V-Neck Short Sleeve Tee',cat:'Adult S/S',sr:'S-3XL'},
     {no:'1314',desc:'Adult 30/1 100% Cotton Tank Top',cat:'Adult Tank Top',sr:'XS-5XL'},
     {no:'1315',desc:'Adult 30/1 100% Cotton Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
-    {no:'1315R',desc:'Adult 30/1 100% Cotton Short Sleeve Ringer Tee',cat:'Adult S/S',sr:'XS-5XL'},
+    {no:'1315R',desc:'Adult 30/1 100% Cotton Ringer Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'1322',desc:'Adult 30/1 100% Cotton Long Sleeve Tee',cat:'Adult L/S',sr:'XS-5XL'},
     {no:'1330',desc:'Adult Omni Short Sleeve Tee',cat:'Adult S/S',sr:'XS-5XL'},
     {no:'1332',desc:'Adult Omni Long Sleeve Tee',cat:'Adult L/S',sr:'XS-5XL'},
